@@ -15,11 +15,17 @@
   "license": "MIT",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "ts-node --files src/main.ts"
+    "start": "ts-node --files src/main.ts",
+    "prestart": "jison src/parsing/c_grammar.jison -o src/parsing/gen/c_grammar.js --default-action=ast --pretty"
   },
   "devDependencies": {
+    "@types/moo": "^0.5.3",
     "@types/node": "^14.14.2",
+    "jison-gho": "^0.6.1-216",
     "ts-node": "^9.0.0",
     "typescript": "^4.0.3"
+  },
+  "dependencies": {
+    "moo": "^0.5.1"
   }
 }
