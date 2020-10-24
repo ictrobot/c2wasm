@@ -1,6 +1,5 @@
 import {lexer} from "./lexer";
-
-const generatedParser = require("./gen/c_grammar") as any;
+import gen from "./gen/c_grammar";
 
 // adapt moo parser to work with Jison
 class WrappedLexer {
@@ -17,9 +16,11 @@ class WrappedLexer {
         lexer.reset(input);
     }
 }
+
 // provide the generated parser with our custom lexer
+const generatedParser = gen as any;
 generatedParser.parser.lexer = new WrappedLexer();
 
-export function parse(s: String): unknown {
+export function parse(s: string): unknown {
     return generatedParser.parse(s);
 }

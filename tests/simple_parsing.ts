@@ -22,5 +22,5 @@ test('valid C decodes', t => {
 test('invalid C raises an error', t => {
     t.throws(() => parse(`
         int main int a { return 0 }    
-    `))
+    `));
 });

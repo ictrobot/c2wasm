@@ -50,7 +50,7 @@ export const lexer = moo.compile({
     ...Object.fromEntries(simpleSymbols.map(x => [x,x])),
     _whitespace: [
         {match: /[ \t\v\f]+/},
-        {match: /\n/, lineBreaks: true },
+        {match: /\n/, lineBreaks: true},
     ],
 });
 

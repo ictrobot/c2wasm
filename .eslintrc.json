@@ -1,0 +1,57 @@
+{
+  "root": true,
+  "parser": "@typescript-eslint/parser",
+  "plugins": [
+    "@typescript-eslint"
+  ],
+  "overrides": [
+    {
+      "files": [
+        "src/**/*.ts",
+        "tests/**/*.ts"
+      ],
+      "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/eslint-recommended",
+        "plugin:@typescript-eslint/recommended"
+      ],
+      "rules": {
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/no-inferrable-types": "off",
+        "curly": ["error", "multi-line", "consistent"],
+        "@typescript-eslint/semi": ["error", "always"],
+        "dot-notation": "error",
+        "eqeqeq": "error",
+        "no-multi-spaces": "error",
+        "object-curly-spacing": ["error", "never"],
+        "yoda": "error",
+        "block-spacing": "error",
+        "brace-style": ["error", "1tbs"],
+        "eol-last": "error",
+        "@typescript-eslint/func-call-spacing": "error",
+        "function-call-argument-newline": ["error", "consistent"],
+        "@typescript-eslint/indent": ["error", 4, {
+          "FunctionDeclaration": {
+            "parameters": "first"
+          },
+          "FunctionExpression": {
+            "parameters": "first"
+          }
+        }],
+        "new-parens": "error",
+        "no-multiple-empty-lines": ["error",  {
+          "max": 2,
+          "maxEOF": 0,
+          "maxBOF": 0
+        }],
+        "no-trailing-spaces": "error",
+        "prefer-exponentiation-operator": "error",
+        "space-infix-ops": "error",
+        "space-unary-ops": ["error", {
+          "words": true,
+          "nonwords": false
+        }]
+      }
+    }
+  ]
+}
