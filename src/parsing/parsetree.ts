@@ -9,16 +9,16 @@ abstract class ParseNode {
 
 // Expressions
 
-export class Expression extends ParseNode {
-    readonly type = "expression";
+export abstract class Expression extends ParseNode {
+    private readonly _expression: boolean = true;
 }
 
-export class ConstantExpression extends Expression {
+export abstract class ConstantExpression extends Expression {
     private readonly _constant: boolean = true;
 }
 
 export class Identifier extends ConstantExpression {
-    readonly op = "identifier";
+    readonly type = "identifier";
 
     constructor(loc: Location, public name: string) {
         super(loc);
@@ -26,7 +26,7 @@ export class Identifier extends ConstantExpression {
 }
 
 export class Constant extends ConstantExpression {
-    readonly op = "constant";
+    readonly type = "constant";
 
     constructor(loc: Location, public value: string) {
         super(loc);
@@ -34,27 +34,42 @@ export class Constant extends ConstantExpression {
 }
 
 export class StringLiteral extends ConstantExpression {
-    readonly op = "stringLiteral";
+    readonly type = "stringLiteral";
 
     constructor(loc: Location, public value: string) {
         super(loc);
     }
 }
 
+export const UnaryOperations = [
+    "postfixIncrement", "postfixDecrement", "prefixIncrement", "prefixDecrement",
+    "addressOf", "dereference", "unaryPlus", "unaryMinus", "bitwiseNot", "logicalNot",
+    "sizeof"
+] as const;
+export type UnaryOp = typeof UnaryOperations[number];
 export class UnaryExpression extends ConstantExpression {
-    constructor(loc: Location, public readonly op: string, public body: Expression) {
+    private readonly _unaryExpr = true;
+
+    constructor(loc: Location, public readonly type: UnaryOp, public body: Expression) {
         super(loc);
     }
 }
 
+export const BinaryOperations = ["arraySubscript", "cast", "comma",
+    "mul", "div", "mod", "add", "sub", "bitwiseShiftLeft", "bitwiseShiftRight",
+    "relationalLT", "relationalGT", "relationalLEq", "relationalGEq", "relationalEq", "relationalNeq",
+    "bitwiseAnd", "bitwiseXor", "bitwiseOr", "logicalAnd", "logicalOr"] as const;
+export type BinaryOp = typeof BinaryOperations[number];
 export class BinaryExpression extends ConstantExpression {
-    constructor(loc: Location, public readonly op: string, public lhs: Expression, public rhs: Expression) {
+    private readonly _binaryExpr = true;
+
+    constructor(loc: Location, public readonly type: BinaryOp, public lhs: Expression, public rhs: Expression) {
         super(loc);
     }
 }
 
 export class FunctionCallExpression extends ConstantExpression {
-    readonly op = "functionCall";
+    readonly type = "functionCall";
 
     constructor(loc: Location, public fn: Expression, public args: AssignmentExpression[] = []) {
         super(loc);
@@ -62,7 +77,7 @@ export class FunctionCallExpression extends ConstantExpression {
 }
 
 export class MemberAccessExpression extends ConstantExpression {
-    readonly op = "access";
+    readonly type = "access";
 
     constructor(loc: Location, public pointer: boolean, public lhs: Expression, public rhs: Identifier) {
         super(loc);
@@ -70,7 +85,7 @@ export class MemberAccessExpression extends ConstantExpression {
 }
 
 export class ConditionalExpression extends ConstantExpression {
-    readonly op = "conditional";
+    readonly type = "conditional";
 
     constructor(loc: Location, public condition: Expression, public trueValue: Expression, public falseValue: Expression) {
         super(loc);
@@ -78,7 +93,7 @@ export class ConditionalExpression extends ConstantExpression {
 }
 
 export class AssignmentExpression extends Expression {
-    readonly op = "assign";
+    readonly type = "assign";
 
     constructor(loc: Location, public assignType: string, public lhs: Expression, public rhs: Expression) {
         super(loc);
