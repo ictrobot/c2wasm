@@ -17,7 +17,8 @@
     "test": "ava --verbose",
     "start": "ts-node --files src/main.ts",
     "prestart": "jison src/parsing/c_grammar.jison -o src/parsing/gen/c_grammar.js --default-action=none,merge",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "build": "webpack"
   },
   "devDependencies": {
     "@types/moo": "^0.5.3",
@@ -26,9 +27,13 @@
     "@typescript-eslint/parser": "^4.5.0",
     "ava": "^3.13.0",
     "eslint": "^7.12.0",
+    "html-webpack-plugin": "^4.5.0",
     "jison-gho": "^0.6.1-216",
+    "ts-loader": "^8.0.7",
     "ts-node": "^9.0.0",
-    "typescript": "^4.0.3"
+    "typescript": "^4.0.3",
+    "webpack": "^5.2.0",
+    "webpack-cli": "^4.1.0"
   },
   "dependencies": {
     "moo": "^0.5.1"

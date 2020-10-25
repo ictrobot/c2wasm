@@ -8,7 +8,8 @@
     {
       "files": [
         "src/**/*.ts",
-        "tests/**/*.ts"
+        "tests/**/*.ts",
+        "demos/**/*.ts"
       ],
       "extends": [
         "eslint:recommended",
