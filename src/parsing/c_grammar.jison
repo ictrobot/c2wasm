@@ -174,14 +174,14 @@ declaration
     ;
 
 declaration_specifiers
-    : storage_class_specifier                                                           -> new t.DeclarationSpecifiers(@$).addStorageClass($1)
-    | storage_class_specifier declaration_specifiers                                    -> $2.addStorageClass($1)
-    | type_specifier                                                                    -> new t.DeclarationSpecifiers(@$).addSpecifier($1)
-    | type_specifier declaration_specifiers                                             -> $2.addSpecifier($1)
-    | type_qualifier                                                                    -> new t.DeclarationSpecifiers(@$).addQualifier($1)
-    | type_qualifier declaration_specifiers                                             -> $2.addQualifier($1)
-    | function_specifier                                                                -> new t.DeclarationSpecifiers(@$).addFnSpecifier($1)
-    | function_specifier declaration_specifiers                                         -> $2.addFnSpecifier($1)
+    : storage_class_specifier                                                           -> new t.DeclarationSpecifiers(@$, [], [], [$1], [])
+    | storage_class_specifier declaration_specifiers                                    -> new t.DeclarationSpecifiers(@$, $2.specifierList, $2.qualifierList, [$1, ...$2.storageList], $2.fnSpecifierList)
+    | type_specifier                                                                    -> new t.DeclarationSpecifiers(@$, [$1], [], [], [])
+    | type_specifier declaration_specifiers                                             -> new t.DeclarationSpecifiers(@$, [$1, ...$2.specifierList], $2.qualifierList, $2.storageList, $2.fnSpecifierList)
+    | type_qualifier                                                                    -> new t.DeclarationSpecifiers(@$, [], [$1], [], [])
+    | type_qualifier declaration_specifiers                                             -> new t.DeclarationSpecifiers(@$, $2.specifierList, [$1, ...$2.qualifierList], $2.storageList, $2.fnSpecifierList)
+    | function_specifier                                                                -> new t.DeclarationSpecifiers(@$, [], [], [], [$1])
+    | function_specifier declaration_specifiers                                         -> new t.DeclarationSpecifiers(@$, $2.specifierList, $2.qualifierList, $2.storageList, [$1, ...$2.fnSpecifierList])
     ;
 
 init_declarator_list
@@ -241,10 +241,10 @@ struct_declaration
     ;
 
 specifier_qualifier_list
-    : type_specifier specifier_qualifier_list                                           -> $2.addSpecifier($1)
-    | type_specifier                                                                    -> new t.SpecifierQualifiers(@$).addSpecifier($1)
-    | type_qualifier specifier_qualifier_list                                           -> $2.addQualifier($1)
-    | type_qualifier                                                                    -> new t.SpecifierQualifiers(@$).addQualifier($1)
+    : type_specifier specifier_qualifier_list                                           -> new t.SpecifierQualifiers(@$, [$1, ...$2.specifierList], $2.qualifierList)
+    | type_specifier                                                                    -> new t.SpecifierQualifiers(@$, [$1], [])
+    | type_qualifier specifier_qualifier_list                                           -> new t.SpecifierQualifiers(@$, $2.specifierList, [$1, ...$2.qualifierList])
+    | type_qualifier                                                                    -> new t.SpecifierQualifiers(@$, [], [$1])
     ;
 
 struct_declarator_list

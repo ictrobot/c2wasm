@@ -1,9 +1,9 @@
 export type Location = {first_line: number, last_line: number, first_column: number, last_column: number};
 
-abstract class ParseNode {
+export abstract class ParseNode {
     abstract readonly type: string;
 
-    constructor(public loc: Location) {
+    constructor(readonly loc: Location) {
     }
 }
 
@@ -20,7 +20,7 @@ export abstract class ConstantExpression extends Expression {
 export class Identifier extends ConstantExpression {
     readonly type = "identifier";
 
-    constructor(loc: Location, public name: string) {
+    constructor(loc: Location, readonly name: string) {
         super(loc);
     }
 }
@@ -28,7 +28,7 @@ export class Identifier extends ConstantExpression {
 export class Constant extends ConstantExpression {
     readonly type = "constant";
 
-    constructor(loc: Location, public value: string) {
+    constructor(loc: Location, readonly value: string) {
         super(loc);
     }
 }
@@ -36,7 +36,7 @@ export class Constant extends ConstantExpression {
 export class StringLiteral extends ConstantExpression {
     readonly type = "stringLiteral";
 
-    constructor(loc: Location, public value: string) {
+    constructor(loc: Location, readonly value: string) {
         super(loc);
     }
 }
@@ -50,7 +50,7 @@ export type UnaryOp = typeof UnaryOperations[number];
 export class UnaryExpression extends ConstantExpression {
     private readonly _unaryExpr = true;
 
-    constructor(loc: Location, public readonly type: UnaryOp, public body: Expression) {
+    constructor(loc: Location, readonly type: UnaryOp, readonly body: Expression) {
         super(loc);
     }
 }
@@ -63,7 +63,7 @@ export type BinaryOp = typeof BinaryOperations[number];
 export class BinaryExpression extends ConstantExpression {
     private readonly _binaryExpr = true;
 
-    constructor(loc: Location, public readonly type: BinaryOp, public lhs: Expression, public rhs: Expression) {
+    constructor(loc: Location, readonly type: BinaryOp, readonly lhs: Expression, readonly rhs: Expression) {
         super(loc);
     }
 }
@@ -71,7 +71,7 @@ export class BinaryExpression extends ConstantExpression {
 export class FunctionCallExpression extends ConstantExpression {
     readonly type = "functionCall";
 
-    constructor(loc: Location, public fn: Expression, public args: AssignmentExpression[] = []) {
+    constructor(loc: Location, readonly fn: Expression, readonly args: ReadonlyArray<AssignmentExpression> = []) {
         super(loc);
     }
 }
@@ -79,7 +79,7 @@ export class FunctionCallExpression extends ConstantExpression {
 export class MemberAccessExpression extends ConstantExpression {
     readonly type = "access";
 
-    constructor(loc: Location, public pointer: boolean, public lhs: Expression, public rhs: Identifier) {
+    constructor(loc: Location, readonly pointer: boolean, readonly lhs: Expression, readonly rhs: Identifier) {
         super(loc);
     }
 }
@@ -87,7 +87,7 @@ export class MemberAccessExpression extends ConstantExpression {
 export class ConditionalExpression extends ConstantExpression {
     readonly type = "conditional";
 
-    constructor(loc: Location, public condition: Expression, public trueValue: Expression, public falseValue: Expression) {
+    constructor(loc: Location, readonly condition: Expression, readonly trueValue: Expression, readonly falseValue: Expression) {
         super(loc);
     }
 }
@@ -95,7 +95,7 @@ export class ConditionalExpression extends ConstantExpression {
 export class AssignmentExpression extends Expression {
     readonly type = "assign";
 
-    constructor(loc: Location, public assignType: string, public lhs: Expression, public rhs: Expression) {
+    constructor(loc: Location, readonly assignType: string, readonly lhs: Expression, readonly rhs: Expression) {
         super(loc);
     }
 }
@@ -111,47 +111,31 @@ type TypeQualifier = "const" | "restrict" | "volatile";
 type FnSpecifier = "inline";
 
 export class SpecifierQualifiers extends ParseNode {
-    public specifierList: TypeSpecifier[] = [];
-    public qualifierList: TypeQualifier[] = [];
+    readonly type = "specifiersAndQualifiers";
 
-    constructor(loc: Location, public readonly type: string = "specifiersAndQualifiers") {
+    constructor(loc: Location,
+                readonly specifierList: ReadonlyArray<TypeSpecifier>,
+                readonly qualifierList: ReadonlyArray<TypeQualifier>) {
         super(loc);
-    }
-
-    addSpecifier(x: TypeSpecifier): SpecifierQualifiers {
-        this.specifierList.unshift(x);
-        return this;
-    }
-
-    addQualifier(x: TypeQualifier): SpecifierQualifiers {
-        this.qualifierList.unshift(x);
-        return this;
     }
 }
 
-export class DeclarationSpecifiers extends SpecifierQualifiers {
-    public storageList: StorageClass[] = [];
-    public fnSpecifierList: FnSpecifier[] = [];
+export class DeclarationSpecifiers extends ParseNode {
+    readonly type = "declarationSpecifiers";
 
-    constructor(loc: Location) {
-        super(loc, "declarationSpecifiers");
-    }
-
-    addStorageClass(x: StorageClass): DeclarationSpecifiers {
-        this.storageList.unshift(x);
-        return this;
-    }
-
-    addFnSpecifier(x: FnSpecifier): DeclarationSpecifiers {
-        this.fnSpecifierList.unshift(x);
-        return this;
+    constructor(loc: Location,
+                readonly specifierList: ReadonlyArray<TypeSpecifier>,
+                readonly qualifierList: ReadonlyArray<TypeQualifier>,
+                readonly storageList: ReadonlyArray<StorageClass>,
+                readonly fnSpecifierList: ReadonlyArray<FnSpecifier>) {
+        super(loc);
     }
 }
 
 export class EnumSpecifier extends ParseNode {
     type = "enum";
 
-    constructor(loc: Location, public id?: string, public body?: Enumerator[]) {
+    constructor(loc: Location, readonly id?: string, readonly body?: ReadonlyArray<Enumerator>) {
         super(loc);
     }
 }
@@ -159,7 +143,7 @@ export class EnumSpecifier extends ParseNode {
 export class Enumerator extends ParseNode {
     type = "enumerator";
 
-    constructor(loc: Location, public id: string, public value?: ConstantExpression) {
+    constructor(loc: Location, readonly id: string, readonly value?: ConstantExpression) {
         super(loc);
     }
 }
@@ -167,7 +151,7 @@ export class Enumerator extends ParseNode {
 export class Declaration extends ParseNode{
     readonly type = "declaration";
 
-    constructor(loc: Location, public typeInfo: DeclarationSpecifiers, public list: (Declarator | InitDeclarator)[] = []) {
+    constructor(loc: Location, readonly typeInfo: DeclarationSpecifiers, readonly list: ReadonlyArray<Declarator | InitDeclarator> = []) {
         super(loc);
     }
 }
@@ -175,7 +159,7 @@ export class Declaration extends ParseNode{
 export class InitDeclarator extends ParseNode {
     readonly type= "initDeclarator";
 
-    constructor(loc: Location, public body: Declarator, public initializer: Initializer) {
+    constructor(loc: Location, readonly body: Declarator, readonly initializer: Initializer) {
         super(loc);
     }
 }
@@ -183,7 +167,7 @@ export class InitDeclarator extends ParseNode {
 export class StructUnionSpecifier extends ParseNode {
     readonly type = "structUnionSpecifier";
 
-    constructor(loc: Location, public structure: "struct" | "union", public id?: string, public declarations?: StructDeclaration[]) {
+    constructor(loc: Location, readonly structure: "struct" | "union", readonly id?: string, readonly declarations?: ReadonlyArray<StructDeclaration>) {
         super(loc);
     }
 }
@@ -191,7 +175,7 @@ export class StructUnionSpecifier extends ParseNode {
 export class StructDeclaration extends ParseNode {
     readonly type= "structDeclaration";
 
-    constructor(loc: Location, public typeInfo: DeclarationSpecifiers, public list: Declarator[] = []) {
+    constructor(loc: Location, readonly typeInfo: DeclarationSpecifiers, readonly list: ReadonlyArray<Declarator> = []) {
         super(loc);
     }
 }
@@ -201,7 +185,7 @@ export type Declarator = PointerDeclarator | IdentifierDeclarator | ArrayDeclara
 export class PointerDeclarator extends ParseNode {
     readonly type= "pointerDeclarator";
 
-    constructor(loc: Location, public pointer: Pointer, public body: Declarator) {
+    constructor(loc: Location, readonly pointer: Pointer, readonly body: Declarator) {
         super(loc);
     }
 }
@@ -209,7 +193,7 @@ export class PointerDeclarator extends ParseNode {
 export class IdentifierDeclarator extends ParseNode {
     readonly type= "identifierDeclarator";
 
-    constructor(loc: Location, public id: string) {
+    constructor(loc: Location, readonly id: string) {
         super(loc);
     }
 }
@@ -217,7 +201,7 @@ export class IdentifierDeclarator extends ParseNode {
 export class ArrayDeclarator extends ParseNode {
     readonly type= "arrayDeclarator";
 
-    constructor(loc: Location, public body: Declarator, public length?: ConstantExpression) {
+    constructor(loc: Location, readonly body: Declarator, readonly length?: ConstantExpression) {
         super(loc);
     }
 }
@@ -225,7 +209,7 @@ export class ArrayDeclarator extends ParseNode {
 export class FunctionDeclarator extends ParseNode {
     readonly type= "functionDeclarator";
 
-    constructor(loc: Location, public body: Declarator, public args?: string[] | ParameterDeclaration[]) {
+    constructor(loc: Location, readonly body: Declarator, readonly args?: ReadonlyArray<string> | ReadonlyArray<ParameterDeclaration>) {
         super(loc);
     }
 }
@@ -233,7 +217,7 @@ export class FunctionDeclarator extends ParseNode {
 export class ParameterDeclaration extends ParseNode {
     readonly type= "parameterDeclaration";
 
-    constructor(loc: Location, public typeInfo: DeclarationSpecifiers, public declarator?: Declarator | AbstractDeclarator) {
+    constructor(loc: Location, readonly typeInfo: DeclarationSpecifiers, readonly declarator?: Declarator | AbstractDeclarator) {
         super(loc);
     }
 }
@@ -241,7 +225,7 @@ export class ParameterDeclaration extends ParseNode {
 export class Pointer extends ParseNode {
     readonly type= "pointer";
 
-    constructor(loc: Location, public qualifierList?: TypeQualifier[], public body?: Pointer) {
+    constructor(loc: Location, readonly qualifierList?: ReadonlyArray<TypeQualifier>, readonly body?: Pointer) {
         super(loc);
     }
 }
@@ -249,7 +233,7 @@ export class Pointer extends ParseNode {
 export class TypeName extends ParseNode {
     readonly type= "typeName";
 
-    constructor(loc: Location, public typeInfo: SpecifierQualifiers, public declarator?: AbstractDeclarator) {
+    constructor(loc: Location, readonly typeInfo: SpecifierQualifiers, readonly declarator?: AbstractDeclarator) {
         super(loc);
     }
 }
@@ -259,7 +243,7 @@ export type AbstractDeclarator = AbstractPointerDeclarator | AbstractArrayDeclar
 export class AbstractPointerDeclarator extends ParseNode {
     readonly type= "abstractPointerDeclarator";
 
-    constructor(loc: Location, public pointer: Pointer, public body?: AbstractDeclarator) {
+    constructor(loc: Location, readonly pointer: Pointer, readonly body?: AbstractDeclarator) {
         super(loc);
     }
 }
@@ -267,7 +251,7 @@ export class AbstractPointerDeclarator extends ParseNode {
 export class AbstractArrayDeclarator extends ParseNode {
     readonly type= "abstractArrayDeclarator";
 
-    constructor(loc: Location, public body?: AbstractDeclarator, public length?: ConstantExpression) {
+    constructor(loc: Location, readonly body?: AbstractDeclarator, readonly length?: ConstantExpression) {
         super(loc);
     }
 }
@@ -275,12 +259,12 @@ export class AbstractArrayDeclarator extends ParseNode {
 export class AbstractFunctionDeclarator extends ParseNode {
     readonly type= "abstractFunctionDeclarator";
 
-    constructor(loc: Location, public body?: AbstractDeclarator, public args?: ParameterDeclaration[]) {
+    constructor(loc: Location, readonly body?: AbstractDeclarator, readonly args?: ReadonlyArray<ParameterDeclaration>) {
         super(loc);
     }
 }
 
-export type Initializer = AssignmentExpression | Initializer[];
+export type Initializer = AssignmentExpression | ReadonlyArray<Initializer>;
 
 // Statements
 
@@ -291,7 +275,7 @@ export abstract class Statement extends ParseNode {
 export class IfStatement extends Statement {
     readonly type = "ifStatement";
 
-    constructor(loc: Location, public expression: Expression, public ifBody: Statement, public elseBody?: Statement) {
+    constructor(loc: Location, readonly expression: Expression, readonly ifBody: Statement, readonly elseBody?: Statement) {
         super(loc);
     }
 }
@@ -299,7 +283,7 @@ export class IfStatement extends Statement {
 export class SwitchStatement extends Statement {
     readonly type = "switchStatement";
 
-    constructor(loc: Location, public expression: Expression, public body: Statement) {
+    constructor(loc: Location, readonly expression: Expression, readonly body: Statement) {
         super(loc);
     }
 }
@@ -307,7 +291,7 @@ export class SwitchStatement extends Statement {
 export class CaseStatement extends Statement {
     readonly type = "caseStatement";
 
-    constructor(loc: Location, public value: ConstantExpression, public body: Statement) {
+    constructor(loc: Location, readonly value: ConstantExpression, readonly body: Statement) {
         super(loc);
     }
 }
@@ -315,7 +299,7 @@ export class CaseStatement extends Statement {
 export class DefaultStatement extends Statement {
     readonly type = "defaultStatement";
 
-    constructor(loc: Location, public body: Statement) {
+    constructor(loc: Location, readonly body: Statement) {
         super(loc);
     }
 }
@@ -323,7 +307,7 @@ export class DefaultStatement extends Statement {
 export class CompoundStatement extends Statement {
     readonly type = "compoundStatement";
 
-    constructor(loc: Location, public body: Statement[]) {
+    constructor(loc: Location, readonly body: ReadonlyArray<Statement>) {
         super(loc);
     }
 }
@@ -331,7 +315,7 @@ export class CompoundStatement extends Statement {
 export class ExpressionStatement extends Statement {
     readonly type = "expressionStatement";
 
-    constructor(loc: Location, public expression: Expression) {
+    constructor(loc: Location, readonly expression: Expression) {
         super(loc);
     }
 }
@@ -348,10 +332,10 @@ export class ForLoop extends Statement {
     readonly type = "forStatement";
 
     constructor(loc: Location,
-                public init: ExpressionStatement | NoOp | Declaration,
-                public test: ExpressionStatement,
-                public update: Expression | undefined,
-                public body: Statement) {
+                readonly init: ExpressionStatement | NoOp | Declaration,
+                readonly test: ExpressionStatement,
+                readonly update: Expression | undefined,
+                readonly body: Statement) {
         super(loc);
     }
 }
@@ -359,7 +343,7 @@ export class ForLoop extends Statement {
 export class WhileLoop extends Statement {
     readonly type = "whileStatement";
 
-    constructor(loc: Location, public test: Expression, public body: Statement) {
+    constructor(loc: Location, readonly test: Expression, readonly body: Statement) {
         super(loc);
     }
 }
@@ -367,7 +351,7 @@ export class WhileLoop extends Statement {
 export class DoWhileLoop extends Statement {
     readonly type = "doWhileStatement";
 
-    constructor(loc: Location, public body: Statement, public test: Expression) {
+    constructor(loc: Location, readonly body: Statement, readonly test: Expression) {
         super(loc);
     }
 }
@@ -383,7 +367,7 @@ export class BreakStatement extends Statement {
 export class ReturnStatement extends Statement {
     readonly type = "returnStatement";
 
-    constructor(loc: Location, public value?: Expression) {
+    constructor(loc: Location, readonly value?: Expression) {
         super(loc);
     }
 }
@@ -392,12 +376,12 @@ export class FunctionDefinition extends ParseNode {
     readonly type = "functionDefinition";
 
     constructor(loc: Location,
-                public typeInfo: DeclarationSpecifiers,
-                public declarator: Declarator,
-                public body: Statement,
-                public declarationList?: Declaration[]) {
+                readonly typeInfo: DeclarationSpecifiers,
+                readonly declarator: Declarator,
+                readonly body: Statement,
+                readonly declarationList?: ReadonlyArray<Declaration>) {
         super(loc);
     }
 }
 
-export type TranslationUnit = (FunctionDefinition | Declaration)[];
+export type TranslationUnit = ReadonlyArray<FunctionDefinition | Declaration>;
