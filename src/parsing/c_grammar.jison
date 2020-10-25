@@ -287,7 +287,7 @@ function_specifier
     ;
 
 declarator
-    : pointer direct_declarator                                                         -> new t.PointerDeclarator($1, $2)
+    : pointer direct_declarator                                                         -> new t.PointerDeclarator(@$, $1, $2)
     | direct_declarator                                                                 -> $1
     ;
 
@@ -396,7 +396,7 @@ labeled_statement
 
 compound_statement
     : '{' '}'                                                                           -> new t.NoOp(@$)
-    | '{' block_item_list '}'                                                           -> $2
+    | '{' block_item_list '}'                                                           -> $2.length === 1 ? $2[0] : new t.CompoundStatement(@$, $2)
     ;
 
 block_item_list
