@@ -5,6 +5,10 @@ export abstract class ParseNode {
 
     constructor(readonly loc: Location) {
     }
+
+    *children(): IterableIterator<ParseNode> {
+        // return any children of the node
+    }
 }
 
 // Expressions
@@ -44,14 +48,17 @@ export class StringLiteral extends ConstantExpression {
 export const UnaryOperations = [
     "postfixIncrement", "postfixDecrement", "prefixIncrement", "prefixDecrement",
     "addressOf", "dereference", "unaryPlus", "unaryMinus", "bitwiseNot", "logicalNot",
-    "sizeof"
-] as const;
+    "sizeof"] as const;
 export type UnaryOp = typeof UnaryOperations[number];
 export class UnaryExpression extends ConstantExpression {
     private readonly _unaryExpr = true;
 
     constructor(loc: Location, readonly type: UnaryOp, readonly body: Expression) {
         super(loc);
+    }
+
+    *children(): IterableIterator<ParseNode> {
+        yield this.body;
     }
 }
 
@@ -66,6 +73,11 @@ export class BinaryExpression extends ConstantExpression {
     constructor(loc: Location, readonly type: BinaryOp, readonly lhs: Expression, readonly rhs: Expression) {
         super(loc);
     }
+
+    *children(): IterableIterator<ParseNode> {
+        yield this.lhs;
+        yield this.rhs;
+    }
 }
 
 export class FunctionCallExpression extends ConstantExpression {
@@ -73,6 +85,11 @@ export class FunctionCallExpression extends ConstantExpression {
 
     constructor(loc: Location, readonly fn: Expression, readonly args: ReadonlyArray<AssignmentExpression> = []) {
         super(loc);
+    }
+
+    *children(): IterableIterator<ParseNode> {
+        yield this.fn;
+        yield* this.args;
     }
 }
 
@@ -82,6 +99,11 @@ export class MemberAccessExpression extends ConstantExpression {
     constructor(loc: Location, readonly pointer: boolean, readonly lhs: Expression, readonly rhs: Identifier) {
         super(loc);
     }
+
+    *children(): IterableIterator<ParseNode> {
+        yield this.lhs;
+        yield this.rhs;
+    }
 }
 
 export class ConditionalExpression extends ConstantExpression {
@@ -90,6 +112,12 @@ export class ConditionalExpression extends ConstantExpression {
     constructor(loc: Location, readonly condition: Expression, readonly trueValue: Expression, readonly falseValue: Expression) {
         super(loc);
     }
+
+    *children(): IterableIterator<ParseNode> {
+        yield this.condition;
+        yield this.trueValue;
+        yield this.falseValue;
+    }
 }
 
 export class AssignmentExpression extends Expression {
@@ -97,6 +125,11 @@ export class AssignmentExpression extends Expression {
 
     constructor(loc: Location, readonly assignType: string, readonly lhs: Expression, readonly rhs: Expression) {
         super(loc);
+    }
+
+    *children(): IterableIterator<ParseNode> {
+        yield this.lhs;
+        yield this.rhs;
     }
 }
 
@@ -138,6 +171,10 @@ export class EnumSpecifier extends ParseNode {
     constructor(loc: Location, readonly id?: string, readonly body?: ReadonlyArray<Enumerator>) {
         super(loc);
     }
+
+    *children(): IterableIterator<ParseNode> {
+        if (this.body) yield* this.body;
+    }
 }
 
 export class Enumerator extends ParseNode {
@@ -145,6 +182,10 @@ export class Enumerator extends ParseNode {
 
     constructor(loc: Location, readonly id: string, readonly value?: ConstantExpression) {
         super(loc);
+    }
+
+    *children(): IterableIterator<ParseNode> {
+        if (this.value) yield this.value;
     }
 }
 
@@ -154,6 +195,11 @@ export class Declaration extends ParseNode{
     constructor(loc: Location, readonly typeInfo: DeclarationSpecifiers, readonly list: ReadonlyArray<Declarator | InitDeclarator> = []) {
         super(loc);
     }
+
+    *children(): IterableIterator<ParseNode> {
+        yield this.typeInfo;
+        yield* this.list;
+    }
 }
 
 export class InitDeclarator extends ParseNode {
@@ -161,6 +207,19 @@ export class InitDeclarator extends ParseNode {
 
     constructor(loc: Location, readonly body: Declarator, readonly initializer: Initializer) {
         super(loc);
+    }
+
+    *children(): IterableIterator<ParseNode> {
+        yield this.body;
+        yield* this.exploreInitializer();
+    }
+
+    private *exploreInitializer(initializer: Initializer = this.initializer): Iterable<ParseNode> {
+        if (initializer instanceof AssignmentExpression) {
+            yield initializer;
+        } else if (Array.isArray(initializer)) {
+            yield* this.exploreInitializer(initializer);
+        }
     }
 }
 
@@ -170,6 +229,10 @@ export class StructUnionSpecifier extends ParseNode {
     constructor(loc: Location, readonly structure: "struct" | "union", readonly id?: string, readonly declarations?: ReadonlyArray<StructDeclaration>) {
         super(loc);
     }
+
+    *children(): IterableIterator<ParseNode> {
+        if (this.declarations) yield* this.declarations;
+    }
 }
 
 export class StructDeclaration extends ParseNode {
@@ -177,6 +240,11 @@ export class StructDeclaration extends ParseNode {
 
     constructor(loc: Location, readonly typeInfo: DeclarationSpecifiers, readonly list: ReadonlyArray<Declarator> = []) {
         super(loc);
+    }
+
+    *children(): IterableIterator<ParseNode> {
+        yield this.typeInfo;
+        yield* this.list;
     }
 }
 
@@ -187,6 +255,11 @@ export class PointerDeclarator extends ParseNode {
 
     constructor(loc: Location, readonly pointer: Pointer, readonly body: Declarator) {
         super(loc);
+    }
+
+    *children(): IterableIterator<ParseNode> {
+        yield this.pointer;
+        yield this.body;
     }
 }
 
@@ -204,6 +277,11 @@ export class ArrayDeclarator extends ParseNode {
     constructor(loc: Location, readonly body: Declarator, readonly length?: ConstantExpression) {
         super(loc);
     }
+
+    *children(): IterableIterator<ParseNode> {
+        yield this.body;
+        if (this.length) yield this.length;
+    }
 }
 
 export class FunctionDeclarator extends ParseNode {
@@ -211,6 +289,13 @@ export class FunctionDeclarator extends ParseNode {
 
     constructor(loc: Location, readonly body: Declarator, readonly args?: ReadonlyArray<string> | ReadonlyArray<ParameterDeclaration>) {
         super(loc);
+    }
+
+    *children(): IterableIterator<ParseNode> {
+        yield this.body;
+        for (const value of this.args ?? []) {
+            if (value instanceof ParseNode) yield value;
+        }
     }
 }
 
@@ -220,6 +305,11 @@ export class ParameterDeclaration extends ParseNode {
     constructor(loc: Location, readonly typeInfo: DeclarationSpecifiers, readonly declarator?: Declarator | AbstractDeclarator) {
         super(loc);
     }
+
+    *children(): IterableIterator<ParseNode> {
+        yield this.typeInfo;
+        if (this.declarator) yield this.declarator;
+    }
 }
 
 export class Pointer extends ParseNode {
@@ -228,6 +318,10 @@ export class Pointer extends ParseNode {
     constructor(loc: Location, readonly qualifierList?: ReadonlyArray<TypeQualifier>, readonly body?: Pointer) {
         super(loc);
     }
+
+    *children(): IterableIterator<ParseNode> {
+        if (this.body) yield this.body;
+    }
 }
 
 export class TypeName extends ParseNode {
@@ -235,6 +329,11 @@ export class TypeName extends ParseNode {
 
     constructor(loc: Location, readonly typeInfo: SpecifierQualifiers, readonly declarator?: AbstractDeclarator) {
         super(loc);
+    }
+
+    *children(): IterableIterator<ParseNode> {
+        yield this.typeInfo;
+        if (this.declarator) yield this.declarator;
     }
 }
 
@@ -246,6 +345,11 @@ export class AbstractPointerDeclarator extends ParseNode {
     constructor(loc: Location, readonly pointer: Pointer, readonly body?: AbstractDeclarator) {
         super(loc);
     }
+
+    *children(): IterableIterator<ParseNode> {
+        yield this.pointer;
+        if (this.body) yield this.body;
+    }
 }
 
 export class AbstractArrayDeclarator extends ParseNode {
@@ -254,6 +358,11 @@ export class AbstractArrayDeclarator extends ParseNode {
     constructor(loc: Location, readonly body?: AbstractDeclarator, readonly length?: ConstantExpression) {
         super(loc);
     }
+
+    *children(): IterableIterator<ParseNode> {
+        if (this.body) yield this.body;
+        if (this.length) yield this.length;
+    }
 }
 
 export class AbstractFunctionDeclarator extends ParseNode {
@@ -261,6 +370,11 @@ export class AbstractFunctionDeclarator extends ParseNode {
 
     constructor(loc: Location, readonly body?: AbstractDeclarator, readonly args?: ReadonlyArray<ParameterDeclaration>) {
         super(loc);
+    }
+
+    *children(): IterableIterator<ParseNode> {
+        if (this.body) yield this.body;
+        if (this.args) yield* this.args;
     }
 }
 
@@ -278,6 +392,12 @@ export class IfStatement extends Statement {
     constructor(loc: Location, readonly expression: Expression, readonly ifBody: Statement, readonly elseBody?: Statement) {
         super(loc);
     }
+
+    *children(): IterableIterator<ParseNode> {
+        yield this.expression;
+        yield this.ifBody;
+        if (this.elseBody) yield this.elseBody;
+    }
 }
 
 export class SwitchStatement extends Statement {
@@ -285,6 +405,11 @@ export class SwitchStatement extends Statement {
 
     constructor(loc: Location, readonly expression: Expression, readonly body: Statement) {
         super(loc);
+    }
+
+    *children(): IterableIterator<ParseNode> {
+        yield this.expression;
+        yield this.body;
     }
 }
 
@@ -294,6 +419,11 @@ export class CaseStatement extends Statement {
     constructor(loc: Location, readonly value: ConstantExpression, readonly body: Statement) {
         super(loc);
     }
+
+    *children(): IterableIterator<ParseNode> {
+        yield this.value;
+        yield this.body;
+    }
 }
 
 export class DefaultStatement extends Statement {
@@ -301,6 +431,10 @@ export class DefaultStatement extends Statement {
 
     constructor(loc: Location, readonly body: Statement) {
         super(loc);
+    }
+
+    *children(): IterableIterator<ParseNode> {
+        yield this.body;
     }
 }
 
@@ -310,6 +444,10 @@ export class CompoundStatement extends Statement {
     constructor(loc: Location, readonly body: ReadonlyArray<Statement>) {
         super(loc);
     }
+
+    *children(): IterableIterator<ParseNode> {
+        yield* this.body;
+    }
 }
 
 export class ExpressionStatement extends Statement {
@@ -317,6 +455,10 @@ export class ExpressionStatement extends Statement {
 
     constructor(loc: Location, readonly expression: Expression) {
         super(loc);
+    }
+
+    *children(): IterableIterator<ParseNode> {
+        yield this.expression;
     }
 }
 
@@ -338,6 +480,13 @@ export class ForLoop extends Statement {
                 readonly body: Statement) {
         super(loc);
     }
+
+    *children(): IterableIterator<ParseNode> {
+        yield this.init;
+        yield this.test;
+        if (this.update) yield this.update;
+        yield this.body;
+    }
 }
 
 export class WhileLoop extends Statement {
@@ -346,6 +495,11 @@ export class WhileLoop extends Statement {
     constructor(loc: Location, readonly test: Expression, readonly body: Statement) {
         super(loc);
     }
+
+    *children(): IterableIterator<ParseNode> {
+        yield this.test;
+        yield this.body;
+    }
 }
 
 export class DoWhileLoop extends Statement {
@@ -353,6 +507,11 @@ export class DoWhileLoop extends Statement {
 
     constructor(loc: Location, readonly body: Statement, readonly test: Expression) {
         super(loc);
+    }
+
+    *children(): IterableIterator<ParseNode> {
+        yield this.body;
+        yield this.test;
     }
 }
 
@@ -370,6 +529,10 @@ export class ReturnStatement extends Statement {
     constructor(loc: Location, readonly value?: Expression) {
         super(loc);
     }
+
+    *children(): IterableIterator<ParseNode> {
+        if (this.value) yield this.value;
+    }
 }
 
 export class FunctionDefinition extends ParseNode {
@@ -381,6 +544,13 @@ export class FunctionDefinition extends ParseNode {
                 readonly body: Statement,
                 readonly declarationList?: ReadonlyArray<Declaration>) {
         super(loc);
+    }
+
+    *children(): IterableIterator<ParseNode> {
+        yield this.typeInfo;
+        yield this.declarator;
+        yield this.body;
+        if (this.declarationList) yield* this.declarationList;
     }
 }
 
