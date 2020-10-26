@@ -5,6 +5,7 @@ const TerserPlugin = require('terser-webpack-plugin');
 const demoPath = "./demos/";
 const demoFiles = Object.fromEntries(require("fs")
         .readdirSync(demoPath)
+        .filter(filename => filename.endsWith(".ts"))
         .map(fileName => [fileName.split(".")[0], demoPath + fileName]));
 
 
@@ -23,16 +24,15 @@ module.exports = {
     plugins: Object.keys(demoFiles).map(entryPoint => new HtmlWebpackPlugin({
         title: `c2wasm ${entryPoint}`,
         chunks: [entryPoint],
-        filename: `${entryPoint}.html`
+        filename: `${entryPoint}.html`,
+        template: "demos/index.html"
     })),
     target: "es2020",
     optimization: {
         minimizer: [
             new TerserPlugin({
                 terserOptions: {
-                    output: {
-                        comments: false
-                    }
+                    output: {comments: false}
                 },
                 extractComments: false
             })
