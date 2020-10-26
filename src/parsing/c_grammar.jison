@@ -27,11 +27,19 @@ identifier
     : IDENTIFIER                                                                        -> yytext
     ;
 
+constant
+    : CONSTANT_FLOAT                                                                    -> new t.Constant(@$, yytext, "float")
+    | CONSTANT_HEX                                                                      -> new t.Constant(@$, yytext, "hex")
+    | CONSTANT_OCTAL                                                                    -> new t.Constant(@$, yytext, "oct")
+    | CONSTANT_INT                                                                      -> new t.Constant(@$, yytext, "int")
+    | CONSTANT_CHAR                                                                     -> new t.Constant(@$, yytext, "char")
+    ;
+
 // start of normal C grammar
 
 primary_expression
     : identifier                                                                        -> new t.Identifier(@$, yytext)
-    | CONSTANT                                                                          -> new t.Constant(@$, yytext)
+    | constant                                                                          -> $1
     | STRING_LITERAL                                                                    -> new t.StringLiteral(@$, yytext)
     | '(' expression ')'                                                                -> $expression
     ;

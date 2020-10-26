@@ -626,141 +626,146 @@ symbols_: {
   "=": 25,
   ">": 20,
   "?": 23,
-  "ADD_ASSIGN": 45,
-  "AND_ASSIGN": 49,
-  "AND_OP": 40,
-  "AUTO": 55,
-  "BOOL": 66,
-  "BREAK": 88,
-  "CASE": 78,
-  "CHAR": 58,
-  "COMPLEX": 67,
-  "CONST": 73,
-  "CONSTANT": 28,
-  "CONTINUE": 87,
-  "DEC_OP": 32,
-  "DEFAULT": 79,
-  "DIV_ASSIGN": 43,
-  "DO": 84,
-  "DOUBLE": 63,
-  "ELLIPSIS": 77,
-  "ELSE": 81,
-  "ENUM": 72,
+  "ADD_ASSIGN": 49,
+  "AND_ASSIGN": 53,
+  "AND_OP": 44,
+  "AUTO": 59,
+  "BOOL": 70,
+  "BREAK": 92,
+  "CASE": 82,
+  "CHAR": 62,
+  "COMPLEX": 71,
+  "CONST": 77,
+  "CONSTANT_CHAR": 32,
+  "CONSTANT_FLOAT": 28,
+  "CONSTANT_HEX": 29,
+  "CONSTANT_INT": 31,
+  "CONSTANT_OCTAL": 30,
+  "CONTINUE": 91,
+  "DEC_OP": 36,
+  "DEFAULT": 83,
+  "DIV_ASSIGN": 47,
+  "DO": 88,
+  "DOUBLE": 67,
+  "ELLIPSIS": 81,
+  "ELSE": 85,
+  "ENUM": 76,
   "EOF": 1,
-  "EQ_OP": 38,
-  "EXTERN": 53,
-  "FLOAT": 62,
-  "FOR": 85,
-  "GE_OP": 37,
-  "GOTO": 86,
+  "EQ_OP": 42,
+  "EXTERN": 57,
+  "FLOAT": 66,
+  "FOR": 89,
+  "GE_OP": 41,
+  "GOTO": 90,
   "IDENTIFIER": 27,
-  "IF": 80,
-  "IMAGINARY": 68,
-  "INC_OP": 31,
-  "INLINE": 76,
-  "INT": 60,
-  "LEFT_ASSIGN": 47,
-  "LEFT_OP": 34,
-  "LE_OP": 36,
-  "LONG": 61,
-  "MOD_ASSIGN": 44,
-  "MUL_ASSIGN": 42,
-  "NE_OP": 39,
-  "OR_ASSIGN": 51,
-  "OR_OP": 41,
-  "PTR_OP": 30,
-  "REGISTER": 56,
-  "RESTRICT": 74,
-  "RETURN": 89,
-  "RIGHT_ASSIGN": 48,
-  "RIGHT_OP": 35,
-  "SHORT": 59,
-  "SIGNED": 64,
-  "SIZEOF": 33,
-  "STATIC": 54,
-  "STRING_LITERAL": 29,
-  "STRUCT": 70,
-  "SUB_ASSIGN": 46,
-  "SWITCH": 82,
-  "TYPEDEF": 52,
-  "TYPE_NAME": 69,
-  "UNION": 71,
-  "UNSIGNED": 65,
-  "VOID": 57,
-  "VOLATILE": 75,
-  "WHILE": 83,
-  "XOR_ASSIGN": 50,
+  "IF": 84,
+  "IMAGINARY": 72,
+  "INC_OP": 35,
+  "INLINE": 80,
+  "INT": 64,
+  "LEFT_ASSIGN": 51,
+  "LEFT_OP": 38,
+  "LE_OP": 40,
+  "LONG": 65,
+  "MOD_ASSIGN": 48,
+  "MUL_ASSIGN": 46,
+  "NE_OP": 43,
+  "OR_ASSIGN": 55,
+  "OR_OP": 45,
+  "PTR_OP": 34,
+  "REGISTER": 60,
+  "RESTRICT": 78,
+  "RETURN": 93,
+  "RIGHT_ASSIGN": 52,
+  "RIGHT_OP": 39,
+  "SHORT": 63,
+  "SIGNED": 68,
+  "SIZEOF": 37,
+  "STATIC": 58,
+  "STRING_LITERAL": 33,
+  "STRUCT": 74,
+  "SUB_ASSIGN": 50,
+  "SWITCH": 86,
+  "TYPEDEF": 56,
+  "TYPE_NAME": 73,
+  "UNION": 75,
+  "UNSIGNED": 69,
+  "VOID": 61,
+  "VOLATILE": 79,
+  "WHILE": 87,
+  "XOR_ASSIGN": 54,
   "[": 5,
   "]": 6,
   "^": 21,
-  "abstract_declarator": 140,
-  "additive_expression": 99,
-  "and_expression": 103,
-  "argument_expression_list": 94,
-  "assignment_expression": 109,
-  "assignment_operator": 110,
-  "ast_tree": 90,
-  "block_item": 148,
-  "block_item_list": 147,
-  "cast_expression": 97,
-  "compound_statement": 146,
-  "conditional_expression": 108,
-  "constant_expression": 112,
-  "declaration": 113,
-  "declaration_list": 156,
-  "declaration_specifiers": 114,
-  "declarator": 131,
-  "direct_abstract_declarator": 141,
-  "direct_declarator": 132,
-  "enum_specifier": 126,
-  "enumerator": 128,
-  "enumerator_list": 127,
-  "equality_expression": 102,
+  "abstract_declarator": 145,
+  "additive_expression": 104,
+  "and_expression": 108,
+  "argument_expression_list": 99,
+  "assignment_expression": 114,
+  "assignment_operator": 115,
+  "ast_tree": 94,
+  "block_item": 153,
+  "block_item_list": 152,
+  "cast_expression": 102,
+  "compound_statement": 151,
+  "conditional_expression": 113,
+  "constant": 96,
+  "constant_expression": 117,
+  "declaration": 118,
+  "declaration_list": 161,
+  "declaration_specifiers": 119,
+  "declarator": 136,
+  "direct_abstract_declarator": 146,
+  "direct_declarator": 137,
+  "enum_specifier": 131,
+  "enumerator": 133,
+  "enumerator_list": 132,
+  "equality_expression": 107,
   "error": 2,
-  "exclusive_or_expression": 104,
-  "expression": 111,
-  "expression_statement": 149,
-  "external_declaration": 154,
-  "function_definition": 155,
-  "function_specifier": 130,
-  "identifier": 91,
-  "identifier_list": 138,
-  "inclusive_or_expression": 105,
-  "init_declarator": 116,
-  "init_declarator_list": 115,
-  "initializer": 142,
-  "initializer_list": 143,
-  "iteration_statement": 151,
-  "jump_statement": 152,
-  "labeled_statement": 145,
-  "logical_and_expression": 106,
-  "logical_or_expression": 107,
-  "multiplicative_expression": 98,
-  "parameter_declaration": 137,
-  "parameter_list": 136,
-  "parameter_type_list": 135,
-  "pointer": 133,
-  "postfix_expression": 93,
-  "primary_expression": 92,
-  "relational_expression": 101,
-  "selection_statement": 150,
-  "shift_expression": 100,
-  "specifier_qualifier_list": 123,
-  "statement": 144,
-  "storage_class_specifier": 117,
-  "struct_declaration": 122,
-  "struct_declaration_list": 121,
-  "struct_declarator": 125,
-  "struct_declarator_list": 124,
-  "struct_or_union": 120,
-  "struct_or_union_specifier": 119,
-  "translation_unit": 153,
-  "type_name": 139,
-  "type_qualifier": 129,
-  "type_qualifier_list": 134,
-  "type_specifier": 118,
-  "unary_expression": 95,
-  "unary_operator": 96,
+  "exclusive_or_expression": 109,
+  "expression": 116,
+  "expression_statement": 154,
+  "external_declaration": 159,
+  "function_definition": 160,
+  "function_specifier": 135,
+  "identifier": 95,
+  "identifier_list": 143,
+  "inclusive_or_expression": 110,
+  "init_declarator": 121,
+  "init_declarator_list": 120,
+  "initializer": 147,
+  "initializer_list": 148,
+  "iteration_statement": 156,
+  "jump_statement": 157,
+  "labeled_statement": 150,
+  "logical_and_expression": 111,
+  "logical_or_expression": 112,
+  "multiplicative_expression": 103,
+  "parameter_declaration": 142,
+  "parameter_list": 141,
+  "parameter_type_list": 140,
+  "pointer": 138,
+  "postfix_expression": 98,
+  "primary_expression": 97,
+  "relational_expression": 106,
+  "selection_statement": 155,
+  "shift_expression": 105,
+  "specifier_qualifier_list": 128,
+  "statement": 149,
+  "storage_class_specifier": 122,
+  "struct_declaration": 127,
+  "struct_declaration_list": 126,
+  "struct_declarator": 130,
+  "struct_declarator_list": 129,
+  "struct_or_union": 125,
+  "struct_or_union_specifier": 124,
+  "translation_unit": 158,
+  "type_name": 144,
+  "type_qualifier": 134,
+  "type_qualifier_list": 139,
+  "type_specifier": 123,
+  "unary_expression": 100,
+  "unary_operator": 101,
   "{": 8,
   "|": 22,
   "}": 9,
@@ -794,68 +799,72 @@ terminals_: {
   25: "=",
   26: ";",
   27: "IDENTIFIER",
-  28: "CONSTANT",
-  29: "STRING_LITERAL",
-  30: "PTR_OP",
-  31: "INC_OP",
-  32: "DEC_OP",
-  33: "SIZEOF",
-  34: "LEFT_OP",
-  35: "RIGHT_OP",
-  36: "LE_OP",
-  37: "GE_OP",
-  38: "EQ_OP",
-  39: "NE_OP",
-  40: "AND_OP",
-  41: "OR_OP",
-  42: "MUL_ASSIGN",
-  43: "DIV_ASSIGN",
-  44: "MOD_ASSIGN",
-  45: "ADD_ASSIGN",
-  46: "SUB_ASSIGN",
-  47: "LEFT_ASSIGN",
-  48: "RIGHT_ASSIGN",
-  49: "AND_ASSIGN",
-  50: "XOR_ASSIGN",
-  51: "OR_ASSIGN",
-  52: "TYPEDEF",
-  53: "EXTERN",
-  54: "STATIC",
-  55: "AUTO",
-  56: "REGISTER",
-  57: "VOID",
-  58: "CHAR",
-  59: "SHORT",
-  60: "INT",
-  61: "LONG",
-  62: "FLOAT",
-  63: "DOUBLE",
-  64: "SIGNED",
-  65: "UNSIGNED",
-  66: "BOOL",
-  67: "COMPLEX",
-  68: "IMAGINARY",
-  69: "TYPE_NAME",
-  70: "STRUCT",
-  71: "UNION",
-  72: "ENUM",
-  73: "CONST",
-  74: "RESTRICT",
-  75: "VOLATILE",
-  76: "INLINE",
-  77: "ELLIPSIS",
-  78: "CASE",
-  79: "DEFAULT",
-  80: "IF",
-  81: "ELSE",
-  82: "SWITCH",
-  83: "WHILE",
-  84: "DO",
-  85: "FOR",
-  86: "GOTO",
-  87: "CONTINUE",
-  88: "BREAK",
-  89: "RETURN"
+  28: "CONSTANT_FLOAT",
+  29: "CONSTANT_HEX",
+  30: "CONSTANT_OCTAL",
+  31: "CONSTANT_INT",
+  32: "CONSTANT_CHAR",
+  33: "STRING_LITERAL",
+  34: "PTR_OP",
+  35: "INC_OP",
+  36: "DEC_OP",
+  37: "SIZEOF",
+  38: "LEFT_OP",
+  39: "RIGHT_OP",
+  40: "LE_OP",
+  41: "GE_OP",
+  42: "EQ_OP",
+  43: "NE_OP",
+  44: "AND_OP",
+  45: "OR_OP",
+  46: "MUL_ASSIGN",
+  47: "DIV_ASSIGN",
+  48: "MOD_ASSIGN",
+  49: "ADD_ASSIGN",
+  50: "SUB_ASSIGN",
+  51: "LEFT_ASSIGN",
+  52: "RIGHT_ASSIGN",
+  53: "AND_ASSIGN",
+  54: "XOR_ASSIGN",
+  55: "OR_ASSIGN",
+  56: "TYPEDEF",
+  57: "EXTERN",
+  58: "STATIC",
+  59: "AUTO",
+  60: "REGISTER",
+  61: "VOID",
+  62: "CHAR",
+  63: "SHORT",
+  64: "INT",
+  65: "LONG",
+  66: "FLOAT",
+  67: "DOUBLE",
+  68: "SIGNED",
+  69: "UNSIGNED",
+  70: "BOOL",
+  71: "COMPLEX",
+  72: "IMAGINARY",
+  73: "TYPE_NAME",
+  74: "STRUCT",
+  75: "UNION",
+  76: "ENUM",
+  77: "CONST",
+  78: "RESTRICT",
+  79: "VOLATILE",
+  80: "INLINE",
+  81: "ELLIPSIS",
+  82: "CASE",
+  83: "DEFAULT",
+  84: "IF",
+  85: "ELSE",
+  86: "SWITCH",
+  87: "WHILE",
+  88: "DO",
+  89: "FOR",
+  90: "GOTO",
+  91: "CONTINUE",
+  92: "BREAK",
+  93: "RETURN"
 },
 TERROR: 2,
     EOF: 1,
@@ -961,141 +970,143 @@ TERROR: 2,
     },
 productions_: bp({
   pop: u([
-  90,
-  90,
-  91,
-  s,
-  [92, 4],
-  s,
-  [93, 10],
   94,
   94,
+  95,
   s,
-  [95, 6],
+  [96, 5],
   s,
-  [96, 6],
-  97,
-  97,
+  [97, 4],
   s,
-  [98, 4],
+  [98, 10],
+  99,
+  99,
   s,
-  [99, 3],
+  [100, 6],
   s,
-  [100, 3],
+  [101, 6],
+  102,
+  102,
   s,
-  [101, 5],
+  [103, 4],
   s,
-  [102, 3],
-  103,
-  103,
-  104,
-  104,
-  105,
-  105,
-  106,
-  106,
-  107,
-  107,
+  [104, 3],
+  s,
+  [105, 3],
+  s,
+  [106, 5],
+  s,
+  [107, 3],
   108,
   108,
   109,
   109,
-  s,
-  [110, 11],
+  110,
+  110,
   111,
   111,
   112,
+  112,
   113,
   113,
+  114,
+  114,
   s,
-  [114, 8],
-  115,
-  115,
+  [115, 11],
   116,
   116,
+  117,
+  118,
+  118,
   s,
-  [117, 5],
-  s,
-  [118, 15],
-  s,
-  [119, 3],
+  [119, 8],
   120,
   120,
   121,
   121,
-  122,
   s,
-  [123, 4],
-  124,
-  124,
+  [122, 5],
   s,
-  [125, 3],
+  [123, 15],
   s,
-  [126, 5],
+  [124, 3],
+  125,
+  125,
+  126,
+  126,
   127,
-  127,
-  128,
-  128,
   s,
-  [129, 3],
-  130,
-  131,
-  131,
+  [128, 4],
+  129,
+  129,
   s,
-  [132, 13],
+  [130, 3],
   s,
-  [133, 4],
-  134,
-  134,
-  135,
+  [131, 5],
+  132,
+  132,
+  133,
+  133,
+  s,
+  [134, 3],
   135,
   136,
   136,
   s,
-  [137, 3],
-  138,
-  138,
+  [137, 13],
+  s,
+  [138, 4],
   139,
   139,
-  s,
-  [140, 3],
-  s,
-  [141, 11],
+  140,
+  140,
+  141,
+  141,
   s,
   [142, 3],
   143,
   143,
-  s,
-  [144, 6],
+  144,
+  144,
   s,
   [145, 3],
-  146,
-  146,
-  147,
-  147,
+  s,
+  [146, 11],
+  s,
+  [147, 3],
   148,
   148,
-  149,
-  149,
+  s,
+  [149, 6],
   s,
   [150, 3],
-  s,
-  [151, 6],
-  s,
-  [152, 5],
+  151,
+  151,
+  152,
+  152,
   153,
   153,
   154,
   154,
-  155,
-  155,
-  156,
-  156
+  s,
+  [155, 3],
+  s,
+  [156, 6],
+  s,
+  [157, 5],
+  158,
+  158,
+  159,
+  159,
+  160,
+  160,
+  161,
+  161
 ]),
   rule: u([
   2,
   s,
-  [1, 5],
+  [1, 10],
   3,
   1,
   4,
@@ -1148,7 +1159,7 @@ productions_: bp({
   5,
   4,
   c,
-  [115, 4],
+  [120, 4],
   2,
   3,
   c,
@@ -1265,15 +1276,15 @@ case 2:
 
 case 3:
     /*! Production::    identifier : IDENTIFIER */
-case 94:
+case 99:
     /*! Production::    storage_class_specifier : TYPEDEF */
-case 95:
+case 100:
     /*! Production::    storage_class_specifier : EXTERN */
-case 96:
+case 101:
     /*! Production::    storage_class_specifier : STATIC */
-case 97:
+case 102:
     /*! Production::    storage_class_specifier : AUTO */
-case 98:
+case 103:
     /*! Production::    storage_class_specifier : REGISTER */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,-,-):
@@ -1285,6 +1296,61 @@ case 98:
     break;
 
 case 4:
+    /*! Production::    constant : CONSTANT_FLOAT */
+
+    // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,LU,LUbA):
+    this._$ = yylstack[yysp];
+    // END of default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,LU,LUbA)
+    
+    
+    this.$ = (new t.Constant(this._$, yytext, "float"));
+    break;
+
+case 5:
+    /*! Production::    constant : CONSTANT_HEX */
+
+    // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,LU,LUbA):
+    this._$ = yylstack[yysp];
+    // END of default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,LU,LUbA)
+    
+    
+    this.$ = (new t.Constant(this._$, yytext, "hex"));
+    break;
+
+case 6:
+    /*! Production::    constant : CONSTANT_OCTAL */
+
+    // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,LU,LUbA):
+    this._$ = yylstack[yysp];
+    // END of default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,LU,LUbA)
+    
+    
+    this.$ = (new t.Constant(this._$, yytext, "oct"));
+    break;
+
+case 7:
+    /*! Production::    constant : CONSTANT_INT */
+
+    // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,LU,LUbA):
+    this._$ = yylstack[yysp];
+    // END of default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,LU,LUbA)
+    
+    
+    this.$ = (new t.Constant(this._$, yytext, "int"));
+    break;
+
+case 8:
+    /*! Production::    constant : CONSTANT_CHAR */
+
+    // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,LU,LUbA):
+    this._$ = yylstack[yysp];
+    // END of default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,LU,LUbA)
+    
+    
+    this.$ = (new t.Constant(this._$, yytext, "char"));
+    break;
+
+case 9:
     /*! Production::    primary_expression : identifier */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -1295,114 +1361,77 @@ case 4:
     this.$ = (new t.Identifier(this._$, yytext));
     break;
 
-case 5:
-    /*! Production::    primary_expression : CONSTANT */
-
-    // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,LU,LUbA):
-    this._$ = yylstack[yysp];
-    // END of default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,LU,LUbA)
-    
-    
-    this.$ = (new t.Constant(this._$, yytext));
-    break;
-
-case 6:
-    /*! Production::    primary_expression : STRING_LITERAL */
-
-    // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,LU,LUbA):
-    this._$ = yylstack[yysp];
-    // END of default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,LU,LUbA)
-    
-    
-    this.$ = (new t.StringLiteral(this._$, yytext));
-    break;
-
-case 7:
-    /*! Production::    primary_expression : "(" expression ")" */
-case 147:
-    /*! Production::    direct_declarator : "(" declarator ")" */
-case 179:
-    /*! Production::    direct_abstract_declarator : "(" abstract_declarator ")" */
-case 191:
-    /*! Production::    initializer : "{" initializer_list "}" */
-
-    // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,-,-):
-    this._$ = yyparser.yyMergeLocationInfo(yysp - 2, yysp);
-    // END of default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,-,-)
-    
-    
-    this.$ = (yyvstack[yysp - 1]);
-    break;
-
-case 8:
+case 10:
+    /*! Production::    primary_expression : constant */
+case 13:
     /*! Production::    postfix_expression : primary_expression */
-case 20:
+case 25:
     /*! Production::    unary_expression : postfix_expression */
-case 32:
+case 37:
     /*! Production::    cast_expression : unary_expression */
-case 34:
+case 39:
     /*! Production::    multiplicative_expression : cast_expression */
-case 38:
+case 43:
     /*! Production::    additive_expression : multiplicative_expression */
-case 41:
+case 46:
     /*! Production::    shift_expression : additive_expression */
-case 44:
-    /*! Production::    relational_expression : shift_expression */
 case 49:
-    /*! Production::    equality_expression : relational_expression */
-case 52:
-    /*! Production::    and_expression : equality_expression */
+    /*! Production::    relational_expression : shift_expression */
 case 54:
+    /*! Production::    equality_expression : relational_expression */
+case 57:
+    /*! Production::    and_expression : equality_expression */
+case 59:
     /*! Production::    exclusive_or_expression : and_expression */
-case 56:
+case 61:
     /*! Production::    inclusive_or_expression : exclusive_or_expression */
-case 58:
+case 63:
     /*! Production::    logical_and_expression : inclusive_or_expression */
-case 60:
+case 65:
     /*! Production::    logical_or_expression : logical_and_expression */
-case 62:
+case 67:
     /*! Production::    conditional_expression : logical_or_expression */
-case 64:
+case 69:
     /*! Production::    assignment_expression : conditional_expression */
-case 77:
+case 82:
     /*! Production::    expression : assignment_expression */
-case 79:
+case 84:
     /*! Production::    constant_expression : conditional_expression */
-case 92:
+case 97:
     /*! Production::    init_declarator : declarator */
-case 111:
+case 116:
     /*! Production::    type_specifier : struct_or_union_specifier */
-case 112:
+case 117:
     /*! Production::    type_specifier : enum_specifier */
-case 128:
+case 133:
     /*! Production::    struct_declarator : declarator */
-case 145:
+case 150:
     /*! Production::    declarator : direct_declarator */
-case 165:
+case 170:
     /*! Production::    parameter_type_list : parameter_list */
-case 177:
+case 182:
     /*! Production::    abstract_declarator : direct_abstract_declarator */
-case 190:
-    /*! Production::    initializer : assignment_expression */
 case 195:
-    /*! Production::    statement : labeled_statement */
-case 196:
-    /*! Production::    statement : compound_statement */
-case 197:
-    /*! Production::    statement : expression_statement */
-case 198:
-    /*! Production::    statement : selection_statement */
-case 199:
-    /*! Production::    statement : iteration_statement */
+    /*! Production::    initializer : assignment_expression */
 case 200:
+    /*! Production::    statement : labeled_statement */
+case 201:
+    /*! Production::    statement : compound_statement */
+case 202:
+    /*! Production::    statement : expression_statement */
+case 203:
+    /*! Production::    statement : selection_statement */
+case 204:
+    /*! Production::    statement : iteration_statement */
+case 205:
     /*! Production::    statement : jump_statement */
-case 208:
+case 213:
     /*! Production::    block_item : declaration */
-case 209:
+case 214:
     /*! Production::    block_item : statement */
-case 228:
+case 233:
     /*! Production::    external_declaration : function_definition */
-case 229:
+case 234:
     /*! Production::    external_declaration : declaration */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,-,-):
@@ -1413,7 +1442,35 @@ case 229:
     this.$ = (yyvstack[yysp]);
     break;
 
-case 9:
+case 11:
+    /*! Production::    primary_expression : STRING_LITERAL */
+
+    // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,LU,LUbA):
+    this._$ = yylstack[yysp];
+    // END of default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,LU,LUbA)
+    
+    
+    this.$ = (new t.StringLiteral(this._$, yytext));
+    break;
+
+case 12:
+    /*! Production::    primary_expression : "(" expression ")" */
+case 152:
+    /*! Production::    direct_declarator : "(" declarator ")" */
+case 184:
+    /*! Production::    direct_abstract_declarator : "(" abstract_declarator ")" */
+case 196:
+    /*! Production::    initializer : "{" initializer_list "}" */
+
+    // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,-,-):
+    this._$ = yyparser.yyMergeLocationInfo(yysp - 2, yysp);
+    // END of default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,-,-)
+    
+    
+    this.$ = (yyvstack[yysp - 1]);
+    break;
+
+case 14:
     /*! Production::    postfix_expression : postfix_expression "[" expression "]" */
 
     // default action (generated by JISON mode none/merge :: 4,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -1424,7 +1481,7 @@ case 9:
     this.$ = (new t.BinaryExpression(this._$, "arraySubscript", yyvstack[yysp - 3], yyvstack[yysp - 1]));
     break;
 
-case 10:
+case 15:
     /*! Production::    postfix_expression : postfix_expression "(" ")" */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -1435,7 +1492,7 @@ case 10:
     this.$ = (new t.FunctionCallExpression(this._$, yyvstack[yysp - 2]));
     break;
 
-case 11:
+case 16:
     /*! Production::    postfix_expression : postfix_expression "(" argument_expression_list ")" */
 
     // default action (generated by JISON mode none/merge :: 4,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -1446,7 +1503,7 @@ case 11:
     this.$ = (new t.FunctionCallExpression(this._$, yyvstack[yysp - 3], yyvstack[yysp - 1]));
     break;
 
-case 12:
+case 17:
     /*! Production::    postfix_expression : postfix_expression "." identifier */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -1457,7 +1514,7 @@ case 12:
     this.$ = (new t.MemberAccessExpression(this._$, false, yyvstack[yysp - 2], yyvstack[yysp]));
     break;
 
-case 13:
+case 18:
     /*! Production::    postfix_expression : postfix_expression PTR_OP identifier */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -1468,7 +1525,7 @@ case 13:
     this.$ = (new t.MemberAccessExpression(this._$, true, yyvstack[yysp - 2], yyvstack[yysp]));
     break;
 
-case 14:
+case 19:
     /*! Production::    postfix_expression : postfix_expression INC_OP */
 
     // default action (generated by JISON mode none/merge :: 2,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -1479,7 +1536,7 @@ case 14:
     this.$ = (new t.UnaryExpression(this._$, "postfixIncrement", yyvstack[yysp - 1]));
     break;
 
-case 15:
+case 20:
     /*! Production::    postfix_expression : postfix_expression DEC_OP */
 
     // default action (generated by JISON mode none/merge :: 2,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -1490,7 +1547,7 @@ case 15:
     this.$ = (new t.UnaryExpression(this._$, "postfixDecrement", yyvstack[yysp - 1]));
     break;
 
-case 16:
+case 21:
     /*! Production::    postfix_expression : "(" type_name ")" "{" initializer_list "}" */
 
     // default action (generated by JISON mode none/merge :: 6,VT,VA,-,-,LT,LA,-,-):
@@ -1502,7 +1559,7 @@ case 16:
     throw new JisonParserError("Unsupported rule: postfix_expression (c99 compound literal)");
     break;
 
-case 17:
+case 22:
     /*! Production::    postfix_expression : "(" type_name ")" "{" initializer_list "," "}" */
 
     // default action (generated by JISON mode none/merge :: 7,VT,VA,-,-,LT,LA,-,-):
@@ -1514,29 +1571,29 @@ case 17:
     throw new JisonParserError("Unsupported rule: postfix_expression (c99 compound literal)");
     break;
 
-case 18:
+case 23:
     /*! Production::    argument_expression_list : assignment_expression */
-case 90:
+case 95:
     /*! Production::    init_declarator_list : init_declarator */
-case 119:
+case 124:
     /*! Production::    struct_declaration_list : struct_declaration */
-case 126:
+case 131:
     /*! Production::    struct_declarator_list : struct_declarator */
-case 136:
+case 141:
     /*! Production::    enumerator_list : enumerator */
-case 163:
+case 168:
     /*! Production::    type_qualifier_list : type_qualifier */
-case 167:
-    /*! Production::    parameter_list : parameter_declaration */
 case 172:
+    /*! Production::    parameter_list : parameter_declaration */
+case 177:
     /*! Production::    identifier_list : identifier */
-case 193:
+case 198:
     /*! Production::    initializer_list : initializer */
-case 206:
+case 211:
     /*! Production::    block_item_list : block_item */
-case 226:
+case 231:
     /*! Production::    translation_unit : external_declaration */
-case 232:
+case 237:
     /*! Production::    declaration_list : declaration */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,-,-):
@@ -1547,17 +1604,17 @@ case 232:
     this.$ = ([yyvstack[yysp]]);
     break;
 
-case 19:
+case 24:
     /*! Production::    argument_expression_list : argument_expression_list "," assignment_expression */
-case 91:
+case 96:
     /*! Production::    init_declarator_list : init_declarator_list "," init_declarator */
-case 127:
+case 132:
     /*! Production::    struct_declarator_list : struct_declarator_list "," struct_declarator */
-case 137:
+case 142:
     /*! Production::    enumerator_list : enumerator_list "," enumerator */
-case 168:
-    /*! Production::    parameter_list : parameter_list "," parameter_declaration */
 case 173:
+    /*! Production::    parameter_list : parameter_list "," parameter_declaration */
+case 178:
     /*! Production::    identifier_list : identifier_list "," identifier */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,-,-):
@@ -1568,7 +1625,7 @@ case 173:
     this.$ = ((yyvstack[yysp - 2].push(yyvstack[yysp]), yyvstack[yysp - 2]));
     break;
 
-case 21:
+case 26:
     /*! Production::    unary_expression : INC_OP unary_expression */
 
     // default action (generated by JISON mode none/merge :: 2,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -1579,7 +1636,7 @@ case 21:
     this.$ = (new t.UnaryExpression(this._$, "prefixIncrement", yyvstack[yysp]));
     break;
 
-case 22:
+case 27:
     /*! Production::    unary_expression : DEC_OP unary_expression */
 
     // default action (generated by JISON mode none/merge :: 2,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -1590,7 +1647,7 @@ case 22:
     this.$ = (new t.UnaryExpression(this._$, "prefixDecrement", yyvstack[yysp]));
     break;
 
-case 23:
+case 28:
     /*! Production::    unary_expression : unary_operator cast_expression */
 
     // default action (generated by JISON mode none/merge :: 2,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -1601,7 +1658,7 @@ case 23:
     this.$ = (new t.UnaryExpression(this._$, yyvstack[yysp - 1], yyvstack[yysp]));
     break;
 
-case 24:
+case 29:
     /*! Production::    unary_expression : SIZEOF unary_expression */
 
     // default action (generated by JISON mode none/merge :: 2,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -1612,7 +1669,7 @@ case 24:
     this.$ = (new t.UnaryExpression(this._$, "sizeof", yyvstack[yysp]));
     break;
 
-case 25:
+case 30:
     /*! Production::    unary_expression : SIZEOF "(" type_name ")" */
 
     // default action (generated by JISON mode none/merge :: 4,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -1623,7 +1680,7 @@ case 25:
     this.$ = (new t.UnaryExpression(this._$, "sizeof", yyvstack[yysp - 1]));
     break;
 
-case 26:
+case 31:
     /*! Production::    unary_operator : "&" */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,-,-):
@@ -1634,7 +1691,7 @@ case 26:
     this.$ = ("addressOf");
     break;
 
-case 27:
+case 32:
     /*! Production::    unary_operator : "*" */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,-,-):
@@ -1645,7 +1702,7 @@ case 27:
     this.$ = ("dereference");
     break;
 
-case 28:
+case 33:
     /*! Production::    unary_operator : "+" */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,-,-):
@@ -1656,7 +1713,7 @@ case 28:
     this.$ = ("unaryPlus");
     break;
 
-case 29:
+case 34:
     /*! Production::    unary_operator : "-" */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,-,-):
@@ -1667,7 +1724,7 @@ case 29:
     this.$ = ("unaryMinus");
     break;
 
-case 30:
+case 35:
     /*! Production::    unary_operator : "~" */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,-,-):
@@ -1678,7 +1735,7 @@ case 30:
     this.$ = ("bitwiseNot");
     break;
 
-case 31:
+case 36:
     /*! Production::    unary_operator : "!" */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,-,-):
@@ -1689,7 +1746,7 @@ case 31:
     this.$ = ("logicalNot");
     break;
 
-case 33:
+case 38:
     /*! Production::    cast_expression : "(" type_name ")" cast_expression */
 
     // default action (generated by JISON mode none/merge :: 4,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -1700,7 +1757,7 @@ case 33:
     this.$ = (new t.BinaryExpression(this._$, "cast", yyvstack[yysp - 2], yyvstack[yysp]));
     break;
 
-case 35:
+case 40:
     /*! Production::    multiplicative_expression : multiplicative_expression "*" cast_expression */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -1711,7 +1768,7 @@ case 35:
     this.$ = (new t.BinaryExpression(this._$, "mul", yyvstack[yysp - 2], yyvstack[yysp]));
     break;
 
-case 36:
+case 41:
     /*! Production::    multiplicative_expression : multiplicative_expression "/" cast_expression */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -1722,7 +1779,7 @@ case 36:
     this.$ = (new t.BinaryExpression(this._$, "div", yyvstack[yysp - 2], yyvstack[yysp]));
     break;
 
-case 37:
+case 42:
     /*! Production::    multiplicative_expression : multiplicative_expression "%" cast_expression */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -1733,7 +1790,7 @@ case 37:
     this.$ = (new t.BinaryExpression(this._$, "mod", yyvstack[yysp - 2], yyvstack[yysp]));
     break;
 
-case 39:
+case 44:
     /*! Production::    additive_expression : additive_expression "+" multiplicative_expression */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -1744,7 +1801,7 @@ case 39:
     this.$ = (new t.BinaryExpression(this._$, "add", yyvstack[yysp - 2], yyvstack[yysp]));
     break;
 
-case 40:
+case 45:
     /*! Production::    additive_expression : additive_expression "-" multiplicative_expression */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -1755,7 +1812,7 @@ case 40:
     this.$ = (new t.BinaryExpression(this._$, "sub", yyvstack[yysp - 2], yyvstack[yysp]));
     break;
 
-case 42:
+case 47:
     /*! Production::    shift_expression : shift_expression LEFT_OP additive_expression */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -1766,7 +1823,7 @@ case 42:
     this.$ = (new t.BinaryExpression(this._$, "bitwiseShiftLeft", yyvstack[yysp - 2], yyvstack[yysp]));
     break;
 
-case 43:
+case 48:
     /*! Production::    shift_expression : shift_expression RIGHT_OP additive_expression */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -1777,7 +1834,7 @@ case 43:
     this.$ = (new t.BinaryExpression(this._$, "bitwiseShiftRight", yyvstack[yysp - 2], yyvstack[yysp]));
     break;
 
-case 45:
+case 50:
     /*! Production::    relational_expression : relational_expression "<" shift_expression */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -1788,7 +1845,7 @@ case 45:
     this.$ = (new t.BinaryExpression(this._$, "relationalLT", yyvstack[yysp - 2], yyvstack[yysp]));
     break;
 
-case 46:
+case 51:
     /*! Production::    relational_expression : relational_expression ">" shift_expression */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -1799,7 +1856,7 @@ case 46:
     this.$ = (new t.BinaryExpression(this._$, "relationalGT", yyvstack[yysp - 2], yyvstack[yysp]));
     break;
 
-case 47:
+case 52:
     /*! Production::    relational_expression : relational_expression LE_OP shift_expression */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -1810,7 +1867,7 @@ case 47:
     this.$ = (new t.BinaryExpression(this._$, "relationalLEq", yyvstack[yysp - 2], yyvstack[yysp]));
     break;
 
-case 48:
+case 53:
     /*! Production::    relational_expression : relational_expression GE_OP shift_expression */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -1821,7 +1878,7 @@ case 48:
     this.$ = (new t.BinaryExpression(this._$, "relationalGEq", yyvstack[yysp - 2], yyvstack[yysp]));
     break;
 
-case 50:
+case 55:
     /*! Production::    equality_expression : equality_expression EQ_OP relational_expression */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -1832,7 +1889,7 @@ case 50:
     this.$ = (new t.BinaryExpression(this._$, "relationalEq", yyvstack[yysp - 2], yyvstack[yysp]));
     break;
 
-case 51:
+case 56:
     /*! Production::    equality_expression : equality_expression NE_OP relational_expression */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -1843,7 +1900,7 @@ case 51:
     this.$ = (new t.BinaryExpression(this._$, "relationalNeq", yyvstack[yysp - 2], yyvstack[yysp]));
     break;
 
-case 53:
+case 58:
     /*! Production::    and_expression : and_expression "&" equality_expression */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -1854,7 +1911,7 @@ case 53:
     this.$ = (new t.BinaryExpression(this._$, "bitwiseAnd", yyvstack[yysp - 2], yyvstack[yysp]));
     break;
 
-case 55:
+case 60:
     /*! Production::    exclusive_or_expression : exclusive_or_expression "^" and_expression */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -1865,7 +1922,7 @@ case 55:
     this.$ = (new t.BinaryExpression(this._$, "bitwiseXor", yyvstack[yysp - 2], yyvstack[yysp]));
     break;
 
-case 57:
+case 62:
     /*! Production::    inclusive_or_expression : inclusive_or_expression "|" exclusive_or_expression */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -1876,7 +1933,7 @@ case 57:
     this.$ = (new t.BinaryExpression(this._$, "bitwiseOr", yyvstack[yysp - 2], yyvstack[yysp]));
     break;
 
-case 59:
+case 64:
     /*! Production::    logical_and_expression : logical_and_expression AND_OP inclusive_or_expression */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -1887,7 +1944,7 @@ case 59:
     this.$ = (new t.BinaryExpression(this._$, "logicalAnd", yyvstack[yysp - 2], yyvstack[yysp]));
     break;
 
-case 61:
+case 66:
     /*! Production::    logical_or_expression : logical_or_expression OR_OP logical_and_expression */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -1898,7 +1955,7 @@ case 61:
     this.$ = (new t.BinaryExpression(this._$, "logicalOr", yyvstack[yysp - 2], yyvstack[yysp]));
     break;
 
-case 63:
+case 68:
     /*! Production::    conditional_expression : logical_or_expression "?" expression ":" conditional_expression */
 
     // default action (generated by JISON mode none/merge :: 5,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -1909,7 +1966,7 @@ case 63:
     this.$ = (new t.ConditionalExpression(this._$, yyvstack[yysp - 4], yyvstack[yysp - 2], yyvstack[yysp]));
     break;
 
-case 65:
+case 70:
     /*! Production::    assignment_expression : unary_expression assignment_operator assignment_expression */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -1920,7 +1977,7 @@ case 65:
     this.$ = (new t.AssignmentExpression(this._$, yyvstack[yysp - 1], yyvstack[yysp - 2], yyvstack[yysp]));
     break;
 
-case 66:
+case 71:
     /*! Production::    assignment_operator : "=" */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,-,-):
@@ -1931,7 +1988,7 @@ case 66:
     this.$ = ("assign");
     break;
 
-case 67:
+case 72:
     /*! Production::    assignment_operator : MUL_ASSIGN */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,-,-):
@@ -1942,7 +1999,7 @@ case 67:
     this.$ = ("mulAssign");
     break;
 
-case 68:
+case 73:
     /*! Production::    assignment_operator : DIV_ASSIGN */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,-,-):
@@ -1953,7 +2010,7 @@ case 68:
     this.$ = ("divAssign");
     break;
 
-case 69:
+case 74:
     /*! Production::    assignment_operator : MOD_ASSIGN */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,-,-):
@@ -1964,7 +2021,7 @@ case 69:
     this.$ = ("modAssign");
     break;
 
-case 70:
+case 75:
     /*! Production::    assignment_operator : ADD_ASSIGN */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,-,-):
@@ -1975,7 +2032,7 @@ case 70:
     this.$ = ("addAssign");
     break;
 
-case 71:
+case 76:
     /*! Production::    assignment_operator : SUB_ASSIGN */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,-,-):
@@ -1986,7 +2043,7 @@ case 71:
     this.$ = ("subAssign");
     break;
 
-case 72:
+case 77:
     /*! Production::    assignment_operator : LEFT_ASSIGN */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,-,-):
@@ -1997,7 +2054,7 @@ case 72:
     this.$ = ("leftAssign");
     break;
 
-case 73:
+case 78:
     /*! Production::    assignment_operator : RIGHT_ASSIGN */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,-,-):
@@ -2008,7 +2065,7 @@ case 73:
     this.$ = ("rightAssign");
     break;
 
-case 74:
+case 79:
     /*! Production::    assignment_operator : AND_ASSIGN */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,-,-):
@@ -2019,7 +2076,7 @@ case 74:
     this.$ = ("andAssign");
     break;
 
-case 75:
+case 80:
     /*! Production::    assignment_operator : XOR_ASSIGN */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,-,-):
@@ -2030,7 +2087,7 @@ case 75:
     this.$ = ("xorAssign");
     break;
 
-case 76:
+case 81:
     /*! Production::    assignment_operator : OR_ASSIGN */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,-,-):
@@ -2041,7 +2098,7 @@ case 76:
     this.$ = ("orAssign");
     break;
 
-case 78:
+case 83:
     /*! Production::    expression : expression "," assignment_expression */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2052,7 +2109,7 @@ case 78:
     this.$ = (new t.BinaryExpression(this._$, "comma", yyvstack[yysp - 2], yyvstack[yysp]));
     break;
 
-case 80:
+case 85:
     /*! Production::    declaration : declaration_specifiers ";" */
 
     // default action (generated by JISON mode none/merge :: 2,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2063,7 +2120,7 @@ case 80:
     this.$ = (new t.Declaration(this._$, yyvstack[yysp - 1]));
     break;
 
-case 81:
+case 86:
     /*! Production::    declaration : declaration_specifiers init_declarator_list ";" */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2074,7 +2131,7 @@ case 81:
     this.$ = (new t.Declaration(this._$, yyvstack[yysp - 2], yyvstack[yysp - 1]));
     break;
 
-case 82:
+case 87:
     /*! Production::    declaration_specifiers : storage_class_specifier */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2085,7 +2142,7 @@ case 82:
     this.$ = (new t.DeclarationSpecifiers(this._$, [], [], [yyvstack[yysp]], []));
     break;
 
-case 83:
+case 88:
     /*! Production::    declaration_specifiers : storage_class_specifier declaration_specifiers */
 
     // default action (generated by JISON mode none/merge :: 2,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2096,7 +2153,7 @@ case 83:
     this.$ = (new t.DeclarationSpecifiers(this._$, yyvstack[yysp].specifierList, yyvstack[yysp].qualifierList, [yyvstack[yysp - 1], ...yyvstack[yysp].storageList], yyvstack[yysp].fnSpecifierList));
     break;
 
-case 84:
+case 89:
     /*! Production::    declaration_specifiers : type_specifier */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2107,7 +2164,7 @@ case 84:
     this.$ = (new t.DeclarationSpecifiers(this._$, [yyvstack[yysp]], [], [], []));
     break;
 
-case 85:
+case 90:
     /*! Production::    declaration_specifiers : type_specifier declaration_specifiers */
 
     // default action (generated by JISON mode none/merge :: 2,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2118,7 +2175,7 @@ case 85:
     this.$ = (new t.DeclarationSpecifiers(this._$, [yyvstack[yysp - 1], ...yyvstack[yysp].specifierList], yyvstack[yysp].qualifierList, yyvstack[yysp].storageList, yyvstack[yysp].fnSpecifierList));
     break;
 
-case 86:
+case 91:
     /*! Production::    declaration_specifiers : type_qualifier */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2129,7 +2186,7 @@ case 86:
     this.$ = (new t.DeclarationSpecifiers(this._$, [], [yyvstack[yysp]], [], []));
     break;
 
-case 87:
+case 92:
     /*! Production::    declaration_specifiers : type_qualifier declaration_specifiers */
 
     // default action (generated by JISON mode none/merge :: 2,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2140,7 +2197,7 @@ case 87:
     this.$ = (new t.DeclarationSpecifiers(this._$, yyvstack[yysp].specifierList, [yyvstack[yysp - 1], ...yyvstack[yysp].qualifierList], yyvstack[yysp].storageList, yyvstack[yysp].fnSpecifierList));
     break;
 
-case 88:
+case 93:
     /*! Production::    declaration_specifiers : function_specifier */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2151,7 +2208,7 @@ case 88:
     this.$ = (new t.DeclarationSpecifiers(this._$, [], [], [], [yyvstack[yysp]]));
     break;
 
-case 89:
+case 94:
     /*! Production::    declaration_specifiers : function_specifier declaration_specifiers */
 
     // default action (generated by JISON mode none/merge :: 2,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2162,7 +2219,7 @@ case 89:
     this.$ = (new t.DeclarationSpecifiers(this._$, yyvstack[yysp].specifierList, yyvstack[yysp].qualifierList, yyvstack[yysp].storageList, [yyvstack[yysp - 1], ...yyvstack[yysp].fnSpecifierList]));
     break;
 
-case 93:
+case 98:
     /*! Production::    init_declarator : declarator "=" initializer */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2173,29 +2230,29 @@ case 93:
     this.$ = (new t.InitDeclarator(this._$, yyvstack[yysp - 2], yyvstack[yysp]));
     break;
 
-case 99:
-    /*! Production::    type_specifier : VOID */
-case 100:
-    /*! Production::    type_specifier : CHAR */
-case 101:
-    /*! Production::    type_specifier : SHORT */
-case 102:
-    /*! Production::    type_specifier : INT */
-case 103:
-    /*! Production::    type_specifier : LONG */
 case 104:
-    /*! Production::    type_specifier : FLOAT */
+    /*! Production::    type_specifier : VOID */
 case 105:
-    /*! Production::    type_specifier : DOUBLE */
+    /*! Production::    type_specifier : CHAR */
 case 106:
-    /*! Production::    type_specifier : SIGNED */
+    /*! Production::    type_specifier : SHORT */
 case 107:
-    /*! Production::    type_specifier : UNSIGNED */
+    /*! Production::    type_specifier : INT */
 case 108:
-    /*! Production::    type_specifier : BOOL */
+    /*! Production::    type_specifier : LONG */
 case 109:
-    /*! Production::    type_specifier : COMPLEX */
+    /*! Production::    type_specifier : FLOAT */
 case 110:
+    /*! Production::    type_specifier : DOUBLE */
+case 111:
+    /*! Production::    type_specifier : SIGNED */
+case 112:
+    /*! Production::    type_specifier : UNSIGNED */
+case 113:
+    /*! Production::    type_specifier : BOOL */
+case 114:
+    /*! Production::    type_specifier : COMPLEX */
+case 115:
     /*! Production::    type_specifier : IMAGINARY */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,-,-):
@@ -2206,7 +2263,7 @@ case 110:
     this.$ = (["builtInType", yytext]);
     break;
 
-case 113:
+case 118:
     /*! Production::    type_specifier : TYPE_NAME */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,-,-):
@@ -2217,7 +2274,7 @@ case 113:
     this.$ = (["customType", yyvstack[yysp]]);
     break;
 
-case 114:
+case 119:
     /*! Production::    struct_or_union_specifier : struct_or_union identifier "{" struct_declaration_list "}" */
 
     // default action (generated by JISON mode none/merge :: 5,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2228,7 +2285,7 @@ case 114:
     this.$ = (new t.StructUnionSpecifier(this._$, yyvstack[yysp - 4], yyvstack[yysp - 3], yyvstack[yysp - 1]));
     break;
 
-case 115:
+case 120:
     /*! Production::    struct_or_union_specifier : struct_or_union "{" struct_declaration_list "}" */
 
     // default action (generated by JISON mode none/merge :: 4,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2239,7 +2296,7 @@ case 115:
     this.$ = (new t.StructUnionSpecifier(this._$, yyvstack[yysp - 3], undefined, yyvstack[yysp - 1]));
     break;
 
-case 116:
+case 121:
     /*! Production::    struct_or_union_specifier : struct_or_union identifier */
 
     // default action (generated by JISON mode none/merge :: 2,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2250,7 +2307,7 @@ case 116:
     this.$ = (new t.StructUnionSpecifier(this._$, yyvstack[yysp - 1], yyvstack[yysp]));
     break;
 
-case 117:
+case 122:
     /*! Production::    struct_or_union : STRUCT */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,-,-):
@@ -2261,7 +2318,7 @@ case 117:
     this.$ = ("struct");
     break;
 
-case 118:
+case 123:
     /*! Production::    struct_or_union : UNION */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,-,-):
@@ -2272,15 +2329,15 @@ case 118:
     this.$ = ("union");
     break;
 
-case 120:
+case 125:
     /*! Production::    struct_declaration_list : struct_declaration_list struct_declaration */
-case 164:
+case 169:
     /*! Production::    type_qualifier_list : type_qualifier_list type_qualifier */
-case 207:
+case 212:
     /*! Production::    block_item_list : block_item_list block_item */
-case 227:
+case 232:
     /*! Production::    translation_unit : translation_unit external_declaration */
-case 233:
+case 238:
     /*! Production::    declaration_list : declaration_list declaration */
 
     // default action (generated by JISON mode none/merge :: 2,VT,VA,VU,-,LT,LA,-,-):
@@ -2291,7 +2348,7 @@ case 233:
     this.$ = ((yyvstack[yysp - 1].push(yyvstack[yysp]), yyvstack[yysp - 1]));
     break;
 
-case 121:
+case 126:
     /*! Production::    struct_declaration : specifier_qualifier_list struct_declarator_list ";" */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2302,7 +2359,7 @@ case 121:
     this.$ = (new t.StructDeclaration(this._$, yyvstack[yysp - 2], yyvstack[yysp - 1]));
     break;
 
-case 122:
+case 127:
     /*! Production::    specifier_qualifier_list : type_specifier specifier_qualifier_list */
 
     // default action (generated by JISON mode none/merge :: 2,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2313,7 +2370,7 @@ case 122:
     this.$ = (new t.SpecifierQualifiers(this._$, [yyvstack[yysp - 1], ...yyvstack[yysp].specifierList], yyvstack[yysp].qualifierList));
     break;
 
-case 123:
+case 128:
     /*! Production::    specifier_qualifier_list : type_specifier */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2324,7 +2381,7 @@ case 123:
     this.$ = (new t.SpecifierQualifiers(this._$, [yyvstack[yysp]], []));
     break;
 
-case 124:
+case 129:
     /*! Production::    specifier_qualifier_list : type_qualifier specifier_qualifier_list */
 
     // default action (generated by JISON mode none/merge :: 2,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2335,7 +2392,7 @@ case 124:
     this.$ = (new t.SpecifierQualifiers(this._$, yyvstack[yysp].specifierList, [yyvstack[yysp - 1], ...yyvstack[yysp].qualifierList]));
     break;
 
-case 125:
+case 130:
     /*! Production::    specifier_qualifier_list : type_qualifier */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2346,7 +2403,7 @@ case 125:
     this.$ = (new t.SpecifierQualifiers(this._$, [], [yyvstack[yysp]]));
     break;
 
-case 129:
+case 134:
     /*! Production::    struct_declarator : ":" constant_expression */
 
     // default action (generated by JISON mode none/merge :: 2,VT,VA,-,-,LT,LA,-,-):
@@ -2358,7 +2415,7 @@ case 129:
     throw new JisonParserError("Unsupported rule: struct_declarator (c99 bitfield)");
     break;
 
-case 130:
+case 135:
     /*! Production::    struct_declarator : declarator ":" constant_expression */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,-,-,LT,LA,-,-):
@@ -2370,7 +2427,7 @@ case 130:
     throw new JisonParserError("Unsupported rule: struct_declarator (c99 bitfield)");
     break;
 
-case 131:
+case 136:
     /*! Production::    enum_specifier : ENUM "{" enumerator_list "}" */
 
     // default action (generated by JISON mode none/merge :: 4,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2381,7 +2438,7 @@ case 131:
     this.$ = (new t.EnumSpecifier(this._$, undefined, yyvstack[yysp - 1]));
     break;
 
-case 132:
+case 137:
     /*! Production::    enum_specifier : ENUM identifier "{" enumerator_list "}" */
 
     // default action (generated by JISON mode none/merge :: 5,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2392,7 +2449,7 @@ case 132:
     this.$ = (new t.EnumSpecifier(this._$, yyvstack[yysp - 3], yyvstack[yysp - 1]));
     break;
 
-case 133:
+case 138:
     /*! Production::    enum_specifier : ENUM "{" enumerator_list "," "}" */
 
     // default action (generated by JISON mode none/merge :: 5,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2403,7 +2460,7 @@ case 133:
     this.$ = (new t.EnumSpecifier(this._$, undefined, yyvstack[yysp - 2]));
     break;
 
-case 134:
+case 139:
     /*! Production::    enum_specifier : ENUM identifier "{" enumerator_list "," "}" */
 
     // default action (generated by JISON mode none/merge :: 6,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2414,7 +2471,7 @@ case 134:
     this.$ = (new t.EnumSpecifier(this._$, yyvstack[yysp - 4], yyvstack[yysp - 2]));
     break;
 
-case 135:
+case 140:
     /*! Production::    enum_specifier : ENUM identifier */
 
     // default action (generated by JISON mode none/merge :: 2,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2425,7 +2482,7 @@ case 135:
     this.$ = (new t.EnumSpecifier(this._$, yyvstack[yysp]));
     break;
 
-case 138:
+case 143:
     /*! Production::    enumerator : identifier */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2436,7 +2493,7 @@ case 138:
     this.$ = (new t.Enumerator(this._$, yyvstack[yysp]));
     break;
 
-case 139:
+case 144:
     /*! Production::    enumerator : identifier "=" constant_expression */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2447,7 +2504,7 @@ case 139:
     this.$ = (new t.Enumerator(this._$, yyvstack[yysp - 2], yyvstack[yysp]));
     break;
 
-case 140:
+case 145:
     /*! Production::    type_qualifier : CONST */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,-,-):
@@ -2458,7 +2515,7 @@ case 140:
     this.$ = ("const");
     break;
 
-case 141:
+case 146:
     /*! Production::    type_qualifier : RESTRICT */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,-,-):
@@ -2469,7 +2526,7 @@ case 141:
     this.$ = ("restrict");
     break;
 
-case 142:
+case 147:
     /*! Production::    type_qualifier : VOLATILE */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,-,-):
@@ -2480,7 +2537,7 @@ case 142:
     this.$ = ("volatile");
     break;
 
-case 143:
+case 148:
     /*! Production::    function_specifier : INLINE */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,-,-):
@@ -2491,7 +2548,7 @@ case 143:
     this.$ = ("inline");
     break;
 
-case 144:
+case 149:
     /*! Production::    declarator : pointer direct_declarator */
 
     // default action (generated by JISON mode none/merge :: 2,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2502,7 +2559,7 @@ case 144:
     this.$ = (new t.PointerDeclarator(this._$, yyvstack[yysp - 1], yyvstack[yysp]));
     break;
 
-case 146:
+case 151:
     /*! Production::    direct_declarator : identifier */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2513,9 +2570,9 @@ case 146:
     this.$ = (new t.IdentifierDeclarator(this._$, yyvstack[yysp]));
     break;
 
-case 148:
+case 153:
     /*! Production::    direct_declarator : direct_declarator "[" type_qualifier_list assignment_expression "]" */
-case 152:
+case 157:
     /*! Production::    direct_declarator : direct_declarator "[" type_qualifier_list "*" "]" */
 
     // default action (generated by JISON mode none/merge :: 5,VT,VA,-,-,LT,LA,-,-):
@@ -2527,9 +2584,9 @@ case 152:
     throw new JisonParserError("Unsupported rule: direct_declarator (c99 variable length array)");
     break;
 
-case 149:
+case 154:
     /*! Production::    direct_declarator : direct_declarator "[" type_qualifier_list "]" */
-case 153:
+case 158:
     /*! Production::    direct_declarator : direct_declarator "[" "*" "]" */
 
     // default action (generated by JISON mode none/merge :: 4,VT,VA,-,-,LT,LA,-,-):
@@ -2541,9 +2598,9 @@ case 153:
     throw new JisonParserError("Unsupported rule: direct_declarator (c99 variable length array)");
     break;
 
-case 150:
+case 155:
     /*! Production::    direct_declarator : direct_declarator "[" STATIC type_qualifier_list assignment_expression "]" */
-case 151:
+case 156:
     /*! Production::    direct_declarator : direct_declarator "[" type_qualifier_list STATIC assignment_expression "]" */
 
     // default action (generated by JISON mode none/merge :: 6,VT,VA,-,-,LT,LA,-,-):
@@ -2555,7 +2612,7 @@ case 151:
     throw new JisonParserError("Unsupported rule: direct_declarator (c99 variable length array)");
     break;
 
-case 154:
+case 159:
     /*! Production::    direct_declarator : direct_declarator "[" constant_expression "]" */
 
     // default action (generated by JISON mode none/merge :: 4,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2566,7 +2623,7 @@ case 154:
     this.$ = (new t.ArrayDeclarator(this._$, yyvstack[yysp - 3], yyvstack[yysp - 1]));
     break;
 
-case 155:
+case 160:
     /*! Production::    direct_declarator : direct_declarator "[" "]" */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2577,9 +2634,9 @@ case 155:
     this.$ = (new t.ArrayDeclarator(this._$, yyvstack[yysp - 2]));
     break;
 
-case 156:
+case 161:
     /*! Production::    direct_declarator : direct_declarator "(" parameter_type_list ")" */
-case 157:
+case 162:
     /*! Production::    direct_declarator : direct_declarator "(" identifier_list ")" */
 
     // default action (generated by JISON mode none/merge :: 4,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2590,7 +2647,7 @@ case 157:
     this.$ = (new t.FunctionDeclarator(this._$, yyvstack[yysp - 3], yyvstack[yysp - 1]));
     break;
 
-case 158:
+case 163:
     /*! Production::    direct_declarator : direct_declarator "(" ")" */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2601,7 +2658,7 @@ case 158:
     this.$ = (new t.FunctionDeclarator(this._$, yyvstack[yysp - 2]));
     break;
 
-case 159:
+case 164:
     /*! Production::    pointer : "*" */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2612,7 +2669,7 @@ case 159:
     this.$ = (new t.Pointer(this._$));
     break;
 
-case 160:
+case 165:
     /*! Production::    pointer : "*" type_qualifier_list */
 
     // default action (generated by JISON mode none/merge :: 2,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2623,7 +2680,7 @@ case 160:
     this.$ = (new t.Pointer(this._$, yyvstack[yysp]));
     break;
 
-case 161:
+case 166:
     /*! Production::    pointer : "*" pointer */
 
     // default action (generated by JISON mode none/merge :: 2,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2634,7 +2691,7 @@ case 161:
     this.$ = (new t.Pointer(this._$, undefined, yyvstack[yysp]));
     break;
 
-case 162:
+case 167:
     /*! Production::    pointer : "*" type_qualifier_list pointer */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2645,7 +2702,7 @@ case 162:
     this.$ = (new t.Pointer(this._$, yyvstack[yysp - 1], yyvstack[yysp]));
     break;
 
-case 166:
+case 171:
     /*! Production::    parameter_type_list : parameter_list "," ELLIPSIS */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,-,-,LT,LA,-,-):
@@ -2657,9 +2714,9 @@ case 166:
     throw new JisonParserError("Unsupported rule: parameter_type_list (ellipsis)");
     break;
 
-case 169:
+case 174:
     /*! Production::    parameter_declaration : declaration_specifiers declarator */
-case 170:
+case 175:
     /*! Production::    parameter_declaration : declaration_specifiers abstract_declarator */
 
     // default action (generated by JISON mode none/merge :: 2,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2670,7 +2727,7 @@ case 170:
     this.$ = (new t.ParameterDeclaration(this._$, yyvstack[yysp - 1], yyvstack[yysp]));
     break;
 
-case 171:
+case 176:
     /*! Production::    parameter_declaration : declaration_specifiers */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2681,7 +2738,7 @@ case 171:
     this.$ = (new t.ParameterDeclaration(this._$, yyvstack[yysp]));
     break;
 
-case 174:
+case 179:
     /*! Production::    type_name : specifier_qualifier_list */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2692,7 +2749,7 @@ case 174:
     this.$ = (new t.TypeName(this._$, yyvstack[yysp]));
     break;
 
-case 175:
+case 180:
     /*! Production::    type_name : specifier_qualifier_list abstract_declarator */
 
     // default action (generated by JISON mode none/merge :: 2,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2703,7 +2760,7 @@ case 175:
     this.$ = (new t.TypeName(this._$, yyvstack[yysp - 1], yyvstack[yysp]));
     break;
 
-case 176:
+case 181:
     /*! Production::    abstract_declarator : pointer */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2714,7 +2771,7 @@ case 176:
     this.$ = (new t.AbstractPointerDeclarator(this._$, yyvstack[yysp]));
     break;
 
-case 178:
+case 183:
     /*! Production::    abstract_declarator : pointer direct_abstract_declarator */
 
     // default action (generated by JISON mode none/merge :: 2,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2725,7 +2782,7 @@ case 178:
     this.$ = (new t.AbstractPointerDeclarator(this._$, yyvstack[yysp - 1], yyvstack[yysp]));
     break;
 
-case 180:
+case 185:
     /*! Production::    direct_abstract_declarator : "[" "]" */
 
     // default action (generated by JISON mode none/merge :: 2,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2736,7 +2793,7 @@ case 180:
     this.$ = (new t.AbstractArrayDeclarator(this._$));
     break;
 
-case 181:
+case 186:
     /*! Production::    direct_abstract_declarator : "[" constant_expression "]" */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2747,7 +2804,7 @@ case 181:
     this.$ = (new t.AbstractArrayDeclarator(this._$, undefined, yyvstack[yysp - 1]));
     break;
 
-case 182:
+case 187:
     /*! Production::    direct_abstract_declarator : direct_abstract_declarator "[" "]" */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2758,7 +2815,7 @@ case 182:
     this.$ = (new t.AbstractArrayDeclarator(this._$, yyvstack[yysp - 2]));
     break;
 
-case 183:
+case 188:
     /*! Production::    direct_abstract_declarator : direct_abstract_declarator "[" constant_expression "]" */
 
     // default action (generated by JISON mode none/merge :: 4,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2769,7 +2826,7 @@ case 183:
     this.$ = (new t.AbstractArrayDeclarator(this._$, yyvstack[yysp - 3], yyvstack[yysp - 1]));
     break;
 
-case 184:
+case 189:
     /*! Production::    direct_abstract_declarator : "[" "*" "]" */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,-,-,LT,LA,-,-):
@@ -2781,7 +2838,7 @@ case 184:
     throw new JisonParserError("Unsupported rule: direct_abstract_declarator (c99 variable length array)");
     break;
 
-case 185:
+case 190:
     /*! Production::    direct_abstract_declarator : direct_abstract_declarator "[" "*" "]" */
 
     // default action (generated by JISON mode none/merge :: 4,VT,VA,-,-,LT,LA,-,-):
@@ -2793,7 +2850,7 @@ case 185:
     throw new JisonParserError("Unsupported rule: direct_abstract_declarator (c99 variable length array)");
     break;
 
-case 186:
+case 191:
     /*! Production::    direct_abstract_declarator : "(" ")" */
 
     // default action (generated by JISON mode none/merge :: 2,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2804,7 +2861,7 @@ case 186:
     this.$ = (new t.AbstractFunctionDeclarator(this._$));
     break;
 
-case 187:
+case 192:
     /*! Production::    direct_abstract_declarator : "(" parameter_type_list ")" */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2815,7 +2872,7 @@ case 187:
     this.$ = (new t.AbstractFunctionDeclarator(this._$, undefined, yyvstack[yysp - 1]));
     break;
 
-case 188:
+case 193:
     /*! Production::    direct_abstract_declarator : direct_abstract_declarator "(" ")" */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2826,7 +2883,7 @@ case 188:
     this.$ = (new t.AbstractFunctionDeclarator(this._$, yyvstack[yysp - 2]));
     break;
 
-case 189:
+case 194:
     /*! Production::    direct_abstract_declarator : direct_abstract_declarator "(" parameter_type_list ")" */
 
     // default action (generated by JISON mode none/merge :: 4,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2837,7 +2894,7 @@ case 189:
     this.$ = (new t.AbstractFunctionDeclarator(this._$, yyvstack[yysp - 3], yyvstack[yysp - 1]));
     break;
 
-case 192:
+case 197:
     /*! Production::    initializer : "{" initializer_list "," "}" */
 
     // default action (generated by JISON mode none/merge :: 4,VT,VA,VU,-,LT,LA,-,-):
@@ -2848,7 +2905,7 @@ case 192:
     this.$ = (yyvstack[yysp - 2]);
     break;
 
-case 194:
+case 199:
     /*! Production::    initializer_list : initializer_list "," initializer */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,-,-):
@@ -2859,7 +2916,7 @@ case 194:
     this.$ = ((yyvstack[yysp - 2].push(yyvstack[yysp - 1]), yyvstack[yysp - 2]));
     break;
 
-case 201:
+case 206:
     /*! Production::    labeled_statement : identifier ":" statement */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,-,-,LT,LA,-,-):
@@ -2871,7 +2928,7 @@ case 201:
     throw new JisonParserError("Unsupported rule: labeled_statement (goto)");
     break;
 
-case 202:
+case 207:
     /*! Production::    labeled_statement : CASE constant_expression ":" statement */
 
     // default action (generated by JISON mode none/merge :: 4,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2882,7 +2939,7 @@ case 202:
     this.$ = (new t.CaseStatement(this._$, yyvstack[yysp - 2], yyvstack[yysp]));
     break;
 
-case 203:
+case 208:
     /*! Production::    labeled_statement : DEFAULT ":" statement */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2893,7 +2950,7 @@ case 203:
     this.$ = (new t.DefaultStatement(this._$, yyvstack[yysp]));
     break;
 
-case 204:
+case 209:
     /*! Production::    compound_statement : "{" "}" */
 
     // default action (generated by JISON mode none/merge :: 2,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2904,7 +2961,7 @@ case 204:
     this.$ = (new t.NoOp(this._$));
     break;
 
-case 205:
+case 210:
     /*! Production::    compound_statement : "{" block_item_list "}" */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2915,7 +2972,7 @@ case 205:
     this.$ = (yyvstack[yysp - 1].length === 1 ? yyvstack[yysp - 1][0] : new t.CompoundStatement(this._$, yyvstack[yysp - 1]));
     break;
 
-case 210:
+case 215:
     /*! Production::    expression_statement : ";" */
 
     // default action (generated by JISON mode none/merge :: 1,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2926,7 +2983,7 @@ case 210:
     this.$ = (new t.NoOp(this._$));
     break;
 
-case 211:
+case 216:
     /*! Production::    expression_statement : expression ";" */
 
     // default action (generated by JISON mode none/merge :: 2,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2937,7 +2994,7 @@ case 211:
     this.$ = (new t.ExpressionStatement(this._$, yyvstack[yysp - 1]));
     break;
 
-case 212:
+case 217:
     /*! Production::    selection_statement : IF "(" expression ")" statement */
 
     // default action (generated by JISON mode none/merge :: 5,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2948,7 +3005,7 @@ case 212:
     this.$ = (new t.IfStatement(this._$, yyvstack[yysp - 2], yyvstack[yysp]));
     break;
 
-case 213:
+case 218:
     /*! Production::    selection_statement : IF "(" expression ")" statement ELSE statement */
 
     // default action (generated by JISON mode none/merge :: 7,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2959,7 +3016,7 @@ case 213:
     this.$ = (new t.IfStatement(this._$, yyvstack[yysp - 4], yyvstack[yysp - 2], yyvstack[yysp]));
     break;
 
-case 214:
+case 219:
     /*! Production::    selection_statement : SWITCH "(" expression ")" statement */
 
     // default action (generated by JISON mode none/merge :: 5,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2970,7 +3027,7 @@ case 214:
     this.$ = (new t.SwitchStatement(this._$, yyvstack[yysp - 2], yyvstack[yysp]));
     break;
 
-case 215:
+case 220:
     /*! Production::    iteration_statement : WHILE "(" expression ")" statement */
 
     // default action (generated by JISON mode none/merge :: 5,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2981,7 +3038,7 @@ case 215:
     this.$ = (new t.WhileLoop(this._$, yyvstack[yysp - 2], yyvstack[yysp]));
     break;
 
-case 216:
+case 221:
     /*! Production::    iteration_statement : DO statement WHILE "(" expression ")" ";" */
 
     // default action (generated by JISON mode none/merge :: 7,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -2992,9 +3049,9 @@ case 216:
     this.$ = (new t.DoWhileLoop(this._$, yyvstack[yysp - 5], yyvstack[yysp - 2]));
     break;
 
-case 217:
+case 222:
     /*! Production::    iteration_statement : FOR "(" expression_statement expression_statement ")" statement */
-case 219:
+case 224:
     /*! Production::    iteration_statement : FOR "(" declaration expression_statement ")" statement */
 
     // default action (generated by JISON mode none/merge :: 6,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -3005,9 +3062,9 @@ case 219:
     this.$ = (new t.ForLoop(this._$, yyvstack[yysp - 3], yyvstack[yysp - 2], undefined, yyvstack[yysp]));
     break;
 
-case 218:
+case 223:
     /*! Production::    iteration_statement : FOR "(" expression_statement expression_statement expression ")" statement */
-case 220:
+case 225:
     /*! Production::    iteration_statement : FOR "(" declaration expression_statement expression ")" statement */
 
     // default action (generated by JISON mode none/merge :: 7,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -3018,7 +3075,7 @@ case 220:
     this.$ = (new t.ForLoop(this._$, yyvstack[yysp - 4], yyvstack[yysp - 3], yyvstack[yysp - 2], yyvstack[yysp]));
     break;
 
-case 221:
+case 226:
     /*! Production::    jump_statement : GOTO identifier ";" */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,-,-,LT,LA,-,-):
@@ -3030,7 +3087,7 @@ case 221:
     throw new JisonParserError("Unsupported rule: jump_statement (") + yytext + ")";
     break;
 
-case 222:
+case 227:
     /*! Production::    jump_statement : CONTINUE ";" */
 
     // default action (generated by JISON mode none/merge :: 2,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -3041,7 +3098,7 @@ case 222:
     this.$ = (new t.ContinueStatement(this._$));
     break;
 
-case 223:
+case 228:
     /*! Production::    jump_statement : BREAK ";" */
 
     // default action (generated by JISON mode none/merge :: 2,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -3052,7 +3109,7 @@ case 223:
     this.$ = (new t.BreakStatement(this._$));
     break;
 
-case 224:
+case 229:
     /*! Production::    jump_statement : RETURN ";" */
 
     // default action (generated by JISON mode none/merge :: 2,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -3063,7 +3120,7 @@ case 224:
     this.$ = (new t.ReturnStatement(this._$));
     break;
 
-case 225:
+case 230:
     /*! Production::    jump_statement : RETURN expression ";" */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -3074,7 +3131,7 @@ case 225:
     this.$ = (new t.ReturnStatement(this._$, yyvstack[yysp - 1]));
     break;
 
-case 230:
+case 235:
     /*! Production::    function_definition : declaration_specifiers declarator declaration_list compound_statement */
 
     // default action (generated by JISON mode none/merge :: 4,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -3085,7 +3142,7 @@ case 230:
     this.$ = (new t.FunctionDefinition(this._$, yyvstack[yysp - 3], yyvstack[yysp - 2], yyvstack[yysp], yyvstack[yysp - 1]));
     break;
 
-case 231:
+case 236:
     /*! Production::    function_definition : declaration_specifiers declarator compound_statement */
 
     // default action (generated by JISON mode none/merge :: 3,VT,VA,VU,-,LT,LA,LU,LUbA):
@@ -3131,14 +3188,14 @@ table: bt({
   34,
   36,
   0,
-  33,
+  38,
   0,
-  89,
+  94,
   10,
   0,
   8,
   33,
-  38,
+  43,
   40,
   11,
   0,
@@ -3154,25 +3211,29 @@ table: bt({
   0,
   3,
   4,
-  c,
-  [33, 5],
+  s,
+  [0, 4],
+  39,
   0,
   37,
   8,
   42,
-  18,
-  18,
-  19,
-  18,
+  23,
+  23,
+  24,
+  23,
   9,
   0,
-  58,
+  63,
   s,
   [0, 6],
   10,
   s,
   [0, 3],
-  11,
+  c,
+  [40, 3],
+  s,
+  [0, 3],
   12,
   14,
   18,
@@ -3181,27 +3242,27 @@ table: bt({
   25,
   0,
   0,
-  88,
+  93,
   s,
   [0, 9],
   39,
-  31,
+  36,
   1,
   0,
   2,
   s,
   [1, 3],
-  52,
+  57,
   1,
   c,
   [6, 3],
-  33,
+  38,
   0,
   3,
   0,
-  37,
+  42,
   5,
-  14,
+  18,
   1,
   s,
   [0, 3],
@@ -3209,21 +3270,20 @@ table: bt({
   2,
   0,
   2,
-  0,
   c,
-  [112, 3],
-  0,
-  0,
+  [48, 3],
+  s,
+  [0, 3],
   27,
   0,
   c,
   [10, 3],
   3,
-  31,
+  36,
   s,
   [0, 3],
   4,
-  31,
+  36,
   2,
   2,
   0,
@@ -3231,67 +3291,66 @@ table: bt({
   [9, 4],
   s,
   [0, 8],
-  32,
-  28,
-  32,
+  37,
   33,
+  37,
+  38,
   c,
   [19, 3],
   0,
   c,
-  [100, 5],
-  58,
-  27,
+  [105, 5],
+  63,
+  32,
   1,
   2,
   7,
   s,
-  [26, 4, -1],
-  23,
+  [31, 4, -1],
+  28,
   s,
-  [22, 4],
-  21,
-  21,
-  20,
-  20,
+  [27, 4],
+  26,
+  26,
+  25,
+  25,
   s,
-  [19, 3],
+  [24, 3],
   0,
   0,
-  52,
+  57,
   1,
-  52,
+  57,
   0,
-  31,
+  36,
   s,
-  [32, 3],
+  [37, 3],
   1,
-  68,
+  73,
   c,
   [87, 4],
   2,
   1,
   0,
-  31,
-  14,
-  35,
-  s,
-  [0, 4],
-  2,
+  36,
+  18,
   c,
-  [6, 3],
+  [240, 5],
+  2,
+  35,
+  0,
+  0,
   8,
   4,
   47,
-  32,
-  0,
-  0,
+  c,
+  [261, 3],
   9,
   c,
   [83, 6],
   4,
   c,
-  [181, 3],
+  [186, 3],
   2,
   9,
   c,
@@ -3300,12 +3359,13 @@ table: bt({
   1,
   1,
   10,
-  20,
   c,
-  [18, 3],
+  [166, 3],
+  4,
   43,
+  11,
   c,
-  [177, 4],
+  [177, 3],
   18,
   s,
   [20, 4],
@@ -3313,7 +3373,7 @@ table: bt({
   22,
   25,
   c,
-  [183, 3],
+  [17, 3],
   c,
   [78, 3],
   c,
@@ -3321,93 +3381,90 @@ table: bt({
   2,
   2,
   1,
-  34,
-  34,
+  39,
+  39,
   c,
   [37, 4],
   0,
   c,
   [82, 4],
   4,
-  32,
-  37,
   c,
-  [9, 4],
-  1,
-  14,
+  [91, 3],
+  c,
+  [11, 4],
+  18,
   s,
   [0, 5],
-  30,
-  0,
-  0,
-  31,
+  c,
+  [85, 3],
+  36,
   1,
   37,
   c,
   [30, 3],
   s,
-  [52, 3],
-  32,
-  33,
-  33,
+  [57, 3],
+  37,
+  38,
+  38,
   c,
   [38, 4],
-  14,
+  18,
   c,
   [39, 5],
   c,
   [114, 4],
-  53,
   c,
-  [4, 3],
-  52,
+  [61, 4],
+  57,
   2,
-  52,
+  57,
   c,
   [97, 4],
   0,
-  34,
-  52,
+  39,
+  57,
   1,
   c,
   [77, 3],
   c,
-  [79, 3],
+  [18, 3],
   s,
   [0, 3]
 ]),
   symbol: u([
   1,
   s,
-  [52, 25, 1],
-  90,
-  113,
-  114,
+  [56, 25, 1],
+  94,
+  118,
+  119,
   s,
-  [117, 4, 1],
-  126,
-  129,
-  130,
-  153,
-  154,
-  155,
+  [122, 4, 1],
+  131,
+  134,
+  135,
+  158,
+  159,
+  160,
   1,
   c,
   [40, 26],
   c,
   [39, 9],
-  154,
-  155,
+  159,
+  160,
   3,
   12,
   26,
   27,
-  91,
-  115,
-  116,
-  131,
-  132,
-  133,
+  95,
+  120,
+  121,
+  136,
+  137,
+  138,
   3,
   4,
   5,
@@ -3422,7 +3479,7 @@ table: bt({
   [40, 120],
   8,
   27,
-  91,
+  95,
   c,
   [3, 4],
   10,
@@ -3430,14 +3487,14 @@ table: bt({
   26,
   c,
   [216, 34],
-  146,
-  156,
+  151,
+  161,
   10,
   26,
   3,
   27,
-  91,
-  132,
+  95,
+  137,
   c,
   [92, 3],
   8,
@@ -3450,13 +3507,13 @@ table: bt({
   27,
   c,
   [10, 3],
-  129,
-  133,
   134,
+  138,
+  139,
   3,
   12,
   27,
-  91,
+  95,
   c,
   [264, 6],
   8,
@@ -3468,13 +3525,13 @@ table: bt({
   c,
   [20, 19],
   s,
-  [118, 6, 1],
-  126,
-  129,
+  [123, 6, 1],
+  131,
+  134,
   27,
-  91,
-  127,
-  128,
+  95,
+  132,
+  133,
   c,
   [65, 34],
   8,
@@ -3484,73 +3541,71 @@ table: bt({
   8,
   s,
   [11, 6, 1],
-  27,
-  28,
-  29,
-  31,
-  32,
-  33,
-  91,
-  92,
-  93,
   s,
-  [95, 15, 1],
-  142,
+  [27, 7, 1],
+  35,
+  36,
+  37,
+  s,
+  [95, 4, 1],
+  s,
+  [100, 15, 1],
+  147,
   3,
   8,
   9,
   c,
-  [34, 6],
+  [39, 6],
   s,
-  [26, 4, 1],
+  [26, 8, 1],
   c,
-  [35, 3],
+  [40, 3],
   c,
-  [84, 25],
-  78,
-  79,
-  80,
+  [93, 25],
+  82,
+  83,
+  84,
   s,
-  [82, 8, 1],
+  [86, 8, 1],
   c,
-  [71, 18],
-  111,
+  [76, 19],
+  116,
   c,
-  [114, 9],
+  [124, 9],
   s,
-  [144, 9, 1],
+  [149, 9, 1],
   c,
-  [531, 11],
+  [541, 11],
   c,
-  [274, 3],
+  [284, 3],
   c,
-  [539, 7],
+  [549, 7],
   c,
-  [327, 31],
+  [337, 31],
   6,
   c,
-  [173, 12],
-  54,
+  [183, 16],
+  58,
   c,
-  [19, 3],
+  [23, 3],
   c,
-  [106, 17],
-  112,
-  129,
+  [111, 18],
+  117,
   134,
+  139,
   4,
   c,
-  [274, 26],
-  91,
+  [289, 26],
+  95,
   c,
-  [134, 8],
+  [139, 8],
   s,
-  [135, 4, 1],
+  [140, 4, 1],
   c,
-  [405, 11],
+  [420, 11],
   4,
   c,
-  [364, 27],
+  [379, 27],
   9,
   c,
   [28, 22],
@@ -3560,11 +3615,11 @@ table: bt({
   12,
   24,
   27,
-  91,
-  124,
-  125,
+  95,
+  129,
+  130,
   c,
-  [187, 6],
+  [192, 6],
   c,
   [12, 3],
   c,
@@ -3579,10 +3634,10 @@ table: bt({
   10,
   25,
   c,
-  [468, 5],
+  [483, 5],
   c,
-  [398, 32],
-  143,
+  [413, 37],
+  148,
   4,
   6,
   s,
@@ -3590,72 +3645,72 @@ table: bt({
   s,
   [17, 10, 1],
   s,
-  [34, 18, 1],
-  110,
+  [38, 18, 1],
+  115,
   c,
   [37, 4],
   23,
   24,
   26,
-  41,
+  45,
   s,
   [3, 5, 1],
   c,
   [48, 16],
-  30,
-  31,
-  32,
+  34,
+  35,
+  36,
   c,
   [51, 18],
   3,
   c,
-  [120, 17],
+  [125, 22],
   c,
-  [18, 36],
-  97,
+  [23, 46],
+  102,
   c,
-  [19, 18],
+  [24, 23],
   c,
-  [123, 7],
-  40,
-  41,
+  [143, 7],
+  44,
+  45,
   c,
-  [27, 13],
+  [32, 17],
   c,
-  [250, 19],
+  [279, 19],
   c,
-  [548, 19],
+  [583, 20],
   c,
-  [269, 6],
-  139,
+  [299, 6],
+  144,
   c,
-  [67, 4],
+  [72, 4],
   c,
-  [170, 3],
+  [195, 3],
   c,
-  [68, 3],
+  [73, 3],
   c,
   [10, 4],
   c,
-  [181, 4],
+  [206, 4],
   c,
   [11, 7],
   11,
   c,
   [12, 17],
   c,
-  [197, 4],
+  [222, 4],
   c,
   [14, 5],
   c,
-  [221, 6],
+  [246, 6],
   26,
   c,
-  [215, 6],
+  [240, 6],
   c,
   [18, 12],
   c,
-  [235, 8],
+  [260, 8],
   c,
   [20, 5],
   13,
@@ -3663,55 +3718,55 @@ table: bt({
   c,
   [22, 20],
   c,
-  [286, 11],
+  [311, 11],
   c,
   [25, 9],
   c,
-  [758, 83],
+  [798, 88],
   c,
-  [757, 6],
+  [797, 6],
   5,
   7,
   c,
-  [399, 54],
+  [429, 59],
   c,
-  [740, 13],
+  [780, 13],
   24,
   c,
-  [1143, 3],
+  [1198, 3],
   s,
   [3, 3],
   c,
-  [557, 7],
+  [597, 7],
   c,
-  [163, 7],
+  [173, 11],
   c,
-  [138, 30],
+  [148, 31],
   c,
-  [129, 3],
+  [139, 3],
   c,
-  [128, 5],
+  [138, 5],
   27,
-  91,
+  95,
   26,
   26,
   c,
-  [94, 7],
+  [104, 7],
   c,
-  [56, 7],
+  [61, 11],
   c,
-  [45, 19],
+  [50, 20],
   c,
-  [1277, 3],
+  [1342, 3],
   c,
-  [875, 35],
-  109,
-  129,
-  c,
-  [828, 4],
+  [930, 40],
+  114,
   134,
   c,
-  [42, 14],
+  [883, 4],
+  139,
+  c,
+  [47, 18],
   6,
   4,
   4,
@@ -3719,248 +3774,248 @@ table: bt({
   4,
   10,
   c,
-  [859, 6],
+  [918, 6],
   c,
-  [1255, 4],
-  140,
-  141,
+  [1329, 4],
+  145,
+  146,
   c,
-  [832, 27],
+  [891, 27],
   10,
   26,
   10,
   24,
   c,
-  [142, 8],
+  [156, 8],
   c,
-  [236, 24],
+  [260, 29],
   9,
   27,
-  91,
-  128,
+  95,
+  133,
   c,
-  [35, 32],
+  [40, 37],
   c,
-  [831, 3],
+  [900, 3],
   c,
-  [35, 30],
-  109,
+  [40, 35],
+  114,
   c,
-  [31, 31],
-  111,
+  [36, 36],
+  116,
   c,
-  [32, 28],
+  [37, 33],
   c,
-  [60, 33],
+  [70, 38],
   4,
   c,
-  [33, 15],
+  [38, 20],
   s,
-  [94, 16, 1],
+  [99, 16, 1],
   27,
-  91,
+  95,
   27,
-  91,
+  95,
   c,
-  [783, 58],
+  [852, 63],
   c,
-  [58, 71],
+  [63, 80],
   c,
-  [39, 14],
+  [44, 15],
   c,
-  [422, 3],
+  [472, 3],
   c,
-  [1172, 4],
+  [1281, 4],
   c,
-  [415, 3],
+  [465, 3],
   c,
-  [37, 26],
+  [42, 31],
   c,
-  [26, 25],
+  [31, 30],
   c,
-  [25, 24],
+  [30, 29],
   c,
-  [24, 23],
+  [29, 28],
   c,
-  [23, 45],
+  [28, 55],
   c,
-  [22, 87],
+  [27, 107],
   c,
-  [21, 41],
+  [26, 51],
   c,
-  [20, 39],
+  [25, 49],
   c,
-  [19, 39],
+  [24, 49],
   c,
-  [930, 51],
+  [1079, 56],
   24,
   c,
-  [983, 53],
+  [1137, 58],
   c,
-  [766, 90],
+  [896, 105],
   c,
-  [32, 36],
-  83,
+  [37, 41],
+  87,
   c,
-  [1106, 14],
+  [1280, 18],
   c,
-  [1919, 26],
+  [2142, 26],
   c,
-  [1314, 27],
-  149,
+  [1503, 28],
+  154,
   26,
   10,
   26,
   6,
   c,
-  [200, 32],
+  [225, 37],
   c,
-  [1131, 13],
+  [1305, 17],
   c,
-  [45, 13],
+  [54, 17],
   c,
-  [1185, 22],
+  [1368, 23],
   27,
-  91,
+  95,
   s,
-  [52, 26, 1],
+  [56, 26, 1],
   c,
-  [121, 8],
-  137,
+  [135, 8],
+  142,
   c,
-  [1197, 4],
+  [1376, 4],
   c,
-  [2501, 3],
-  141,
+  [2754, 3],
+  146,
   c,
   [8, 4],
   c,
-  [789, 4],
+  [918, 4],
   c,
-  [2111, 35],
+  [2349, 35],
   c,
-  [1241, 3],
+  [1420, 3],
   c,
-  [2114, 3],
+  [2352, 3],
   c,
-  [829, 3],
+  [958, 3],
   c,
-  [145, 13],
+  [154, 17],
   c,
-  [1178, 18],
+  [1352, 19],
   c,
-  [2081, 5],
+  [2324, 5],
   c,
-  [2080, 5],
+  [2323, 5],
   c,
-  [1253, 35],
+  [1437, 40],
   c,
-  [1651, 8],
+  [1869, 8],
   c,
-  [2045, 25],
+  [2293, 30],
   10,
   24,
   c,
-  [1886, 9],
+  [2114, 9],
   6,
   c,
-  [1381, 3],
+  [1575, 3],
   s,
   [4, 3],
   c,
-  [1834, 9],
+  [2057, 9],
   c,
-  [2105, 20],
+  [2358, 25],
   c,
-  [204, 3],
+  [224, 3],
   c,
-  [212, 4],
+  [232, 4],
   12,
   c,
-  [2803, 33],
+  [3076, 33],
   c,
-  [204, 6],
+  [224, 6],
   c,
-  [1901, 67],
+  [2129, 67],
   c,
-  [1919, 31],
+  [2147, 31],
   c,
   [20, 60],
   c,
-  [1979, 22],
+  [2207, 22],
   c,
-  [2001, 42],
+  [2229, 42],
   c,
-  [2026, 27],
+  [2254, 27],
   c,
-  [879, 50],
+  [943, 55],
   c,
-  [1763, 4],
+  [1967, 4],
   c,
-  [1345, 3],
+  [1499, 3],
   c,
-  [1864, 33],
-  149,
+  [2082, 38],
+  154,
   c,
-  [34, 34],
+  [39, 39],
   6,
   6,
   c,
-  [631, 5],
+  [666, 5],
   c,
-  [584, 31],
+  [619, 36],
   4,
   c,
-  [452, 33],
+  [472, 33],
   c,
-  [451, 3],
+  [471, 3],
   c,
-  [527, 3],
+  [552, 3],
   c,
-  [801, 27],
+  [850, 35],
   c,
-  [85, 17],
+  [94, 18],
   c,
-  [876, 31],
+  [939, 36],
   8,
   4,
   6,
   s,
   [8, 7, 1],
   c,
-  [2667, 28],
+  [2954, 28],
   c,
-  [2737, 34],
+  [3029, 39],
   c,
-  [1231, 53],
+  [1334, 58],
   c,
-  [52, 104],
+  [57, 114],
   c,
-  [2010, 48],
+  [2238, 58],
   c,
-  [33, 49],
+  [38, 54],
   c,
-  [402, 15],
+  [451, 19],
   4,
   c,
-  [2217, 3],
+  [2479, 3],
   c,
-  [2650, 43],
+  [2951, 47],
   s,
-  [81, 9, 1],
+  [85, 9, 1],
   c,
-  [621, 3],
+  [693, 3],
   c,
-  [679, 53],
+  [756, 58],
   c,
-  [54, 56],
+  [59, 61],
   c,
-  [1162, 32],
+  [1259, 37],
   c,
-  [88, 52],
+  [98, 57],
   26,
   c,
-  [470, 104]
+  [523, 114]
 ]),
   type: u([
   s,
@@ -3997,165 +4052,165 @@ table: bt({
   c,
   [194, 17],
   c,
-  [474, 27],
+  [478, 31],
   c,
-  [312, 38],
+  [317, 39],
   c,
-  [545, 33],
+  [554, 37],
   s,
-  [0, 24],
+  [0, 25],
   c,
-  [531, 13],
+  [541, 13],
   c,
-  [107, 56],
+  [112, 60],
   c,
-  [89, 24],
+  [94, 25],
   c,
-  [47, 36],
+  [48, 36],
   c,
   [22, 11],
   c,
-  [569, 48],
+  [584, 48],
   c,
-  [726, 42],
+  [741, 42],
   c,
   [31, 43],
   c,
-  [398, 36],
+  [413, 41],
   c,
-  [292, 37],
+  [302, 37],
   c,
-  [539, 61],
+  [559, 61],
   c,
-  [397, 21],
+  [189, 30],
   c,
-  [18, 23],
+  [23, 29],
   c,
-  [37, 32],
+  [47, 41],
   c,
-  [548, 54],
+  [583, 55],
   s,
-  [2, 184],
+  [2, 188],
   c,
-  [757, 40],
+  [797, 41],
   c,
-  [88, 66],
+  [93, 71],
   c,
-  [348, 60],
+  [363, 65],
   c,
-  [61, 17],
+  [793, 29],
   c,
-  [166, 40],
+  [106, 37],
   c,
-  [40, 22],
+  [45, 23],
   c,
-  [141, 28],
+  [156, 32],
   c,
-  [832, 37],
+  [891, 37],
   c,
-  [236, 34],
+  [260, 39],
   c,
-  [634, 21],
+  [683, 26],
   c,
-  [175, 29],
+  [194, 33],
   c,
-  [35, 31],
+  [40, 36],
   c,
-  [242, 32],
+  [271, 37],
   c,
-  [60, 60],
+  [70, 70],
   c,
-  [33, 21],
+  [38, 22],
   c,
-  [1456, 3],
+  [1565, 3],
   c,
-  [783, 90],
+  [852, 99],
   c,
-  [58, 39],
+  [63, 44],
   c,
-  [27, 21],
+  [32, 22],
   c,
-  [37, 29],
+  [42, 34],
   c,
-  [26, 25],
+  [1456, 39],
   c,
-  [1805, 28],
+  [30, 20],
   c,
-  [1635, 32],
+  [1972, 32],
   c,
-  [23, 32],
+  [28, 51],
   c,
-  [22, 87],
+  [27, 107],
   c,
-  [21, 41],
+  [26, 51],
   c,
-  [20, 39],
+  [25, 49],
   c,
-  [19, 51],
+  [24, 65],
   c,
-  [495, 66],
+  [590, 71],
   c,
-  [490, 53],
+  [585, 59],
   c,
-  [766, 64],
+  [896, 74],
   c,
-  [770, 50],
+  [900, 59],
   c,
-  [1314, 55],
+  [1503, 56],
   c,
-  [1272, 65],
+  [1461, 76],
   c,
-  [890, 22],
+  [1034, 25],
   c,
-  [47, 34],
+  [48, 34],
   c,
-  [1917, 22],
+  [2155, 26],
   c,
-  [98, 37],
+  [99, 33],
   c,
-  [177, 36],
+  [191, 41],
   c,
-  [417, 38],
+  [461, 43],
   c,
-  [127, 17],
+  [137, 21],
   c,
-  [1597, 60],
+  [1815, 65],
   c,
-  [1438, 10],
+  [1641, 11],
   c,
-  [207, 43],
+  [227, 43],
   s,
-  [2, 273],
+  [2, 277],
   c,
-  [932, 47],
+  [1001, 52],
   c,
-  [41, 34],
+  [46, 39],
   c,
-  [75, 40],
+  [85, 45],
   c,
-  [506, 44],
+  [531, 45],
   c,
-  [798, 58],
+  [847, 67],
   c,
-  [2148, 63],
+  [939, 74],
   c,
-  [2958, 66],
+  [3029, 69],
   c,
-  [1284, 52],
+  [1392, 57],
   c,
-  [52, 91],
+  [57, 101],
   c,
-  [2010, 53],
+  [2238, 59],
   c,
-  [3390, 84],
+  [3727, 93],
   c,
-  [679, 94],
+  [756, 107],
   c,
-  [54, 50],
+  [59, 55],
   c,
-  [417, 97],
+  [465, 107],
   c,
-  [470, 79]
+  [523, 85]
 ]),
   state: u([
   1,
@@ -4224,381 +4279,383 @@ table: bt({
   [31, 8],
   85,
   108,
+  109,
   99,
   93,
   91,
   96,
   s,
-  [118, 8, -1],
+  [123, 7, -1],
+  111,
   107,
   98,
   92,
   90,
   88,
   87,
+  135,
+  c,
+  [20, 17],
+  149,
+  139,
+  127,
+  c,
+  [50, 8],
+  128,
+  129,
   130,
-  c,
-  [19, 16],
-  144,
-  134,
-  122,
-  c,
-  [48, 8],
-  123,
-  124,
   125,
-  120,
-  121,
+  126,
   s,
-  [126, 4, 1],
+  [131, 4, 1],
   c,
-  [137, 3],
-  145,
+  [139, 3],
+  150,
   46,
   45,
   49,
-  146,
+  151,
   c,
   [5, 3],
   c,
-  [67, 3],
-  153,
-  c,
-  [48, 12],
-  152,
-  150,
-  73,
-  147,
+  [69, 4],
   158,
-  160,
   c,
-  [49, 7],
-  154,
+  [49, 12],
   157,
-  159,
   155,
+  73,
+  152,
+  163,
+  165,
+  c,
+  [50, 7],
+  159,
   162,
-  161,
-  c,
-  [123, 3],
   164,
+  160,
+  167,
+  166,
   c,
-  [123, 4],
+  [126, 3],
+  169,
+  c,
+  [126, 4],
   c,
   [8, 3],
-  166,
+  171,
   c,
   [7, 3],
   49,
-  167,
-  168,
-  169,
+  172,
+  173,
+  174,
   c,
-  [144, 5],
-  171,
+  [147, 5],
+  176,
   c,
   [19, 5],
-  172,
+  177,
   c,
-  [148, 3],
-  176,
+  [151, 3],
+  181,
   82,
   c,
-  [138, 18],
-  178,
-  177,
-  179,
+  [141, 19],
+  183,
+  182,
+  184,
   c,
-  [21, 3],
-  199,
+  [22, 4],
+  204,
   96,
   c,
-  [5, 3],
-  201,
-  c,
-  [5, 4],
-  153,
-  96,
-  202,
-  c,
-  [6, 3],
-  203,
-  c,
-  [11, 4],
-  c,
-  [161, 15],
-  207,
-  c,
-  [70, 3],
-  208,
-  30,
-  80,
+  [6, 4],
   206,
   c,
-  [187, 31],
-  226,
+  [6, 5],
+  158,
+  96,
+  207,
   c,
-  [186, 4],
+  [7, 4],
+  208,
   c,
-  [175, 17],
-  228,
+  [13, 5],
   c,
-  [54, 19],
-  235,
+  [168, 15],
+  212,
+  c,
+  [76, 3],
+  213,
+  30,
+  80,
+  211,
+  c,
+  [195, 32],
+  231,
+  c,
+  [194, 4],
+  c,
+  [183, 18],
+  233,
+  c,
+  [56, 20],
+  240,
   s,
-  [124, 6, 1],
-  237,
-  c,
-  [107, 18],
-  241,
-  c,
-  [19, 17],
+  [129, 6, 1],
   242,
-  162,
-  73,
+  c,
+  [111, 19],
   246,
+  c,
+  [20, 18],
+  247,
+  167,
+  73,
+  251,
   49,
-  253,
+  258,
   46,
-  255,
-  254,
-  256,
+  260,
+  259,
+  261,
   c,
-  [223, 7],
+  [234, 7],
   c,
-  [98, 17],
-  263,
+  [102, 18],
+  268,
   83,
-  265,
+  270,
   c,
-  [20, 17],
-  266,
-  c,
-  [72, 17],
+  [21, 18],
   271,
   c,
-  [109, 18],
-  272,
-  c,
-  [55, 14],
-  273,
-  c,
-  [34, 18],
-  274,
-  c,
-  [19, 3],
+  [75, 18],
   276,
   c,
-  [20, 14],
+  [114, 19],
   277,
+  c,
+  [58, 15],
   278,
+  c,
+  [36, 19],
   279,
   c,
-  [290, 25],
-  280,
-  c,
-  [26, 25],
+  [20, 4],
   281,
   c,
-  [107, 13],
+  [21, 14],
   282,
-  286,
+  283,
+  284,
+  c,
+  [303, 26],
   285,
-  256,
   c,
-  [17, 12],
-  288,
+  [27, 26],
+  286,
   c,
-  [13, 11],
-  289,
-  c,
-  [12, 10],
-  290,
-  c,
-  [11, 9],
+  [112, 14],
+  287,
   291,
+  290,
+  261,
   c,
-  [10, 9],
-  292,
-  c,
-  [10, 8],
+  [18, 13],
   293,
   c,
-  [9, 8],
+  [14, 12],
   294,
   c,
-  [9, 8],
+  [13, 11],
   295,
   c,
-  [9, 8],
+  [12, 10],
   296,
   c,
-  [9, 7],
+  [11, 10],
   297,
   c,
-  [8, 7],
+  [11, 9],
   298,
   c,
-  [8, 6],
+  [10, 9],
   299,
   c,
-  [7, 6],
+  [10, 9],
   300,
   c,
-  [7, 5],
+  [10, 9],
   301,
   c,
-  [6, 5],
+  [10, 8],
   302,
   c,
-  [6, 5],
+  [9, 8],
   303,
   c,
-  [419, 19],
+  [9, 7],
   304,
-  s,
-  [124, 7, 1],
   c,
-  [26, 18],
+  [8, 7],
+  305,
+  c,
+  [8, 6],
   306,
   c,
-  [26, 6],
-  c,
-  [235, 17],
+  [7, 6],
   307,
   c,
-  [253, 18],
+  [7, 6],
   308,
   c,
-  [19, 18],
+  [448, 20],
   309,
+  s,
+  [129, 7, 1],
   c,
-  [19, 18],
-  310,
+  [27, 19],
+  311,
   c,
-  [19, 18],
-  134,
-  313,
+  [27, 6],
   c,
-  [600, 8],
+  [255, 18],
   312,
   c,
-  [29, 17],
+  [274, 19],
+  313,
+  c,
+  [20, 19],
+  314,
+  c,
+  [20, 19],
+  315,
+  c,
+  [20, 19],
+  139,
+  318,
+  c,
+  [637, 8],
   317,
   c,
-  [18, 17],
-  319,
-  162,
-  320,
-  c,
-  [785, 8],
+  [30, 18],
   322,
+  c,
+  [19, 18],
+  324,
+  167,
+  325,
+  c,
+  [831, 8],
+  327,
   49,
   68,
-  323,
+  328,
   49,
   c,
   [13, 8],
   74,
   46,
-  255,
-  328,
-  157,
-  159,
-  326,
-  c,
-  [363, 13],
-  c,
-  [542, 5],
-  330,
-  49,
-  332,
-  c,
-  [802, 3],
-  c,
-  [23, 17],
+  260,
   333,
+  162,
+  164,
+  331,
   c,
-  [585, 5],
+  [388, 14],
   c,
-  [807, 15],
-  336,
+  [576, 5],
+  335,
+  49,
+  337,
   c,
-  [39, 5],
-  344,
-  323,
+  [849, 3],
   c,
-  [85, 8],
-  286,
+  [24, 18],
+  338,
   c,
-  [83, 5],
+  [621, 6],
   c,
-  [280, 19],
-  345,
+  [855, 15],
+  341,
   c,
-  [280, 23],
-  144,
-  134,
+  [41, 6],
+  349,
+  328,
+  c,
+  [89, 8],
+  291,
+  c,
+  [87, 5],
+  c,
+  [292, 20],
   350,
   c,
-  [20, 19],
-  351,
-  c,
-  [126, 17],
+  [292, 24],
+  149,
+  139,
   355,
   c,
-  [98, 8],
-  358,
-  157,
-  159,
+  [21, 20],
+  356,
   c,
-  [29, 16],
+  [132, 18],
+  360,
+  c,
+  [102, 8],
   363,
+  162,
+  164,
   c,
-  [66, 17],
-  364,
-  c,
-  [977, 19],
-  365,
-  c,
-  [150, 19],
-  366,
-  c,
-  [456, 25],
-  367,
-  c,
-  [26, 25],
+  [30, 17],
   368,
   c,
-  [202, 24],
+  [69, 18],
   369,
   c,
-  [19, 18],
+  [1033, 20],
+  370,
+  c,
+  [157, 20],
   371,
   c,
-  [19, 18],
+  [476, 26],
+  372,
+  c,
+  [27, 26],
   373,
   c,
-  [83, 19],
-  381,
+  [211, 25],
+  374,
   c,
-  [109, 25],
-  383,
+  [20, 19],
+  376,
   c,
-  [109, 23],
-  88,
-  336,
+  [20, 19],
+  378,
   c,
-  [45, 19],
+  [87, 20],
   386,
   c,
-  [71, 25],
+  [114, 26],
   388,
   c,
-  [26, 25],
-  389,
+  [114, 24],
+  88,
+  341,
   c,
-  [26, 6]
+  [47, 20],
+  391,
+  c,
+  [74, 26],
+  393,
+  c,
+  [27, 26],
+  394,
+  c,
+  [27, 6]
 ]),
   mode: u([
   s,
@@ -4625,41 +4682,41 @@ table: bt({
   c,
   [54, 51],
   s,
-  [1, 80],
+  [1, 88],
   c,
-  [132, 77],
+  [140, 81],
   c,
-  [277, 12],
+  [289, 12],
   c,
-  [528, 47],
+  [540, 47],
   c,
   [25, 44],
   c,
   [27, 4],
   c,
-  [502, 23],
+  [518, 27],
   c,
-  [412, 11],
+  [428, 11],
   c,
-  [194, 18],
+  [202, 18],
   c,
   [24, 7],
   c,
-  [510, 6],
+  [526, 6],
   c,
-  [233, 19],
+  [241, 19],
   c,
-  [386, 70],
+  [402, 86],
   c,
-  [541, 15],
+  [573, 15],
   c,
-  [302, 32],
+  [326, 36],
   c,
-  [177, 18],
+  [197, 18],
   c,
-  [403, 19],
+  [431, 19],
   c,
-  [726, 11],
+  [762, 11],
   c,
   [16, 14],
   c,
@@ -4667,69 +4724,69 @@ table: bt({
   c,
   [31, 22],
   c,
-  [251, 10],
+  [271, 10],
   c,
-  [225, 73],
+  [245, 70],
   c,
-  [174, 26],
+  [386, 25],
   c,
-  [702, 69],
+  [742, 89],
   c,
-  [321, 24],
+  [341, 28],
   c,
-  [112, 14],
+  [482, 21],
   c,
-  [18, 6],
+  [48, 4],
   c,
-  [975, 28],
+  [53, 27],
   c,
-  [657, 50],
+  [705, 50],
   s,
-  [1, 134],
+  [1, 174],
   c,
-  [182, 182],
+  [222, 222],
   s,
-  [1, 191],
+  [1, 247],
   c,
-  [605, 18],
+  [745, 22],
   c,
-  [687, 45],
+  [839, 49],
   c,
-  [620, 83],
+  [764, 95],
   c,
-  [1643, 18],
+  [1859, 18],
   c,
-  [164, 7],
+  [184, 7],
   c,
-  [559, 46],
+  [679, 50],
   c,
-  [1122, 60],
+  [1306, 60],
   c,
-  [1140, 38],
+  [1324, 38],
   c,
   [20, 60],
   c,
-  [1200, 23],
+  [1384, 23],
   c,
-  [1222, 41],
+  [1406, 41],
   c,
-  [1247, 77],
+  [1431, 81],
   c,
-  [1085, 58],
+  [1257, 70],
   c,
-  [574, 41],
+  [614, 53],
   c,
-  [2042, 33],
+  [2290, 33],
   c,
-  [2046, 104],
+  [2294, 112],
   c,
-  [212, 51],
+  [866, 75],
   s,
-  [2, 44],
+  [2, 48],
   c,
-  [45, 9],
+  [49, 9],
   s,
-  [1, 152]
+  [1, 176]
 ]),
   goto: u([
   3,
@@ -4749,19 +4806,19 @@ table: bt({
   43,
   51,
   s,
-  [82, 7],
+  [87, 7],
   c,
   [36, 25],
   s,
-  [84, 7],
+  [89, 7],
   c,
   [32, 25],
   s,
-  [86, 7],
+  [91, 7],
   c,
   [32, 25],
   s,
-  [88, 7],
+  [93, 7],
   c,
   [32, 25],
   57,
@@ -4769,9 +4826,9 @@ table: bt({
   58,
   51,
   64,
-  92,
+  97,
   62,
-  92,
+  97,
   c,
   [33, 25],
   67,
@@ -4779,32 +4836,32 @@ table: bt({
   50,
   51,
   70,
-  145,
+  150,
   69,
   s,
-  [145, 30],
+  [150, 30],
   s,
-  [159, 4],
+  [164, 4],
   48,
-  159,
+  164,
   c,
   [47, 3],
   50,
   48,
   51,
   s,
-  [116, 3],
+  [121, 3],
   75,
   s,
-  [116, 30],
+  [121, 30],
   c,
   [103, 19],
   51,
   s,
-  [135, 3],
+  [140, 3],
   84,
   s,
-  [135, 30],
+  [140, 30],
   64,
   c,
   [163, 25],
@@ -4813,542 +4870,542 @@ table: bt({
   s,
   [101, 6, 1],
   51,
-  109,
+  s,
+  [112, 5, 1],
   110,
   94,
   95,
   97,
   100,
   64,
-  119,
+  124,
   c,
-  [15, 6],
-  133,
+  [19, 6],
+  138,
   c,
-  [16, 6],
+  [20, 10],
   c,
-  [55, 25],
-  131,
-  132,
+  [63, 25],
+  136,
+  137,
   s,
-  [135, 9, 1],
+  [140, 9, 1],
   c,
-  [394, 4],
+  [402, 4],
   c,
-  [187, 3],
+  [195, 3],
   70,
-  144,
+  149,
   69,
   s,
-  [144, 30],
+  [149, 30],
   100,
-  151,
-  101,
-  149,
-  c,
-  [106, 10],
-  148,
-  c,
-  [70, 3],
   156,
+  101,
+  154,
+  c,
+  [114, 14],
+  153,
+  c,
+  [74, 3],
+  161,
   51,
   c,
-  [96, 25],
+  [100, 25],
   s,
-  [160, 4],
+  [165, 4],
   48,
-  160,
+  165,
   c,
   [10, 3],
-  163,
+  168,
   c,
   [30, 19],
-  165,
+  170,
   c,
   [20, 19],
   50,
   48,
-  170,
+  175,
   51,
   s,
-  [123, 6],
+  [128, 6],
   c,
   [29, 19],
   s,
-  [125, 6],
+  [130, 6],
   c,
   [25, 19],
-  173,
-  174,
-  138,
-  138,
-  175,
+  178,
+  179,
+  143,
+  143,
+  180,
   51,
   c,
-  [260, 14],
+  [272, 18],
   s,
-  [32, 16],
-  180,
+  [37, 16],
+  185,
   s,
-  [32, 9],
+  [37, 9],
   s,
-  [181, 10, 1],
+  [186, 10, 1],
   s,
-  [62, 4],
-  191,
-  62,
-  62,
-  192,
-  194,
-  20,
-  193,
-  20,
-  195,
-  s,
-  [20, 16],
+  [67, 4],
   196,
+  67,
+  67,
   197,
+  199,
+  25,
   198,
-  s,
-  [20, 18],
+  25,
   200,
+  s,
+  [25, 16],
+  201,
+  202,
+  203,
+  s,
+  [25, 18],
+  205,
   c,
-  [99, 12],
+  [103, 16],
   c,
-  [13, 13],
+  [17, 17],
   s,
   [100, 7, 1],
   c,
-  [13, 6],
-  204,
-  c,
-  [13, 12],
-  s,
-  [60, 7],
-  205,
-  60,
-  c,
-  [35, 13],
-  c,
-  [199, 19],
-  s,
-  [58, 4],
+  [17, 10],
   209,
+  c,
+  [17, 16],
   s,
-  [58, 5],
-  s,
-  [56, 4],
+  [65, 7],
   210,
+  65,
+  c,
+  [43, 17],
+  c,
+  [223, 19],
   s,
-  [56, 6],
-  s,
-  [54, 4],
-  211,
-  s,
-  [54, 7],
-  s,
-  [52, 10],
-  212,
-  213,
-  52,
-  52,
-  s,
-  [49, 5],
+  [63, 4],
   214,
+  s,
+  [63, 5],
+  s,
+  [61, 4],
   215,
   s,
-  [49, 5],
+  [61, 6],
+  s,
+  [59, 4],
   216,
+  s,
+  [59, 7],
+  s,
+  [57, 10],
   217,
-  s,
-  [49, 4],
-  s,
-  [44, 12],
   218,
+  57,
+  57,
+  s,
+  [54, 5],
   219,
-  s,
-  [44, 6],
-  s,
-  [41, 5],
   220,
+  s,
+  [54, 5],
   221,
-  s,
-  [41, 15],
-  s,
-  [38, 5],
   222,
-  38,
-  38,
+  s,
+  [54, 4],
+  s,
+  [49, 12],
   223,
   224,
   s,
-  [38, 15],
-  100,
-  64,
+  [49, 6],
+  s,
+  [46, 5],
   225,
-  c,
-  [571, 49],
+  226,
   s,
-  [4, 15],
+  [46, 15],
+  s,
+  [43, 5],
   227,
-  s,
-  [4, 23],
-  c,
-  [255, 13],
+  43,
+  43,
+  228,
   229,
-  231,
-  230,
-  232,
-  233,
-  234,
+  s,
+  [43, 15],
   100,
   64,
+  230,
   c,
-  [109, 13],
+  [603, 53],
+  s,
+  [9, 15],
+  232,
+  s,
+  [9, 23],
   c,
-  [84, 11],
+  [263, 17],
+  234,
   236,
-  51,
+  235,
+  237,
   238,
   239,
-  c,
-  [49, 7],
-  240,
-  c,
-  [29, 6],
-  c,
-  [930, 3],
   100,
-  243,
-  101,
-  245,
+  64,
   c,
-  [67, 10],
+  [117, 17],
+  c,
+  [92, 11],
+  241,
+  51,
+  243,
   244,
   c,
-  [135, 3],
+  [57, 7],
+  245,
   c,
-  [3, 3],
-  27,
-  247,
-  s,
-  [27, 12],
-  s,
-  [248, 4, 1],
-  165,
+  [33, 10],
+  c,
+  [982, 3],
+  100,
+  248,
+  101,
+  250,
+  c,
+  [79, 14],
+  249,
+  c,
+  [151, 3],
+  c,
+  [3, 4],
   252,
-  257,
-  171,
-  258,
-  171,
-  48,
-  51,
-  259,
-  c,
-  [184, 19],
-  261,
-  260,
-  128,
-  262,
-  128,
-  c,
-  [138, 13],
-  264,
-  51,
-  c,
-  [15, 13],
   s,
-  [267, 4, 1],
+  [32, 16],
+  s,
+  [253, 4, 1],
+  170,
+  257,
+  262,
+  176,
+  263,
+  176,
+  48,
+  51,
+  264,
   c,
-  [17, 13],
+  [204, 19],
+  266,
+  265,
+  133,
+  267,
+  133,
   c,
-  [13, 40],
-  275,
-  c,
-  [14, 12],
+  [158, 17],
+  269,
   51,
   c,
-  [85, 14],
+  [19, 17],
+  s,
+  [272, 4, 1],
   c,
-  [137, 19],
+  [21, 17],
   c,
-  [32, 45],
-  283,
-  284,
-  231,
-  287,
-  174,
-  258,
+  [17, 52],
+  280,
+  c,
+  [18, 16],
+  51,
+  c,
+  [109, 18],
+  c,
+  [169, 19],
+  c,
+  [36, 53],
+  288,
+  289,
+  236,
+  292,
+  179,
+  263,
   48,
   c,
-  [152, 53],
+  [184, 69],
   c,
-  [13, 156],
+  [17, 204],
   c,
-  [511, 25],
-  305,
+  [631, 29],
+  310,
   c,
-  [27, 26],
+  [31, 30],
   c,
-  [105, 52],
-  311,
-  c,
-  [14, 7],
-  c,
-  [725, 32],
-  314,
-  231,
-  315,
+  [129, 68],
   316,
   c,
-  [57, 13],
-  27,
-  318,
-  s,
-  [27, 12],
+  [18, 7],
   c,
-  [27, 13],
-  c,
-  [1459, 4],
-  c,
-  [73, 25],
+  [877, 36],
+  319,
+  236,
+  320,
   321,
-  257,
-  176,
-  258,
-  176,
+  c,
+  [65, 17],
+  32,
+  323,
+  s,
+  [32, 16],
+  c,
+  [35, 18],
+  c,
+  [1663, 3],
+  c,
+  [85, 25],
+  326,
+  262,
+  181,
+  263,
+  181,
   51,
-  325,
-  177,
-  324,
-  177,
-  257,
-  327,
-  258,
+  330,
+  182,
+  329,
+  182,
+  262,
+  332,
+  263,
   48,
   c,
   [40, 26],
   100,
-  329,
-  101,
-  331,
-  c,
-  [83, 10],
-  c,
-  [1278, 4],
-  c,
-  [100, 13],
   334,
+  101,
+  336,
   c,
-  [1237, 3],
-  335,
+  [87, 14],
   c,
-  [17, 12],
-  231,
-  337,
-  s,
-  [61, 7],
-  205,
-  61,
-  338,
-  231,
-  s,
-  [339, 4, 1],
-  s,
-  [59, 4],
-  209,
-  s,
-  [59, 5],
-  100,
-  343,
+  [1474, 4],
   c,
-  [41, 12],
-  287,
-  176,
-  258,
-  287,
+  [108, 17],
+  339,
   c,
-  [122, 3],
+  [1437, 3],
+  340,
   c,
-  [1781, 26],
+  [21, 16],
+  236,
+  342,
   s,
-  [57, 3],
+  [66, 7],
   210,
+  66,
+  343,
+  236,
   s,
-  [57, 6],
+  [344, 4, 1],
+  s,
+  [64, 4],
+  214,
+  s,
+  [64, 5],
+  100,
+  348,
+  c,
+  [45, 16],
+  292,
+  181,
+  263,
+  292,
+  c,
+  [138, 3],
+  c,
+  [137, 25],
+  s,
+  [62, 4],
+  215,
+  s,
+  [62, 6],
+  s,
+  [60, 4],
+  216,
+  s,
+  [60, 7],
+  s,
+  [58, 10],
+  217,
+  218,
+  58,
+  58,
+  s,
+  [55, 5],
+  219,
+  220,
+  s,
+  [55, 5],
+  221,
+  222,
   s,
   [55, 4],
-  211,
   s,
-  [55, 7],
-  s,
-  [53, 10],
-  212,
-  213,
-  53,
-  53,
-  s,
-  [50, 5],
-  214,
-  215,
-  s,
-  [50, 5],
-  216,
-  217,
-  s,
-  [50, 4],
-  s,
-  [51, 5],
-  214,
-  215,
-  s,
-  [51, 5],
-  216,
-  217,
-  s,
-  [51, 4],
-  s,
-  [45, 12],
-  218,
+  [56, 5],
   219,
-  s,
-  [45, 6],
-  s,
-  [46, 12],
-  218,
-  219,
-  s,
-  [46, 6],
-  s,
-  [47, 12],
-  218,
-  219,
-  s,
-  [47, 6],
-  s,
-  [48, 12],
-  218,
-  219,
-  s,
-  [48, 6],
-  s,
-  [42, 5],
   220,
+  s,
+  [56, 5],
   221,
-  s,
-  [42, 15],
-  s,
-  [43, 5],
-  220,
-  221,
-  s,
-  [43, 15],
-  s,
-  [39, 5],
   222,
-  39,
-  39,
+  s,
+  [56, 4],
+  s,
+  [50, 12],
   223,
   224,
   s,
-  [39, 15],
+  [50, 6],
   s,
-  [40, 5],
-  222,
-  40,
-  40,
+  [51, 12],
   223,
   224,
   s,
-  [40, 15],
+  [51, 6],
+  s,
+  [52, 12],
+  223,
+  224,
+  s,
+  [52, 6],
+  s,
+  [53, 12],
+  223,
+  224,
+  s,
+  [53, 6],
+  s,
+  [47, 5],
+  225,
+  226,
+  s,
+  [47, 15],
+  s,
+  [48, 5],
+  225,
+  226,
+  s,
+  [48, 15],
+  s,
+  [44, 5],
+  227,
+  44,
+  44,
+  228,
+  229,
+  s,
+  [44, 15],
+  s,
+  [45, 5],
+  227,
+  45,
+  45,
+  228,
+  229,
+  s,
+  [45, 15],
   c,
-  [599, 26],
-  346,
-  231,
-  347,
-  231,
-  348,
-  231,
-  349,
-  c,
-  [553, 14],
-  c,
-  [14, 14],
+  [651, 30],
+  351,
+  236,
   352,
+  236,
   353,
-  325,
-  178,
-  324,
-  178,
-  100,
+  236,
   354,
-  101,
-  356,
   c,
-  [360, 10],
+  [589, 18],
+  c,
+  [18, 18],
   357,
-  c,
-  [354, 25],
+  358,
+  330,
+  183,
+  329,
+  183,
+  100,
   359,
-  360,
+  101,
   361,
-  27,
+  c,
+  [376, 14],
   362,
   c,
-  [574, 25],
+  [370, 25],
+  364,
+  365,
+  366,
+  32,
+  367,
   c,
-  [13, 13],
-  343,
-  25,
-  25,
+  [614, 33],
+  c,
+  [17, 17],
+  348,
+  30,
+  30,
   c,
   [3, 3],
   s,
-  [25, 32],
+  [30, 32],
   c,
-  [2020, 16],
+  [2268, 20],
   c,
-  [801, 25],
+  [885, 29],
   c,
-  [26, 52],
+  [30, 60],
   c,
-  [91, 13],
-  370,
-  c,
-  [14, 13],
-  372,
-  c,
-  [14, 12],
-  374,
-  27,
+  [107, 17],
   375,
-  s,
-  [27, 12],
-  376,
+  c,
+  [18, 17],
   377,
-  378,
-  s,
-  [212, 44],
+  c,
+  [18, 16],
   379,
-  s,
-  [212, 8],
+  32,
   380,
-  231,
-  c,
-  [140, 26],
+  s,
+  [32, 16],
+  381,
   382,
-  c,
-  [28, 27],
+  383,
+  s,
+  [217, 48],
   384,
-  231,
-  100,
-  89,
+  s,
+  [217, 8],
   385,
+  236,
   c,
-  [263, 38],
+  [164, 30],
   387,
   c,
-  [264, 52]
+  [32, 31],
+  389,
+  236,
+  100,
+  89,
+  390,
+  c,
+  [307, 46],
+  392,
+  c,
+  [308, 60]
 ])
 }),
 defaultActions: bda({
@@ -5380,238 +5437,242 @@ defaultActions: bda({
   108,
   109,
   110,
-  118,
-  119,
   s,
-  [121, 9, 1],
-  133,
-  144,
-  146,
+  [112, 5, 1],
+  123,
+  124,
+  s,
+  [126, 9, 1],
+  138,
+  149,
   151,
-  152,
-  153,
   156,
+  157,
+  158,
+  161,
+  163,
+  164,
+  166,
+  167,
+  168,
+  170,
+  171,
+  173,
+  176,
+  177,
+  178,
+  183,
+  s,
+  [185, 11, 1],
+  202,
+  203,
+  204,
+  206,
+  207,
+  208,
+  230,
+  231,
+  235,
+  243,
+  244,
+  245,
+  248,
+  s,
+  [252, 4, 1],
+  258,
+  259,
+  264,
+  265,
+  s,
+  [268, 5, 1],
+  274,
+  276,
+  280,
+  282,
+  283,
+  284,
+  289,
+  290,
+  s,
+  [306, 4, 1],
+  311,
+  312,
+  319,
+  320,
+  321,
+  323,
+  325,
+  326,
+  327,
+  332,
+  334,
+  s,
+  [337, 5, 1],
+  343,
+  344,
+  349,
+  350,
+  357,
+  358,
+  359,
+  362,
+  s,
+  [364, 6, 1],
+  372,
+  373,
+  s,
+  [379, 4, 1],
+  386,
+  388,
+  s,
+  [390, 5, 1]
+]),
+  goto: u([
+  2,
+  231,
+  233,
+  234,
+  s,
+  [99, 20, 1],
+  s,
+  [145, 4, 1],
+  122,
+  123,
+  1,
+  232,
+  85,
+  95,
+  151,
+  3,
+  s,
+  [88, 4, 2],
+  236,
+  237,
+  86,
+  166,
+  168,
+  124,
+  141,
+  235,
+  238,
+  98,
+  195,
+  69,
+  13,
+  s,
+  [31, 6, 1],
+  9,
+  10,
+  11,
+  s,
+  [4, 5, 1],
+  39,
+  209,
+  211,
+  213,
+  214,
+  s,
+  [200, 6, 1],
+  215,
+  82,
+  96,
+  160,
+  84,
+  37,
+  163,
+  177,
+  172,
+  167,
+  169,
+  152,
+  120,
+  125,
+  131,
+  127,
+  129,
+  136,
+  198,
+  s,
+  [71, 11, 1],
+  19,
+  20,
+  s,
+  [26, 4, 1],
+  210,
+  212,
+  216,
+  227,
+  228,
+  229,
+  154,
   158,
   159,
   161,
   162,
-  163,
-  165,
-  166,
-  168,
-  171,
-  172,
-  173,
-  178,
-  s,
-  [180, 11, 1],
-  197,
-  198,
-  199,
-  201,
-  202,
-  203,
-  225,
-  226,
-  230,
-  238,
-  239,
-  240,
-  243,
-  s,
-  [247, 4, 1],
-  253,
-  254,
-  259,
-  260,
-  s,
-  [263, 5, 1],
-  269,
-  271,
-  275,
-  277,
-  278,
-  279,
-  284,
-  285,
-  s,
-  [301, 4, 1],
-  306,
-  307,
-  314,
-  315,
-  316,
-  318,
-  320,
-  321,
-  322,
-  327,
-  329,
-  s,
-  [332, 5, 1],
-  338,
-  339,
-  344,
-  345,
-  352,
-  353,
-  354,
-  357,
-  s,
-  [359, 6, 1],
-  367,
-  368,
-  s,
-  [374, 4, 1],
-  381,
-  383,
-  s,
-  [385, 5, 1]
-]),
-  goto: u([
-  2,
-  226,
-  228,
-  229,
-  s,
-  [94, 20, 1],
-  s,
-  [140, 4, 1],
-  117,
-  118,
-  1,
-  227,
-  80,
-  90,
-  146,
-  3,
-  s,
-  [83, 4, 2],
-  231,
-  232,
-  81,
-  161,
-  163,
+  174,
+  175,
   119,
-  136,
-  230,
-  233,
-  93,
-  190,
-  64,
-  8,
-  s,
-  [26, 6, 1],
-  4,
-  5,
-  6,
-  34,
-  204,
-  206,
-  208,
-  209,
-  s,
-  [195, 6, 1],
-  210,
-  77,
-  91,
-  155,
-  79,
-  32,
-  158,
-  172,
-  167,
-  162,
-  164,
-  147,
-  115,
-  120,
   126,
-  122,
-  124,
-  131,
-  193,
-  s,
-  [66, 11, 1],
-  14,
-  15,
-  s,
-  [21, 4, 1],
-  205,
-  207,
-  211,
-  222,
-  223,
-  224,
-  149,
-  153,
-  154,
-  156,
-  157,
-  169,
-  170,
-  114,
-  121,
-  129,
-  133,
+  134,
+  138,
+  142,
+  144,
   137,
-  139,
-  132,
-  191,
-  65,
-  10,
+  196,
+  70,
+  15,
+  23,
+  17,
   18,
   12,
-  13,
-  7,
-  175,
-  35,
-  36,
-  37,
-  201,
-  203,
-  78,
-  221,
-  225,
-  148,
-  152,
-  173,
-  166,
-  168,
-  186,
   180,
-  127,
-  130,
-  134,
-  192,
-  194,
-  9,
-  11,
-  33,
-  202,
-  151,
-  150,
-  182,
-  188,
-  179,
-  187,
-  181,
-  184,
-  63,
-  19,
-  214,
-  215,
-  183,
+  40,
+  41,
+  42,
+  206,
+  208,
+  83,
+  226,
+  230,
+  153,
+  157,
+  178,
+  171,
+  173,
+  191,
   185,
-  189,
+  132,
+  135,
+  139,
+  197,
+  199,
+  14,
   16,
-  217,
+  38,
+  207,
+  156,
+  155,
+  187,
+  193,
+  184,
+  192,
+  186,
+  189,
+  68,
+  24,
   219,
-  17,
-  213,
-  216,
+  220,
+  188,
+  190,
+  194,
+  21,
+  222,
+  224,
+  22,
   218,
-  220
+  221,
+  223,
+  225
 ])
 }),
 parseError: function parseError(str, hash, ExceptionClass) {
@@ -5651,7 +5712,7 @@ parse: function parse(input) {
     var TERROR = this.TERROR;
     var EOF = this.EOF;
     var ERROR_RECOVERY_TOKEN_DISCARD_COUNT = (this.options.errorRecoveryTokenDiscardCount | 0) || 3;
-    var NO_ACTION = [0, 390 /* === table.length :: ensures that anyone using this new state will fail dramatically! */];
+    var NO_ACTION = [0, 395 /* === table.length :: ensures that anyone using this new state will fail dramatically! */];
 
     var lexer;
     if (this.__lexer__) {

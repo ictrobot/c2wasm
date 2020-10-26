@@ -28,7 +28,7 @@ export class Identifier extends ConstantExpression {
 export class Constant extends ConstantExpression {
     readonly type = "constant";
 
-    constructor(loc: Location, readonly value: string) {
+    constructor(loc: Location, readonly value: string, readonly valueType: "float" | "char" | "int" | "oct" | "hex") {
         super(loc);
     }
 }
