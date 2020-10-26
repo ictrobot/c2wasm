@@ -18,9 +18,9 @@ export const lexer = moo.compile({
         type: moo.keywords(Object.fromEntries(keywords.map(x => [x.toUpperCase(), x])))
     },
     CONSTANT_FLOAT: /(?:[0-9]+[Ee][+-]?[0-9]+)|(?:(?:(?:[0-9]*\.[0-9]+)|(?:[0-9]+\.[0-9]*))(?:[Ee][+-]?[0-9]+)?)[fFlL]?/,
-    CONSTANT_HEX: /0[xX][a-fA-F0-9]+[uUlL]*?/,
-    CONSTANT_OCTAL: /0[0-7]+[uUlL]*?/,
-    CONSTANT_INT: /(?:[1-9][0-9]*|0)[uUlL]*?/,
+    CONSTANT_HEX: /0[xX][a-fA-F0-9]+(?:[uU][lL]?|[lL][uU]?|)/,
+    CONSTANT_OCTAL: /0[0-7]+(?:[uU][lL]?|[lL][uU]?|)/,
+    CONSTANT_INT: /(?:[1-9][0-9]*|0)(?:[uU][lL]?|[lL][uU]?|)/,
     CONSTANT_CHAR: {match: /'(?:[^\\\n']|\\.)'/, value: x => x.slice(1, -1)},
     STRING_LITERAL: {match: /"(?:\\.|[^\\"])*"/, value: x => x.slice(1, -1)},
     ELLIPSIS: "...",
