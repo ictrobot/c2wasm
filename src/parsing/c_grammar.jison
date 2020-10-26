@@ -53,8 +53,6 @@ postfix_expression
     | postfix_expression PTR_OP identifier                                              -> new t.MemberAccessExpression(@$, true, $postfix_expression, $identifier)
     | postfix_expression INC_OP                                                         -> new t.UnaryExpression(@$, "postfixIncrement", $1)
     | postfix_expression DEC_OP                                                         -> new t.UnaryExpression(@$, "postfixDecrement", $1)
-    | '(' type_name ')' '{' initializer_list '}'                                        {{ throw new JisonParserError("Unsupported rule: postfix_expression (c99 compound literal)"); }}
-    | '(' type_name ')' '{' initializer_list ',' '}'                                    {{ throw new JisonParserError("Unsupported rule: postfix_expression (c99 compound literal)"); }}
     ;
 
 argument_expression_list
@@ -182,14 +180,14 @@ declaration
     ;
 
 declaration_specifiers
-    : storage_class_specifier                                                           -> new t.DeclarationSpecifiers(@$, [], [], [$1], [])
-    | storage_class_specifier declaration_specifiers                                    -> new t.DeclarationSpecifiers(@$, $2.specifierList, $2.qualifierList, [$1, ...$2.storageList], $2.fnSpecifierList)
-    | type_specifier                                                                    -> new t.DeclarationSpecifiers(@$, [$1], [], [], [])
-    | type_specifier declaration_specifiers                                             -> new t.DeclarationSpecifiers(@$, [$1, ...$2.specifierList], $2.qualifierList, $2.storageList, $2.fnSpecifierList)
-    | type_qualifier                                                                    -> new t.DeclarationSpecifiers(@$, [], [$1], [], [])
-    | type_qualifier declaration_specifiers                                             -> new t.DeclarationSpecifiers(@$, $2.specifierList, [$1, ...$2.qualifierList], $2.storageList, $2.fnSpecifierList)
-    | function_specifier                                                                -> new t.DeclarationSpecifiers(@$, [], [], [], [$1])
-    | function_specifier declaration_specifiers                                         -> new t.DeclarationSpecifiers(@$, $2.specifierList, $2.qualifierList, $2.storageList, [$1, ...$2.fnSpecifierList])
+    : storage_class_specifier                                                           -> new t.DeclarationSpecifiers(@$, [], [], [$1])
+    | storage_class_specifier declaration_specifiers                                    -> new t.DeclarationSpecifiers(@$, $2.specifierList, $2.qualifierList, [$1, ...$2.storageList])
+    | type_specifier                                                                    -> new t.DeclarationSpecifiers(@$, [$1], [], [])
+    | type_specifier declaration_specifiers                                             -> new t.DeclarationSpecifiers(@$, [$1, ...$2.specifierList], $2.qualifierList, $2.storageList)
+    | type_qualifier                                                                    -> new t.DeclarationSpecifiers(@$, [], [$1], [])
+    | type_qualifier declaration_specifiers                                             -> new t.DeclarationSpecifiers(@$, $2.specifierList, [$1, ...$2.qualifierList], $2.storageList)
+//  | function_specifier                                                                -> new t.DeclarationSpecifiers(@$, [], [], [], [$1])
+//  | function_specifier declaration_specifiers                                         -> new t.DeclarationSpecifiers(@$, $2.specifierList, $2.qualifierList, $2.storageList, [$1, ...$2.fnSpecifierList])
     ;
 
 init_declarator_list
@@ -206,26 +204,24 @@ storage_class_specifier
     : TYPEDEF                                                                           -> yytext
     | EXTERN                                                                            -> yytext
     | STATIC                                                                            -> yytext
-    | AUTO                                                                              -> yytext
-    | REGISTER                                                                          -> yytext
+//  | AUTO                                                                              -> yytext
+//  | REGISTER                                                                          -> yytext
     ;
 
 type_specifier
-    : VOID                                                                              -> ["builtInType", yytext]
-    | CHAR                                                                              -> ["builtInType", yytext]
-    | SHORT                                                                             -> ["builtInType", yytext]
-    | INT                                                                               -> ["builtInType", yytext]
-    | LONG                                                                              -> ["builtInType", yytext]
-    | FLOAT                                                                             -> ["builtInType", yytext]
-    | DOUBLE                                                                            -> ["builtInType", yytext]
-    | SIGNED                                                                            -> ["builtInType", yytext]
-    | UNSIGNED                                                                          -> ["builtInType", yytext]
-    | BOOL                                                                              -> ["builtInType", yytext]
-    | COMPLEX                                                                           -> ["builtInType", yytext]
-    | IMAGINARY                                                                         -> ["builtInType", yytext]
+    : VOID                                                                              -> yytext
+    | CHAR                                                                              -> yytext
+    | SHORT                                                                             -> yytext
+    | INT                                                                               -> yytext
+    | LONG                                                                              -> yytext
+    | FLOAT                                                                             -> yytext
+    | DOUBLE                                                                            -> yytext
+    | SIGNED                                                                            -> yytext
+    | UNSIGNED                                                                          -> yytext
+//  | BOOL                                                                              -> yytext
     | struct_or_union_specifier                                                         -> $1
     | enum_specifier                                                                    -> $1
-    | TYPE_NAME                                                                         -> ["customType", $1]
+    | TYPE_NAME                                                                         -> new t.CustomTypeSpecifier(@$, $1)
     ;
 
 struct_or_union_specifier
@@ -262,8 +258,6 @@ struct_declarator_list
 
 struct_declarator
     : declarator                                                                        -> $1
-    | ':' constant_expression                                                           {{ throw new JisonParserError("Unsupported rule: struct_declarator (c99 bitfield)"); }}
-    | declarator ':' constant_expression                                                {{ throw new JisonParserError("Unsupported rule: struct_declarator (c99 bitfield)"); }} // https://en.cppreference.com/w/c/language/bit_field
     ;
 
 enum_specifier
@@ -286,13 +280,12 @@ enumerator
 
 type_qualifier
     : CONST                                                                             -> "const"
-    | RESTRICT                                                                          -> "restrict"
-    | VOLATILE                                                                          -> "volatile"
+//  | VOLATILE                                                                          -> "volatile"
     ;
 
-function_specifier
-    : INLINE                                                                            -> "inline"
-    ;
+// function_specifier
+//  : INLINE                                                                            -> "inline"
+//  ;
 
 declarator
     : pointer direct_declarator                                                         -> new t.PointerDeclarator(@$, $1, $2)
@@ -303,12 +296,6 @@ declarator
 direct_declarator
     : identifier                                                                        -> new t.IdentifierDeclarator(@$, $1)
     | '(' declarator ')'                                                                -> $2
-    | direct_declarator '[' type_qualifier_list assignment_expression ']'               {{ throw new JisonParserError("Unsupported rule: direct_declarator (c99 variable length array)"); }}
-    | direct_declarator '[' type_qualifier_list ']'                                     {{ throw new JisonParserError("Unsupported rule: direct_declarator (c99 variable length array)"); }}
-    | direct_declarator '[' STATIC type_qualifier_list assignment_expression ']'        {{ throw new JisonParserError("Unsupported rule: direct_declarator (c99 variable length array)"); }}
-    | direct_declarator '[' type_qualifier_list STATIC assignment_expression ']'        {{ throw new JisonParserError("Unsupported rule: direct_declarator (c99 variable length array)"); }}
-    | direct_declarator '[' type_qualifier_list '*' ']'                                 {{ throw new JisonParserError("Unsupported rule: direct_declarator (c99 variable length array)"); }}
-    | direct_declarator '[' '*' ']'                                                     {{ throw new JisonParserError("Unsupported rule: direct_declarator (c99 variable length array)"); }}
     | direct_declarator '[' constant_expression ']'                                     -> new t.ArrayDeclarator(@$, $1, $3)
     | direct_declarator '[' ']'                                                         -> new t.ArrayDeclarator(@$, $1)
     | direct_declarator '(' parameter_type_list ')'                                     -> new t.FunctionDeclarator(@$, $1, $3)
@@ -331,7 +318,7 @@ type_qualifier_list
 
 parameter_type_list
     : parameter_list                                                                    -> $1
-    | parameter_list ',' ELLIPSIS                                                       {{ throw new JisonParserError("Unsupported rule: parameter_type_list (ellipsis)"); }}
+//  | parameter_list ',' ELLIPSIS                                                       {{ throw new JisonParserError("Unsupported rule: parameter_type_list (ellipsis)"); }}
     ;
 
 parameter_list
@@ -368,8 +355,6 @@ direct_abstract_declarator
     | '[' constant_expression ']'                                                       -> new t.AbstractArrayDeclarator(@$, undefined, $2)
     | direct_abstract_declarator '[' ']'                                                -> new t.AbstractArrayDeclarator(@$, $1)
     | direct_abstract_declarator '[' constant_expression ']'                            -> new t.AbstractArrayDeclarator(@$, $1, $3)
-    | '[' '*' ']'                                                                       {{ throw new JisonParserError("Unsupported rule: direct_abstract_declarator (c99 variable length array)"); }}
-    | direct_abstract_declarator '[' '*' ']'                                            {{ throw new JisonParserError("Unsupported rule: direct_abstract_declarator (c99 variable length array)"); }}
     | '(' ')'                                                                           -> new t.AbstractFunctionDeclarator(@$)
     | '(' parameter_type_list ')'                                                       -> new t.AbstractFunctionDeclarator(@$, undefined, $2)
     | direct_abstract_declarator '(' ')'                                                -> new t.AbstractFunctionDeclarator(@$, $1)
@@ -397,8 +382,8 @@ statement
     ;
 
 labeled_statement
-    : identifier ':' statement                                                          {{ throw new JisonParserError("Unsupported rule: labeled_statement (goto)"); }}
-    | CASE constant_expression ':' statement                                            -> new t.CaseStatement(@$, $2, $4)
+//  : identifier ':' statement                                                          {{ throw new JisonParserError("Unsupported rule: labeled_statement (goto)"); }}
+    : CASE constant_expression ':' statement                                            -> new t.CaseStatement(@$, $2, $4)
     | DEFAULT ':' statement                                                             -> new t.DefaultStatement(@$, $3)
     ;
 
@@ -438,8 +423,8 @@ iteration_statement
     ;
 
 jump_statement
-    : GOTO identifier ';'                                                               {{ throw new JisonParserError("Unsupported rule: jump_statement (") + yytext + ")"; }}
-    | CONTINUE ';'                                                                      -> new t.ContinueStatement(@$)
+//  : GOTO identifier ';'                                                               {{ throw new JisonParserError("Unsupported rule: jump_statement"); }}
+    : CONTINUE ';'                                                                      -> new t.ContinueStatement(@$)
     | BREAK ';'                                                                         -> new t.BreakStatement(@$)
     | RETURN ';'                                                                        -> new t.ReturnStatement(@$)
     | RETURN expression ';'                                                             -> new t.ReturnStatement(@$, $2)

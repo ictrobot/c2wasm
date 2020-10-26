@@ -134,14 +134,22 @@ export class AssignmentExpression extends Expression {
 }
 
 // Declarations
-type StorageClass = "typedef" | "extern" | "static" | "auto" | "register";
+export class CustomTypeSpecifier extends ParseNode {
+    readonly type = "customType";
+
+    public constructor(loc: Location, readonly name: string) {
+        super(loc);
+    }
+}
+
+type StorageClass = "typedef" | "extern" | "static"; // | "auto" | "register";
 type TypeSpecifier =
-    ["builtInType", "void" | "char" | "short" | "int" | "long" | "float" | "double" | "signed" | "unsigned" | "bool" | "complex" | "imaginary"]
+    "void" | "char" | "short" | "int" | "long" | "float" | "double" | "signed" | "unsigned" // | "bool" | "complex" | "imaginary"]
     | StructUnionSpecifier
     | EnumSpecifier
-    | ["customType", string];
-type TypeQualifier = "const" | "restrict" | "volatile";
-type FnSpecifier = "inline";
+    | CustomTypeSpecifier;
+type TypeQualifier = "const"; // | "restrict" | "volatile";
+//type FnSpecifier = "inline";
 
 export class SpecifierQualifiers extends ParseNode {
     readonly type = "specifiersAndQualifiers";
@@ -151,6 +159,12 @@ export class SpecifierQualifiers extends ParseNode {
                 readonly qualifierList: ReadonlyArray<TypeQualifier>) {
         super(loc);
     }
+
+    *children(): IterableIterator<ParseNode> {
+        for (const specifier of this.specifierList) {
+            if (specifier instanceof ParseNode) yield specifier;
+        }
+    }
 }
 
 export class DeclarationSpecifiers extends ParseNode {
@@ -159,9 +173,15 @@ export class DeclarationSpecifiers extends ParseNode {
     constructor(loc: Location,
                 readonly specifierList: ReadonlyArray<TypeSpecifier>,
                 readonly qualifierList: ReadonlyArray<TypeQualifier>,
-                readonly storageList: ReadonlyArray<StorageClass>,
-                readonly fnSpecifierList: ReadonlyArray<FnSpecifier>) {
+                readonly storageList: ReadonlyArray<StorageClass>) {
+        //      readonly fnSpecifierList: ReadonlyArray<FnSpecifier>) {
         super(loc);
+    }
+
+    *children(): IterableIterator<ParseNode> {
+        for (const specifier of this.specifierList) {
+            if (specifier instanceof ParseNode) yield specifier;
+        }
     }
 }
 
