@@ -142,13 +142,13 @@ export class CustomTypeSpecifier extends ParseNode {
     }
 }
 
-type StorageClass = "typedef" | "extern" | "static"; // | "auto" | "register";
-type TypeSpecifier =
+export type StorageClass = "typedef" | "extern" | "static"; // | "auto" | "register";
+export type TypeSpecifier =
     "void" | "char" | "short" | "int" | "long" | "float" | "double" | "signed" | "unsigned" // | "bool" | "complex" | "imaginary"]
     | StructUnionSpecifier
     | EnumSpecifier
     | CustomTypeSpecifier;
-type TypeQualifier = "const"; // | "restrict" | "volatile";
+export type TypeQualifier = "const"; // | "restrict" | "volatile";
 //type FnSpecifier = "inline";
 
 export class SpecifierQualifiers extends ParseNode {
