@@ -75,8 +75,16 @@ function typeLookup(specifierList: ReadonlyArray<pt.TypeSpecifier>, node?: Parse
         }
     }
 
-    const type = combinations();
-    if (copy.length === 0 && type) return type;
+    if (copy.find(x => x instanceof pt.StructUnionSpecifier || x instanceof pt.EnumSpecifier)) {
+        // structs/union/enum specifiers must occur alone
+        if (copy.length === 1) return (copy[0] as pt.StructUnionSpecifier | pt.EnumSpecifier).type;
+    } else if (copy.find(x => x instanceof pt.CustomTypeSpecifier)) {
+        // FIXME deal with custom types properly
+        return undefined;
+    } else {
+        const type = combinations();
+        if (copy.length === 0 && type) return type;
+    }
     throw new ParseTreeValidationError(node, "Invalid specifiers - " + specifierList.join(", "));
 }
 
