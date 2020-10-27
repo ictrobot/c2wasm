@@ -171,7 +171,7 @@ expression
     ;
 
 constant_expression
-    : conditional_expression                                                            -> $1
+    : conditional_expression                                                            -> new t.ConstantExpression(@$, $1)
     ;
 
 declaration

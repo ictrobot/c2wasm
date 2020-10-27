@@ -17,6 +17,8 @@ export function validate<T extends Iterable<ParseNode>>(nodeList: T, parents: Pa
 }
 
 export class ParseTreeValidationError extends Error {
+    readonly name = "TreeValidationError";
+
     constructor(readonly node: ParseNode | undefined, message: string) {
         super(node && node.loc ? `Line ${node.loc.first_line + 1}: ${message}` : message);
     }
@@ -31,7 +33,7 @@ function validator<T extends ParseNode>(type: { new(...args: any[]): T}, fn: (no
     }
 }
 
-// Begin validators
+// DeclarationSpecifiers/SpecifierQualifiers validation
 function typeLookup(specifierList: ReadonlyArray<pt.TypeSpecifier>, node?: ParseNode) {
     const copy = specifierList.slice();
 
@@ -88,3 +90,34 @@ validator(pt.DeclarationSpecifiers, typeValidation);
 validator(pt.DeclarationSpecifiers, d => {
     if (d.storageList.length > 1) throw new ParseTreeValidationError(d, "Invalid storage class list.");
 });
+
+// Constant expr validation
+function constExprValidation(n: ParseNode, parents: ParseNode[]) {
+    for (let i = parents.length - 1; i >= 0; i--) {
+        if (!(parents[i] instanceof pt.Expression) || parents[i].type === "sizeof") return;
+        if (parents[i].type === "constantExpr") throw new ParseTreeValidationError(n, "Invalid constant expr.");
+    }
+}
+
+validator(pt.UnaryExpression, (node, parent) => {
+    switch (node.type) {
+    case "postfixIncrement":
+    case "postfixDecrement":
+    case "prefixIncrement":
+    case "prefixDecrement":
+    case "addressOf": // If integers are required (believe this is always the case?)
+    case "dereference":
+        constExprValidation(node, parent);
+    }
+});
+validator(pt.BinaryExpression, (node, parent) => {
+    switch (node.type) {
+    case "comma":
+    case "arraySubscript": // If int
+        constExprValidation(node, parent);
+    }
+});
+validator(pt.FunctionCallExpression, constExprValidation);
+
+// If int
+validator(pt.MemberAccessExpression, constExprValidation);

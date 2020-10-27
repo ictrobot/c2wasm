@@ -21,6 +21,7 @@ function parseTree(input: string, showLocations: boolean = false): string {
             return value;
         }, 2);
     } catch (e) {
+        console.error(e);
         return e.toString();
     }
 }
