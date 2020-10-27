@@ -1,6 +1,7 @@
 import {lexer} from "./lexer";
 import gen from "./gen/c_grammar";
 import * as parsetree from "./parsetree";
+import {validate} from "./validation";
 
 // adapt moo parser to work with Jison
 class WrappedLexer {
@@ -41,6 +42,48 @@ class WrappedLexer {
 const generatedParser = gen as any;
 generatedParser.parser.lexer = new WrappedLexer();
 
-export function parse(s: string): parsetree.TranslationUnit {
-    return generatedParser.parse(s);
+/**
+ * Parse the input string into a parse tree and perform some basic validation
+ */
+export function parse(input: string): parsetree.TranslationUnit {
+    try {
+        const tree = generatedParser.parse(input);
+        return validate(tree);
+    } catch (e) {
+        if (e?.hash?.loc) { // Jison parse errors
+            e.message += "\n\n" + (locationString(e.hash.loc, input) ?? "");
+        } else if (e?.node?.loc) { // Validation errors
+            e.message += "\n\n" + (locationString(e.node.loc, input) ?? "");
+        }
+        throw e;
+    }
+}
+
+function locationString(loc: parsetree.Location, input: string): string | undefined {
+    const lines = input.split("\n");
+    if (loc.first_line - 1 >= lines.length) return;
+
+    let output = "Location:\n";
+
+    const lnumDigits = Math.ceil(Math.log10(loc.last_line + 4));
+    function outputLine(lnum: number) {
+        output += `L${(lnum + 1).toString().padStart(lnumDigits, '0')}: ${lines[lnum]}\n`;
+    }
+
+    if (loc.first_line > 1) outputLine(loc.first_line - 2);
+    if (loc.first_line > 0) outputLine(loc.first_line - 1);
+    outputLine(loc.first_line);
+
+    // output ^^^ arrows
+    output += new Array(3 + lnumDigits + loc.first_column).join(" ");
+    if (loc.first_line === loc.last_line) {
+        output += new Array(1 + loc.last_column - loc.first_column).join("^");
+    } else {
+        output += "^";
+    }
+    output += "\n";
+
+    if (loc.first_line + 1 < lines.length) outputLine(loc.first_line + 1);
+    if (loc.first_line + 2 < lines.length) outputLine(loc.first_line + 2);
+    return output;
 }

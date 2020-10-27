@@ -1,6 +1,5 @@
 import {parse} from "../src/parsing/parser";
 import {Location} from "../src/parsing/parsetree";
-import {validate} from "../src/parsing/validation";
 
 const testInput = `
 int factorial(int v) {
@@ -10,7 +9,7 @@ int factorial(int v) {
 
 function parseTree(input: string, showLocations: boolean = false): string {
     try {
-        const tree = validate(parse(input));
+        const tree = parse(input);
         return JSON.stringify(tree, (key, value) => {
             if (key.startsWith("_")) return undefined;
             if (key === "loc" && typeof value === "object") {
@@ -21,7 +20,7 @@ function parseTree(input: string, showLocations: boolean = false): string {
             return value;
         }, 2);
     } catch (e) {
-        console.error(e);
+        console.debug(e);
         return e.toString();
     }
 }
