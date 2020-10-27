@@ -441,11 +441,12 @@ external_declaration
     ;
 
 function_definition
-    : declaration_specifiers declarator declaration_list compound_statement             -> new t.FunctionDefinition(@$, $1, $2, $4, $3)
-    | declaration_specifiers declarator compound_statement                              -> new t.FunctionDefinition(@$, $1, $2, $3)
+//  : declaration_specifiers declarator declaration_list compound_statement             -> new t.FunctionDefinition(@$, $1, $2, $4, $3)
+    : declaration_specifiers declarator compound_statement                              -> new t.FunctionDefinition(@$, $1, $2, $3)
     ;
 
-declaration_list
-    : declaration                                                                       -> [$1]
-    | declaration_list declaration                                                      -> ($1.push($2), $1)
-    ;
+// old-style (K&R) function definition
+// declaration_list
+//  : declaration                                                                       -> [$1]
+//  | declaration_list declaration                                                      -> ($1.push($2), $1)
+//  ;

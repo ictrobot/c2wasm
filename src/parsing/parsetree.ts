@@ -561,8 +561,7 @@ export class FunctionDefinition extends ParseNode {
     constructor(loc: Location,
                 readonly typeInfo: DeclarationSpecifiers,
                 readonly declarator: Declarator,
-                readonly body: Statement,
-                readonly declarationList?: ReadonlyArray<Declaration>) {
+                readonly body: Statement) {
         super(loc);
     }
 
@@ -570,7 +569,6 @@ export class FunctionDefinition extends ParseNode {
         yield this.typeInfo;
         yield this.declarator;
         yield this.body;
-        if (this.declarationList) yield* this.declarationList;
     }
 }
 
