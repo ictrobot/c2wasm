@@ -1,6 +1,6 @@
 import type * as pt from "../parsing/parsetree";
 import type {CFunction, CVariable} from "./declarations";
-import type {CExpression, IntegerConstant} from "./expressions";
+import type {CExpression, CConstant} from "./expressions";
 import {Scope} from "./scope";
 
 export type CStatement =
@@ -84,7 +84,7 @@ export class CDoLoop {
 }
 
 export class CSwitch {
-    children: {cases: IntegerConstant[], body: CStatement[], default: boolean}[] = [];
+    children: {cases: CConstant[], body: CStatement[], default: boolean}[] = [];
 
     constructor(readonly node: pt.SwitchStatement, readonly expression: CExpression, readonly parent: CStatement) {
     }

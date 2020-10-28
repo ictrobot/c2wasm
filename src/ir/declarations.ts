@@ -16,6 +16,8 @@ export class CVariable {
 }
 
 export class CFunction {
+    readonly typeName = "function";
+
     constructor(readonly name: string,
                 readonly type: CType,
                 readonly qualifier: TypeQualifier | undefined,

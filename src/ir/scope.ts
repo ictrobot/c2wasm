@@ -1,5 +1,5 @@
 import type {ParseNode} from "../parsing/parsetree";
-import type {CDeclaration} from "./declarations";
+import {CVariable, CDeclaration, CFunction} from "./declarations";
 import type {CCompound} from "./types";
 
 export class Scope {
