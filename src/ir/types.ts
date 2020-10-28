@@ -1,7 +1,7 @@
 import type {TypeSpecifier} from "../parsing/parsetree";
 import type {CVariable} from "./declarations";
 
-export type CType = CCompound | CArithmetic | CPointer | CArray;
+export type CType = CCompound | CArithmetic | CPointer | CArray | CVoid;
 
 export class CPointer {
     readonly typeName = "pointer";
@@ -66,6 +66,11 @@ export class CEnum {
     }
 }
 
+export class CVoid {
+    readonly typeName = "void";
+    readonly bytes = 0;
+}
+
 export class CArithmetic {
     readonly typeName = "arithmetic";
 
@@ -86,6 +91,26 @@ export class CArithmetic {
 }
 
 export const CSizeT = CArithmetic.U32;
+
+export function integerPromotion(t: CArithmetic) {
+    if (t.type === "float") return t;
+    if (t.bytes < CArithmetic.S32.bytes) return CArithmetic.S32;
+    return t;
+}
+
+export function usualArithmeticConversion(t1: CArithmetic, t2: CArithmetic): CArithmetic {
+    if (t1 === CArithmetic.Fp64 || t2 === CArithmetic.Fp64) return CArithmetic.Fp64;
+    if (t1 === CArithmetic.Fp32 || t2 === CArithmetic.Fp32) return CArithmetic.Fp32;
+
+    // integer promotion
+    t1 = integerPromotion(t1);
+    t2 = integerPromotion(t2);
+
+    if (t1 === CArithmetic.U64 || t2 === CArithmetic.U64) return CArithmetic.U64;
+    if (t1 === CArithmetic.S64 || t2 === CArithmetic.S64) return CArithmetic.S64;
+    if (t1 === CArithmetic.U32 || t2 === CArithmetic.U32) return CArithmetic.U32;
+    return CArithmetic.S32;
+}
 
 function getArithmeticType(specifierList: ReadonlyArray<TypeSpecifier & string>) {
     const copy = specifierList.slice();
