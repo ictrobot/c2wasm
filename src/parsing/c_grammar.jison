@@ -388,8 +388,8 @@ labeled_statement
     ;
 
 compound_statement
-    : '{' '}'                                                                           -> new t.NoOp(@$)
-    | '{' block_item_list '}'                                                           -> $2.length === 1 ? $2[0] : new t.CompoundStatement(@$, $2)
+    : '{' '}'                                                                           -> new t.CompoundStatement(@$, [])
+    | '{' block_item_list '}'                                                           -> new t.CompoundStatement(@$, $2)
     ;
 
 block_item_list

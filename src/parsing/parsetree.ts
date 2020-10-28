@@ -568,7 +568,7 @@ export class FunctionDefinition extends ParseNode {
     constructor(loc: Location,
                 readonly typeInfo: DeclarationSpecifiers,
                 readonly declarator: Declarator,
-                readonly body: Statement) {
+                readonly body: CompoundStatement) {
         super(loc);
     }
 

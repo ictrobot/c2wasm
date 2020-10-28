@@ -1,5 +1,6 @@
 import type {StorageClass, TypeQualifier} from "../parsing/parsetree";
-import type {CStatement} from "./statements";
+import type {Scope} from "./scope";
+import type {CCompoundStatement} from "./statements";
 import type {CType} from "./types";
 
 export type CDeclaration = CVariable | CFunction;
@@ -19,7 +20,12 @@ export class CFunction {
                 readonly type: CType,
                 readonly qualifier: TypeQualifier | undefined,
                 readonly parameters: CParameter[],
-                readonly body: CStatement) {
+                readonly body: CCompoundStatement,
+                readonly translationUnit: Scope) {
+    }
+
+    get scope(): Scope {
+        return this.translationUnit;
     }
 }
 
