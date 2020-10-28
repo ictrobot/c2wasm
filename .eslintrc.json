@@ -51,7 +51,8 @@
         "space-unary-ops": ["error", {
           "words": true,
           "nonwords": false
-        }]
+        }],
+        "@typescript-eslint/ban-types": "off"
       }
     }
   ]

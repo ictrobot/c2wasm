@@ -3,7 +3,7 @@ import {CFunction} from "./declarations";
 import type {ExpressionType, CExpression} from "./expressions";
 import {CArithmetic, CArray, CPointer, CStruct, CUnion, CType} from "./types";
 
-class ExpressionTypeError extends Error {
+export class ExpressionTypeError extends Error {
     name = "ExpressionTypeError";
 
     constructor(readonly node: ParseNode, readonly wantedType: string, readonly actualType: string) {

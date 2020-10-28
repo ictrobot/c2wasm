@@ -6,14 +6,15 @@ import {CArithmetic, CType, CArray, CPointer, CUnion, CStruct,
     CSizeT, usualArithmeticConversion, integerPromotion} from "./types";
 
 export type ExpressionType = CType | CFunction;
-export type CExpression = // TODO
+export type CExpression =
     CConstant | CVarIdentifier | CFnIdentifier | CStringLiteral |
     CArraySubscript | CFunctionCall | CMemberAccess | CIncrDecr | // postfix
     CAddressOf | CDereference | CUnaryPlusMinus | CBitwiseNot | CLogicalNot | CSizeof | // unary
     CCast |
     CMulDiv | CMod | CPlusMinus | CShift |
     CRelational | CEquality |
-    CBitwiseAndOr | CLogicalAndOr;
+    CBitwiseAndOr | CLogicalAndOr |
+    CConditional | CAssignment | CComma;
 
 export class CConstant {
     readonly lvalue = false;
@@ -259,5 +260,57 @@ export class CLogicalAndOr {
     constructor(readonly node: ParseNode, readonly lhs: CExpression, readonly rhs: CExpression, readonly op: "&&" | "||") {
         checks.asArithmeticOrPointer(lhs.node, lhs.type);
         checks.asArithmeticOrPointer(rhs.node, rhs.type);
+    }
+}
+
+export class CConditional {
+    readonly lvalue = false;
+    readonly type: ExpressionType;
+
+    constructor(readonly node: ParseNode, readonly test: CExpression, readonly trueValue: CExpression, readonly falseValue: CExpression) {
+        checks.asArithmeticOrPointer(test.node, test.type);
+        if (trueValue.type instanceof CArithmetic && falseValue.type instanceof CArithmetic) {
+            this.type = usualArithmeticConversion(trueValue.type, falseValue.type);
+        } else if (this.trueValue.type.equals(this.falseValue.type)) {
+            this.type = this.trueValue.type;
+        } else {
+            // TODO implement full type rules including casting const 0 to ptr
+            throw new checks.ExpressionTypeError(node, "both branches to have the same type", "different types");
+        }
+    }
+}
+
+export class CAssignment {
+    readonly lvalue = false;
+    readonly type: ExpressionType;
+
+    constructor(readonly node: ParseNode, readonly lhs: CExpression, readonly rhs: CExpression) {
+        CAssignment.checkLvalue(lhs);
+
+        if (lhs.type instanceof CArithmetic && rhs.type instanceof CArithmetic) {
+            this.type = usualArithmeticConversion(lhs.type, rhs.type);
+        } else if (lhs.type.equals(rhs.type)) {
+            this.type = this.lhs.type;
+        } else {
+            // TODO implement full type rules including casting const 0 to ptr
+            throw new checks.ExpressionTypeError(node, "assignment to have the same type", "different types");
+        }
+    }
+
+    private static checkLvalue(e: CExpression) {
+        checks.checkLvalue(e, true);
+        if (e.type instanceof CArray || e.type instanceof CFunction) {
+            throw new checks.ExpressionTypeError(e.node, "Assignable lvalue", e.type.typeName);
+        }
+        // TODO implement const and incomplete type checks
+    }
+}
+
+export class CComma {
+    readonly lvalue = false;
+    readonly type: ExpressionType;
+
+    constructor(readonly node: ParseNode, readonly lhs: CExpression, readonly rhs: CExpression) {
+        this.type = rhs.type;
     }
 }

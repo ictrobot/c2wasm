@@ -9,6 +9,10 @@ export class CPointer {
 
     constructor(readonly type: CType, readonly constant: boolean = false) {
     }
+
+    equals(t: object): boolean {
+        return t instanceof CPointer && t.constant === this.constant && this.type.equals(t.type);
+    }
 }
 
 export class CArray {
@@ -19,6 +23,10 @@ export class CArray {
 
     get bytes(): number {
         return this.type.bytes * this.length;
+    }
+
+    equals(t: object): boolean {
+        return t instanceof CArray && t.length === this.length && this.type.equals(t.type);
     }
 }
 
@@ -32,6 +40,10 @@ export class CStruct {
 
     get bytes(): number {
         return this.children.reduce((total, x) => total + x.type.bytes, 0);
+    }
+
+    equals(t: object): boolean {
+        return false; // TODO implement struct comparison
     }
 
     memberType(m: string): CType {
@@ -51,6 +63,10 @@ export class CUnion {
         return this.children.reduce((total, x) => Math.max(total, x.type.bytes), 0);
     }
 
+    equals(t: object): boolean {
+        return false; // TODO implement union comparison
+    }
+
     memberType(m: string): CType {
         const member = this.children.find(x => x.name === m);
         if (member) return member.type;
@@ -64,17 +80,29 @@ export class CEnum {
 
     constructor(readonly values: {name: string, value: number}[], readonly name?: string) {
     }
+
+    equals(t: object): boolean {
+        return false; // TODO implement enum comparison
+    }
 }
 
 export class CVoid {
     readonly typeName = "void";
     readonly bytes = 0;
+
+    equals(t: object): boolean {
+        return t instanceof CVoid;
+    }
 }
 
 export class CArithmetic {
     readonly typeName = "arithmetic";
 
     private constructor(readonly name: string, readonly bytes: number, readonly type: "float" | "signed" | "unsigned") {
+    }
+
+    equals(t: object): boolean {
+        return this === t;
     }
 
     static readonly Fp32 = new CArithmetic("float", 4, "float");
@@ -92,7 +120,7 @@ export class CArithmetic {
 
 export const CSizeT = CArithmetic.U32;
 
-export function integerPromotion(t: CArithmetic) {
+export function integerPromotion(t: CArithmetic): CArithmetic {
     if (t.type === "float") return t;
     if (t.bytes < CArithmetic.S32.bytes) return CArithmetic.S32;
     return t;

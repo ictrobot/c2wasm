@@ -29,6 +29,10 @@ export class CFunction {
     get scope(): Scope {
         return this.translationUnit;
     }
+
+    equals(t: object): boolean {
+        return t === this;
+    }
 }
 
 export class CParameter {
