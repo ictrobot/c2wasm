@@ -1,5 +1,5 @@
 import type * as pt from "../parsing/parsetree";
-import type {CFunction, CVariable} from "./declarations";
+import type {CFuncDefinition, CVariable} from "./declarations";
 import type {CExpression, CConstant} from "./expressions";
 import {Scope} from "./scope";
 
@@ -13,13 +13,17 @@ export class CCompoundStatement {
     readonly statements: CStatement[] = [];
     readonly variables: CVariable[] = [];
 
-    constructor(readonly node: pt.CompoundStatement, readonly parent: CStatement | CFunction) {
+    constructor(readonly node: pt.CompoundStatement, readonly parent: CStatement | CFuncDefinition) {
         this.scope = new Scope(node, parent.scope);
+    }
+
+    definedVariables(): CVariable[] {
+        return this.scope.definedVariables();
     }
 }
 
 export class CExpressionStatement {
-    constructor(readonly node: pt.ExpressionStatement, readonly expression: CExpression, readonly parent: CStatement) {
+    constructor(readonly node: pt.ParseNode, readonly expression: CExpression, readonly parent: CStatement) {
     }
 
     get scope(): Scope {
@@ -28,7 +32,7 @@ export class CExpressionStatement {
 }
 
 export class CNop {
-    constructor(readonly node: pt.NoOp, readonly parent: CCompoundStatement) {
+    constructor(readonly node: pt.NoOp, readonly parent: CStatement) {
     }
 
     get scope(): Scope {
@@ -118,7 +122,7 @@ export class CBreak {
 
 export class CReturn {
     constructor(readonly node: pt.ReturnStatement,
-                readonly func: CFunction,
+                readonly func: CFuncDefinition,
                 readonly parent: CStatement) {
     }
 

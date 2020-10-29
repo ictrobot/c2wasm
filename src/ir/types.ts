@@ -9,7 +9,9 @@ export class CFuncType {
     readonly typeName = "function";
     readonly bytes = 0;
 
-    constructor(readonly returnType: CQualifiedType<CType>, readonly parameterTypes: CQualifiedType<CType>[]) {
+    constructor(readonly returnType: CQualifiedType<CNotFuncType>,
+                readonly parameterTypes: CQualifiedType<CNotFuncType>[],
+                public parameterNames?: string[]) {
     }
 
     equals(t: Object): boolean {

@@ -1,5 +1,6 @@
 import type {ParseNode} from "../parsing/parsetree";
-import {CDeclaration} from "./declarations";
+import {CFuncDeclaration, CFuncDefinition, CVariable} from "./declarations";
+import type {CDeclaration} from "./declarations";
 import type {CCompound} from "./types";
 
 export class Scope {
@@ -42,7 +43,19 @@ export class Scope {
     }
 
     addIdentifier(value: CDeclaration): void {
-        if (this._getId(value.name)) throw new Error("Identifier `" + value.name + "` is already defined!");
+        const existing = this._getId(value.name);
+        if (existing && !(existing instanceof CFuncDeclaration && value instanceof CFuncDefinition && existing.type.equals(value.type))) {
+            // allow function declarations to be replaced with function definitions
+            throw new Error("Identifier `" + value.name + "` is already defined!");
+        }
         this.identifiers.set(value.name, value);
+    }
+
+    definedVariables(): CVariable[] {
+        const vars = [];
+        for (const decl of this.identifiers.values()) {
+            if (decl instanceof CVariable) vars.push(decl);
+        }
+        return vars;
     }
 }
