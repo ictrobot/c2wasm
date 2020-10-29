@@ -405,7 +405,7 @@ export class AbstractFunctionDeclarator extends ParseNode {
     }
 }
 
-export type Initializer = AssignmentExpression | ReadonlyArray<Initializer>;
+export type Initializer = Expression | ReadonlyArray<Initializer>;
 
 // Statements
 

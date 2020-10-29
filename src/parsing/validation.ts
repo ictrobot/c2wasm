@@ -1,4 +1,5 @@
-import {ParseNode} from "./parsetree";
+import {getArithmeticType} from "../ir/types";
+import {ParseNode, TypeSpecifier} from "./parsetree";
 import * as pt from "./parsetree";
 
 const validatorMap = new Map<typeof ParseNode, ((node: ParseNode, parents: ParseNode[]) => void)[]>();
@@ -35,57 +36,11 @@ function validator<T extends ParseNode>(type: { new(...args: any[]): T}, fn: (no
 
 // DeclarationSpecifiers/SpecifierQualifiers validation
 function typeLookup(specifierList: ReadonlyArray<pt.TypeSpecifier>, node?: ParseNode) {
-    const copy = specifierList.slice();
-
-    function check(s: pt.TypeSpecifier) {
-        for (let i = 0; i < copy.length; i++) {
-            if (copy[i] === s) {
-                copy.splice(i, 1);
-                return true;
-            }
-        }
-        return false;
-    }
-
-    function combinations() {
-        if (check("double")) {
-            check("long");
-            return "fp64";
-        } else if (check("float")) {
-            return "fp32";
-        } else if (check("char")) {
-            if (check("signed")) return "s8";
-            check("unsigned");
-            return "u8";
-        } else if (check("short")) {
-            check("int");
-            if (check("unsigned")) return "u16";
-            check("signed");
-            return "s16";
-        } else if (check("long")) {
-            check("long");
-            check("int");
-            if (check("unsigned")) return "u64";
-            check("signed");
-            return "s64";
-        } else if (check("int")) {
-            if (check("unsigned")) return "u32";
-            check("signed");
-            return "s32";
+    if (specifierList.every(v => typeof v === 'string')) {
+        if (!getArithmeticType(specifierList as ReadonlyArray<TypeSpecifier & string>)) {
+            throw new ParseTreeValidationError(node, "Invalid specifiers - " + specifierList.join(", "));
         }
     }
-
-    if (copy.find(x => x instanceof pt.StructUnionSpecifier || x instanceof pt.EnumSpecifier)) {
-        // structs/union/enum specifiers must occur alone
-        if (copy.length === 1) return (copy[0] as pt.StructUnionSpecifier | pt.EnumSpecifier).type;
-    } else if (copy.find(x => x instanceof pt.CustomTypeSpecifier)) {
-        // FIXME deal with custom types properly
-        return undefined;
-    } else {
-        const type = combinations();
-        if (copy.length === 0 && type) return type;
-    }
-    throw new ParseTreeValidationError(node, "Invalid specifiers - " + specifierList.join(", "));
 }
 
 const typeValidation = (d: pt.SpecifierQualifiers | pt.DeclarationSpecifiers) => {

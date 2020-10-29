@@ -1,27 +1,25 @@
-import type {StorageClass, TypeQualifier} from "../parsing/parsetree";
+import type {StorageClass} from "../parsing/parsetree";
+import type {CAssignment} from "./expressions";
 import type {Scope} from "./scope";
 import type {CCompoundStatement} from "./statements";
-import type {CType} from "./types";
+import type {CFuncType, CNotFuncType, CQualifiedType} from "./types";
 
 export type CDeclaration = CVariable | CFunction;
 
 export class CVariable {
-    constructor(readonly name: string,
-                readonly type: CType, readonly qualifier?: TypeQualifier, readonly storage?: StorageClass) {
-    }
+    initial?: CAssignment;
 
-    get constant(): boolean {
-        return this.qualifier === "const";
+    constructor(readonly name: string,
+                readonly type: CQualifiedType<CNotFuncType>,
+                readonly storage?: StorageClass) {
     }
 }
 
 export class CFunction {
-    readonly typeName = "function";
-
     constructor(readonly name: string,
-                readonly type: CType,
-                readonly qualifier: TypeQualifier | undefined,
-                readonly parameters: CParameter[],
+                readonly type: CQualifiedType<CFuncType>,
+                readonly storage: StorageClass | undefined,
+                readonly parameterNames: string[],
                 readonly body: CCompoundStatement,
                 readonly translationUnit: Scope) {
     }
@@ -32,10 +30,5 @@ export class CFunction {
 
     equals(t: object): boolean {
         return t === this;
-    }
-}
-
-export class CParameter {
-    constructor(readonly type: CType, readonly name?: string) {
     }
 }

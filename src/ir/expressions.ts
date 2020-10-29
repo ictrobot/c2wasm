@@ -1,13 +1,13 @@
 import type {ParseNode} from "../parsing/parsetree";
-import {CVariable, CFunction} from "./declarations";
-import {Scope} from "./scope";
+import type {CDeclaration} from "./declarations";
 import * as checks from "./type_checking";
-import {CArithmetic, CType, CArray, CPointer, CUnion, CStruct,
-    CSizeT, usualArithmeticConversion, integerPromotion} from "./types";
+import {
+    CArithmetic, CType, CArray, CPointer, CUnion, CStruct,
+    CSizeT, usualArithmeticConversion, integerPromotion, CFuncType
+} from "./types";
 
-export type ExpressionType = CType | CFunction;
 export type CExpression =
-    CConstant | CVarIdentifier | CFnIdentifier | CStringLiteral |
+    CConstant | CIdentifier | CStringLiteral |
     CArraySubscript | CFunctionCall | CMemberAccess | CIncrDecr | // postfix
     CAddressOf | CDereference | CUnaryPlusMinus | CBitwiseNot | CLogicalNot | CSizeof | // unary
     CCast |
@@ -23,34 +23,15 @@ export class CConstant {
     }
 }
 
-export class CVarIdentifier {
-    readonly lvalue = true;
+export class CIdentifier {
+    readonly lvalue: boolean;
 
-    constructor(readonly node: ParseNode, readonly variable: CVariable) {
+    constructor(readonly node: ParseNode, readonly value: CDeclaration) {
+        this.lvalue = (value.type.qualifier !== "const") && !(value.type instanceof CFuncType);
     }
 
     get type(): CType {
-        return this.variable.type;
-    }
-}
-
-export class CFnIdentifier {
-    readonly lvalue = false;
-
-    constructor(readonly node: ParseNode, readonly fn: CFunction) {
-    }
-
-    get type(): CFunction {
-        return this.fn;
-    }
-}
-
-export function CIdentifier(node: ParseNode, name: string, scope: Scope): CVarIdentifier | CFnIdentifier {
-    const value = scope.lookupIdentifier(name);
-    if (value instanceof CVariable) {
-        return new CVarIdentifier(node, value);
-    } else {
-        return new CFnIdentifier(node, value);
+        return this.value.type;
     }
 }
 
@@ -79,11 +60,9 @@ export class CArraySubscript {
 export class CFunctionCall {
     readonly lvalue = false;
     readonly type: CType;
-    readonly function: CFunction;
 
-    constructor(readonly node: ParseNode, body: CExpression, readonly args: CExpression[]) {
-        this.function = checks.asFunction(body.node, body.type);
-        this.type = this.function.type;
+    constructor(readonly node: ParseNode, readonly body: CExpression, readonly args: CExpression[]) {
+        this.type = checks.asFunction(body.node, body.type).returnType;
         // TODO check types of parameters
     }
 }
@@ -265,7 +244,7 @@ export class CLogicalAndOr {
 
 export class CConditional {
     readonly lvalue = false;
-    readonly type: ExpressionType;
+    readonly type: CType;
 
     constructor(readonly node: ParseNode, readonly test: CExpression, readonly trueValue: CExpression, readonly falseValue: CExpression) {
         checks.asArithmeticOrPointer(test.node, test.type);
@@ -282,7 +261,7 @@ export class CConditional {
 
 export class CAssignment {
     readonly lvalue = false;
-    readonly type: ExpressionType;
+    readonly type: CType;
 
     constructor(readonly node: ParseNode, readonly lhs: CExpression, readonly rhs: CExpression) {
         CAssignment.checkLvalue(lhs);
@@ -299,7 +278,7 @@ export class CAssignment {
 
     private static checkLvalue(e: CExpression) {
         checks.checkLvalue(e, true);
-        if (e.type instanceof CArray || e.type instanceof CFunction) {
+        if (e.type instanceof CArray || e.type instanceof CFuncType) {
             throw new checks.ExpressionTypeError(e.node, "Assignable lvalue", e.type.typeName);
         }
         // TODO implement const and incomplete type checks
@@ -308,7 +287,7 @@ export class CAssignment {
 
 export class CComma {
     readonly lvalue = false;
-    readonly type: ExpressionType;
+    readonly type: CType;
 
     constructor(readonly node: ParseNode, readonly lhs: CExpression, readonly rhs: CExpression) {
         this.type = rhs.type;

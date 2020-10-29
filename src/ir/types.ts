@@ -1,7 +1,24 @@
-import type {TypeSpecifier} from "../parsing/parsetree";
+import type {TypeSpecifier, TypeQualifier} from "../parsing/parsetree";
 import type {CVariable} from "./declarations";
 
-export type CType = CCompound | CArithmetic | CPointer | CArray | CVoid;
+export type CType = CNotFuncType | CFuncType;
+export type CNotFuncType = CCompound | CArithmetic | CPointer | CArray | CVoid;
+export type CQualifiedType<T extends CType> = T & {qualifier?: TypeQualifier};
+
+export class CFuncType {
+    readonly typeName = "function";
+    readonly bytes = 0;
+
+    constructor(readonly returnType: CQualifiedType<CType>, readonly parameterTypes: CQualifiedType<CType>[]) {
+    }
+
+    equals(t: Object): boolean {
+        return t instanceof CFuncType
+            && t.returnType.equals(this.returnType)
+            && t.parameterTypes.length === this.parameterTypes.length
+            && t.parameterTypes.every((other, i) => this.parameterTypes[i].equals(other));
+    }
+}
 
 export class CPointer {
     readonly typeName = "pointer";
@@ -120,6 +137,14 @@ export class CArithmetic {
 
 export const CSizeT = CArithmetic.U32;
 
+export function addQualifier<T extends CType>(t: T, qualifier?: TypeQualifier): CQualifiedType<T> {
+    return Object.assign(t, {qualifier});
+}
+
+export function getQualifier(t: CQualifiedType<CType>): TypeQualifier | undefined {
+    return t?.qualifier;
+}
+
 export function integerPromotion(t: CArithmetic): CArithmetic {
     if (t.type === "float") return t;
     if (t.bytes < CArithmetic.S32.bytes) return CArithmetic.S32;
@@ -140,7 +165,7 @@ export function usualArithmeticConversion(t1: CArithmetic, t2: CArithmetic): CAr
     return CArithmetic.S32;
 }
 
-function getArithmeticType(specifierList: ReadonlyArray<TypeSpecifier & string>) {
+export function getArithmeticType(specifierList: ReadonlyArray<TypeSpecifier & string>): CArithmetic | undefined {
     const copy = specifierList.slice();
 
     function remove(s: TypeSpecifier & string) {
