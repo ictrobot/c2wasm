@@ -314,7 +314,7 @@ export class ArrayDeclarator extends ParseNode {
 export class FunctionDeclarator extends ParseNode {
     readonly type= "functionDeclarator";
 
-    constructor(loc: Location, readonly body: Declarator, readonly args?: ReadonlyArray<string> | ReadonlyArray<ParameterDeclaration>) {
+    constructor(loc: Location, readonly body: Declarator, readonly args?: ReadonlyArray<ParameterDeclaration>) {
         super(loc);
     }
 

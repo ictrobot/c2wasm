@@ -299,7 +299,7 @@ direct_declarator
     | direct_declarator '[' constant_expression ']'                                     -> new t.ArrayDeclarator(@$, $1, $3)
     | direct_declarator '[' ']'                                                         -> new t.ArrayDeclarator(@$, $1)
     | direct_declarator '(' parameter_type_list ')'                                     -> new t.FunctionDeclarator(@$, $1, $3)
-    | direct_declarator '(' identifier_list ')'                                         -> new t.FunctionDeclarator(@$, $1, $3)
+//  | direct_declarator '(' identifier_list ')'                                         -> new t.FunctionDeclarator(@$, $1, $3)
     | direct_declarator '(' ')'                                                         -> new t.FunctionDeclarator(@$, $1)
     ;
 
@@ -332,10 +332,10 @@ parameter_declaration
     | declaration_specifiers                                                            -> new t.ParameterDeclaration(@$, $1)
     ;
 
-identifier_list
-    : identifier                                                                        -> [$1]
-    | identifier_list ',' identifier                                                    -> ($1.push($3), $1)
-    ;
+// identifier_list
+//  : identifier                                                                        -> [$1]
+//  | identifier_list ',' identifier                                                    -> ($1.push($3), $1)
+//  ;
 
 type_name
     : specifier_qualifier_list                                                          -> new t.TypeName(@$, $1)
