@@ -35,10 +35,8 @@ export class CConstant extends CEvaluable {
 export class CIdentifier {
     readonly lvalue: boolean;
 
-    constructor(readonly node: ParseNode, readonly value: CDeclaration) {
-        // TODO const values whilst allowing initial assignment
-        // (value.type.qualifier !== "const") &&
-        this.lvalue = !(value.type instanceof CFuncType);
+    constructor(readonly node: ParseNode, readonly value: CDeclaration, readonly initialAssignment: boolean = false) {
+        this.lvalue = (initialAssignment || value.type.qualifier !== "const") && !(value.type instanceof CFuncType);
     }
 
     get type(): CType {

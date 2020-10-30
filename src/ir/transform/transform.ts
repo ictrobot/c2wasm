@@ -44,7 +44,7 @@ function ptDeclaration(declaration: pt.Declaration, scope: Scope, inFunction: bo
                     throw new ParseTreeValidationError(entry, "Not implemented"); // TODO
                 } else {
                     const value = ptExpression(initialValue as pt.Expression, scope);
-                    const assignment = new CAssignment(entry, new CIdentifier(entry, cvar), value);
+                    const assignment = new CAssignment(entry, new CIdentifier(entry, cvar, true), value);
                     if (inFunction) {
                         // in function so return assignment to be added to body of fn
                         assignments.push(assignment);
