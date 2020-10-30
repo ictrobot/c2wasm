@@ -65,8 +65,8 @@ unary_expression
     | INC_OP unary_expression                                                           -> new t.UnaryExpression(@$, "prefixIncrement", $2)
     | DEC_OP unary_expression                                                           -> new t.UnaryExpression(@$, "prefixDecrement", $2)
     | unary_operator cast_expression                                                    -> new t.UnaryExpression(@$, $1, $2)
-    | SIZEOF unary_expression                                                           -> new t.UnaryExpression(@$, "sizeof", $2)
-    | SIZEOF '(' type_name ')'                                                          -> new t.UnaryExpression(@$, "sizeof", $3)
+    | SIZEOF unary_expression                                                           -> new t.SizeofExpression(@$, $2)
+    | SIZEOF '(' type_name ')'                                                          -> new t.SizeofExpression(@$, $3)
     ;
 
 unary_operator
@@ -80,7 +80,7 @@ unary_operator
 
 cast_expression
     : unary_expression                                                                  -> $1
-    | '(' type_name ')' cast_expression                                                 -> new t.BinaryExpression(@$, "cast", $2, $4)
+    | '(' type_name ')' cast_expression                                                 -> new t.CastExpression(@$, $2, $4)
     ;
 
 multiplicative_expression
@@ -113,7 +113,7 @@ relational_expression
 equality_expression
     : relational_expression                                                             -> $1
     | equality_expression EQ_OP relational_expression                                   -> new t.BinaryExpression(@$, "relationalEq", $1, $3)
-    | equality_expression NE_OP relational_expression                                   -> new t.BinaryExpression(@$, "relationalNeq", $1, $3)
+    | equality_expression NE_OP relational_expression                                   -> new t.BinaryExpression(@$, "relationalNEq", $1, $3)
     ;
 
 and_expression

@@ -1,13 +1,12 @@
-import {CExpression, CConstant, CEvaluable, CIdentifier, CFunctionCall, CMemberAccess, CDereference, CConditional, CAssignment, CStringLiteral} from "../ir/expressions";
+import {CExpression, CConstant, CEvaluable, CIdentifier, CFunctionCall, CMemberAccess, CDereference, CConditional,
+    CAssignment, CStringLiteral, CIncrDecr, CAddressOf, CUnaryPlusMinus, CBitwiseNot, CLogicalNot, CSizeof, CAddSub,
+    CCast, CComma, CMulDiv, CMod, CShift, CRelational, CEquality, CBitwiseAndOr, CLogicalAndOr} from "../ir/expressions";
 import {Scope} from "../ir/scope";
 import {CArithmetic} from "../ir/types";
-import {ParseNode} from "../parsing/parsetree";
 import * as pt from "../parsing/parsetree";
+import {ParseNode} from "../parsing/parsetree";
 import {ParseTreeValidationError} from "../parsing/validation";
-
-const tempFakeConstant = new CConstant(new class extends ParseNode {
-    readonly type = "fake";
-}({first_line: 0, first_column: 0, last_line: 0, last_column: 0}), CArithmetic.S32, 36n);
+import {getType} from "./type_transform";
 
 export function ptExpression(e: pt.Expression, scope: Scope): CExpression {
     if (e instanceof pt.ConstantExpression) {
@@ -33,6 +32,16 @@ export function ptExpression(e: pt.Expression, scope: Scope): CExpression {
 
     } else if (e instanceof pt.BinaryExpression) {
         return ptBinary(e, scope);
+
+    } else if (e instanceof pt.SizeofExpression) {
+        if (e.body instanceof pt.Expression) { // sizeof [expression]
+            return new CSizeof(e, ptExpression(e.body, scope).type);
+        } else { // sizeof [type]
+            return new CSizeof(e, getType(e.body, scope));
+        }
+
+    } else if (e instanceof pt.CastExpression) {
+        return new CCast(e, getType(e.targetType, scope), ptExpression(e.body, scope));
 
     } else if (e instanceof pt.FunctionCallExpression) {
         return new CFunctionCall(e, ptExpression(e.fn, scope), (e.args ?? []).map(e => ptExpression(e, scope)));
@@ -65,11 +74,52 @@ export function evalConstant(c: pt.ConstantExpression): CConstant {
 }
 
 function ptUnary(e: pt.UnaryExpression, scope: Scope): CExpression {
-    return tempFakeConstant;
+    const body = ptExpression(e.body, scope);
+    if (e.type === "prefixIncrement") return new CIncrDecr(e, body, "++", "pre");
+    if (e.type === "prefixDecrement") return new CIncrDecr(e, body, "--", "pre");
+    if (e.type === "postfixIncrement") return new CIncrDecr(e, body, "++", "post");
+    if (e.type === "postfixDecrement") return new CIncrDecr(e, body, "--", "post");
+    if (e.type === "addressOf") return new CAddressOf(e, body);
+    if (e.type === "dereference") return new CDereference(e, body);
+    if (e.type === "unaryPlus") return new CUnaryPlusMinus(e, body, "+");
+    if (e.type === "unaryMinus") return new CUnaryPlusMinus(e, body, "-");
+    if (e.type === "bitwiseNot") return new CBitwiseNot(e, body);
+    if (e.type === "logicalNot") return new CLogicalNot(e, body);
+
+    throw new ParseTreeValidationError(e, "Invalid unary expression");
 }
 
 function ptBinary(e: pt.BinaryExpression, scope: Scope): CExpression {
-    return tempFakeConstant;
+    const lhs = ptExpression(e.lhs, scope), rhs = ptExpression(e.rhs, scope);
+
+    if (e.type === "mul") return new CMulDiv(e, lhs, rhs, "*");
+    if (e.type === "div") return new CMulDiv(e, lhs, rhs, "/");
+    if (e.type === "mod") return new CMod(e, lhs, rhs);
+    if (e.type === "add") return new CAddSub(e, lhs, rhs, "+");
+    if (e.type === "sub") return new CAddSub(e, lhs, rhs, "-");
+    if (e.type === "bitwiseShiftLeft") return new CShift(e, lhs, rhs, "left");
+    if (e.type === "bitwiseShiftRight") return new CShift(e, lhs, rhs, "right");
+
+    if (e.type === "relationalLT") return new CRelational(e, lhs, rhs, "LT");
+    if (e.type === "relationalGT") return new CRelational(e, lhs, rhs, "GT");
+    if (e.type === "relationalLEq") return new CRelational(e, lhs, rhs, "LEq");
+    if (e.type === "relationalGEq") return new CRelational(e, lhs, rhs, "GEq");
+    if (e.type === "relationalEq") return new CEquality(e, lhs, rhs, "==");
+    if (e.type === "relationalNEq") return new CEquality(e, lhs, rhs, "!=");
+
+    if (e.type === "bitwiseAnd") return new CBitwiseAndOr(e, lhs, rhs, "and");
+    if (e.type === "bitwiseXor") return new CBitwiseAndOr(e, lhs, rhs, "xor");
+    if (e.type === "bitwiseOr") return new CBitwiseAndOr(e, lhs, rhs, "or");
+    if (e.type === "logicalAnd") return new CLogicalAndOr(e, lhs, rhs, "and");
+    if (e.type === "logicalOr") return new CLogicalAndOr(e, lhs, rhs, "or");
+
+    if (e.type === "comma") return new CComma(e, lhs, rhs);
+    if (e.type === "arraySubscript") {
+        // transform `a[b]` into `*(a+b)`
+        return new CDereference(e, new CAddSub(e, ptExpression(e.lhs, scope), ptExpression(e.rhs, scope), "+"));
+    }
+
+    throw new ParseTreeValidationError(e, "Invalid binary expression");
 }
 
 function ptConstant(e: pt.Constant): CConstant {
@@ -143,7 +193,7 @@ function unescapeChar(s: string, node?: ParseNode): string {
         if (s === "\\'") return "'";
         if (s === '\\"') return '"';
 
-        let value = NaN;
+        let value: number;
         if (s.startsWith("\\x")) {
             // hex constant
             value = parseInt(s.slice(2), 16);

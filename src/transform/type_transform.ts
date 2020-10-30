@@ -3,6 +3,18 @@ import {CType, getArithmeticType, CPointer, addQualifier, CFuncType, CNotFuncTyp
 import * as pt from "../parsing/parsetree";
 import {ParseTreeValidationError} from "../parsing/validation";
 
+type GeneralTypeDecl = {
+    typeInfo: pt.SpecifierQualifiers | pt.DeclarationSpecifiers,
+    declarator?: pt.Declarator | pt.AbstractDeclarator
+};
+
+/** helper function for specifier & declarator type */
+export function getType(o: GeneralTypeDecl, scope: Scope): CType {
+    let type = getSpecifierType(o.typeInfo, scope);
+    if (o.declarator) type = getDeclaratorType(type, o.declarator, scope);
+    return type;
+}
+
 export function getDeclaratorType(type: CType, declarator: pt.Declarator | pt.AbstractDeclarator, scope: Scope): CType {
     let d: pt.Declarator | pt.AbstractDeclarator | undefined = declarator;
 

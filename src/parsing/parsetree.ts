@@ -43,8 +43,7 @@ export class StringLiteral extends Expression {
 
 export const UnaryOperations = [
     "postfixIncrement", "postfixDecrement", "prefixIncrement", "prefixDecrement",
-    "addressOf", "dereference", "unaryPlus", "unaryMinus", "bitwiseNot", "logicalNot",
-    "sizeof"] as const;
+    "addressOf", "dereference", "unaryPlus", "unaryMinus", "bitwiseNot", "logicalNot"] as const;
 export type UnaryOp = typeof UnaryOperations[number];
 export class UnaryExpression extends Expression {
     private readonly _unaryExpr = true;
@@ -58,9 +57,9 @@ export class UnaryExpression extends Expression {
     }
 }
 
-export const BinaryOperations = ["arraySubscript", "cast", "comma",
+export const BinaryOperations = ["arraySubscript", "comma",
     "mul", "div", "mod", "add", "sub", "bitwiseShiftLeft", "bitwiseShiftRight",
-    "relationalLT", "relationalGT", "relationalLEq", "relationalGEq", "relationalEq", "relationalNeq",
+    "relationalLT", "relationalGT", "relationalLEq", "relationalGEq", "relationalEq", "relationalNEq",
     "bitwiseAnd", "bitwiseXor", "bitwiseOr", "logicalAnd", "logicalOr"] as const;
 export type BinaryOp = typeof BinaryOperations[number];
 export class BinaryExpression extends Expression {
@@ -73,6 +72,31 @@ export class BinaryExpression extends Expression {
     *children(): IterableIterator<ParseNode> {
         yield this.lhs;
         yield this.rhs;
+    }
+}
+
+export class SizeofExpression extends Expression {
+    readonly type = "sizeof";
+
+    constructor(loc: Location, readonly body: Expression | TypeName) {
+        super(loc);
+    }
+
+    *children(): IterableIterator<ParseNode> {
+        yield this.body;
+    }
+}
+
+export class CastExpression extends Expression {
+    readonly type = "cast";
+
+    constructor(loc: Location, readonly targetType: TypeName, readonly body: Expression) {
+        super(loc);
+    }
+
+    *children(): IterableIterator<ParseNode> {
+        yield this.targetType;
+        yield this.body;
     }
 }
 

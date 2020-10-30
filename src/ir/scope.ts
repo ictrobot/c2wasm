@@ -37,7 +37,7 @@ export class Scope {
     lookupIdentifier(name: string): CDeclaration {
         const result = this._getId(name);
         if (!result) {
-            throw new Error("Failed to find `" + result + "`");
+            throw new Error("Failed to find `" + name + "`");
         }
         return result;
     }

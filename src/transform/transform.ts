@@ -6,7 +6,7 @@ import {CFuncType, addQualifier} from "../ir/types";
 import * as pt from "../parsing/parsetree";
 import {ParseTreeValidationError} from "../parsing/validation";
 import {ptExpression, evalConstant} from "./expr_transform";
-import {getSpecifierType, getDeclaratorName, getDeclaratorType} from "./type_transform";
+import {getSpecifierType, getDeclaratorName, getDeclaratorType, getType} from "./type_transform";
 
 export function transform(translationUnit: pt.TranslationUnit): Scope {
     const fileScope = new Scope();
@@ -62,8 +62,7 @@ function ptDeclaration(declaration: pt.Declaration, scope: Scope, inFunction: bo
 
 function ptFunction(fn: pt.FunctionDefinition, scope: Scope): void {
     // fn type
-    let type = getSpecifierType(fn.typeInfo, scope);
-    type = getDeclaratorType(type, fn.declarator, scope);
+    let type = getType(fn, scope);
     if (!(type instanceof CFuncType)) throw new ParseTreeValidationError(fn, "Unexpected declarator");
     type = addQualifier(type, fn.typeInfo.qualifierList[0]);
     // fn name

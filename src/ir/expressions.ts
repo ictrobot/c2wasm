@@ -8,10 +8,10 @@ import {
 
 export type CExpression =
     CConstant | CIdentifier | CStringLiteral |
-    CArraySubscript | CFunctionCall | CMemberAccess | CIncrDecr | // postfix
+    CFunctionCall | CMemberAccess | CIncrDecr | // postfix
     CAddressOf | CDereference | CUnaryPlusMinus | CBitwiseNot | CLogicalNot | CSizeof | // unary
     CCast |
-    CMulDiv | CMod | CPlusMinus | CShift |
+    CMulDiv | CMod | CAddSub | CShift |
     CRelational | CEquality |
     CBitwiseAndOr | CLogicalAndOr |
     CConditional | CAssignment | CComma;
@@ -59,18 +59,6 @@ export class CStringLiteral {
     }
 }
 
-export class CArraySubscript {
-    readonly lvalue = false;
-    readonly type: CType;
-    readonly body: CArray | CPointer;
-
-    constructor(readonly node: ParseNode, body: CExpression, readonly idx: CExpression) {
-        this.body = checks.asArrayOrPointer(body.node, body.type);
-        checks.asInteger(idx.node, idx.type);
-        this.type = this.body.type;
-    }
-}
-
 export class CFunctionCall {
     readonly lvalue = false;
     readonly type: CType;
@@ -99,7 +87,7 @@ export class CIncrDecr {
     readonly type: CArithmetic;
 
     constructor(readonly node: ParseNode, readonly body: CExpression,
-                readonly op: "++" | "op", readonly pos: "pre" | "post") {
+                readonly op: "++" | "--", readonly pos: "pre" | "post") {
         checks.checkLvalue(body, true);
         this.type = checks.asArithmetic(body.node, body.type);
     }
@@ -109,7 +97,7 @@ export class CSizeof {
     readonly lvalue = false;
     readonly type = CSizeT;
 
-    constructor(readonly node: ParseNode, readonly body: CExpression | CType) {
+    constructor(readonly node: ParseNode, readonly body: CType) {
         // TODO check body valid sizeof type
     }
 }
@@ -193,7 +181,8 @@ export class CMod {
     }
 }
 
-export class CPlusMinus {
+// Array subscript a[b] becomes *(a + b)
+export class CAddSub {
     readonly lvalue = false;
     readonly type: CArithmetic;
 
@@ -209,7 +198,7 @@ export class CShift {
     readonly lvalue = false;
     readonly type: CArithmetic;
 
-    constructor(readonly node: ParseNode, readonly lhs: CExpression, readonly rhs: CExpression) {
+    constructor(readonly node: ParseNode, readonly lhs: CExpression, readonly rhs: CExpression, readonly dir: "left" | "right") {
         this.type = integerPromotion(checks.asInteger(lhs.node, lhs.type));
         checks.asInteger(rhs.node, rhs.type);
     }
@@ -219,7 +208,7 @@ export class CRelational {
     readonly lvalue = false;
     readonly type = CArithmetic.S32;
 
-    constructor(readonly node: ParseNode, readonly lhs: CExpression, readonly rhs: CExpression, readonly op: "<" | ">" | "<=" | ">=") {
+    constructor(readonly node: ParseNode, readonly lhs: CExpression, readonly rhs: CExpression, readonly op: "LT" | "GT" | "LEq" | "GEq") {
         checks.asArithmeticOrPointer(lhs.node, lhs.type);
         checks.asArithmeticOrPointer(rhs.node, rhs.type);
     }
@@ -250,7 +239,7 @@ export class CLogicalAndOr {
     readonly lvalue = false;
     readonly type = CArithmetic.S32;
 
-    constructor(readonly node: ParseNode, readonly lhs: CExpression, readonly rhs: CExpression, readonly op: "&&" | "||") {
+    constructor(readonly node: ParseNode, readonly lhs: CExpression, readonly rhs: CExpression, readonly op: "and" | "or") {
         checks.asArithmeticOrPointer(lhs.node, lhs.type);
         checks.asArithmeticOrPointer(rhs.node, rhs.type);
     }
