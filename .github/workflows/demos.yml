@@ -27,3 +27,5 @@ jobs:
         FOLDER: dist/demos/
         CLEAN: true
         SINGLE_COMMIT: true
+        GIT_CONFIG_NAME: "github-actions[bot]"
+        GIT_CONFIG_EMAIL: "github-actions[bot]@users.noreply.github.com"
