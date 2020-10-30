@@ -124,6 +124,28 @@ export class CArithmetic {
         return t instanceof CArithmetic && t.type === this.type && t.bytes === this.bytes;
     }
 
+    get minValue(): bigint | number {
+        switch (this.type) {
+        case "float":
+            return -Infinity;
+        case "unsigned":
+            return 0;
+        case "signed":
+            return -(2n ** (BigInt(this.bytes * 8) - 1n));
+        }
+    }
+
+    get maxValue(): bigint | number {
+        switch (this.type) {
+        case "float":
+            return Infinity;
+        case "unsigned":
+            return 2n ** BigInt(this.bytes * 8) - 1n;
+        case "signed":
+            return 2n ** (BigInt(this.bytes * 8) - 1n) - 1n;
+        }
+    }
+
     static readonly Fp32 = new CArithmetic("float", 4, "float");
     static readonly Fp64 = new CArithmetic("double", 4, "float");
 

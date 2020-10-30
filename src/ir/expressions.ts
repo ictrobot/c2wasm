@@ -16,10 +16,19 @@ export type CExpression =
     CBitwiseAndOr | CLogicalAndOr |
     CConditional | CAssignment | CComma;
 
-export class CConstant {
+export abstract class CEvaluable {
+    abstract evaluate(): CConstant;
+}
+
+export class CConstant extends CEvaluable {
     readonly lvalue = false;
 
     constructor(readonly node: ParseNode, readonly type: CArithmetic, readonly value: BigInt | number) {
+        super();
+    }
+
+    evaluate(): CConstant {
+        return this;
     }
 }
 
