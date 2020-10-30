@@ -32,7 +32,8 @@ module.exports = {
         minimizer: [
             new TerserPlugin({
                 terserOptions: {
-                    output: {comments: false}
+                    output: {comments: false},
+                    keep_classnames: true
                 },
                 extractComments: false
             })

@@ -24,9 +24,7 @@ function parseTree(input: string, showLocations: boolean = false): string {
     }
 }
 
-if (typeof window === 'undefined') {
-    console.log(parseTree(testInput));
-} else {
+if (typeof window !== 'undefined' && window.document) {
     window.document.write(`
         <h1>c2wasm parse tree</h1>
         <div>
@@ -48,4 +46,6 @@ if (typeof window === 'undefined') {
     };
     textInput.addEventListener("input", handler);
     showLoc.addEventListener("change", handler);
+} else {
+    console.log(parseTree(testInput));
 }

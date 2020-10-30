@@ -162,8 +162,8 @@ export class CArithmetic {
 export const CSizeT = CArithmetic.U32;
 
 export function addQualifier<T extends CType>(t: T, qualifier?: TypeQualifier): CQualifiedType<T> {
-    // TODO test this
-    return Object.setPrototypeOf({qualifier}, t);
+    const newType = Object.assign({}, t, {qualifier});
+    return Object.setPrototypeOf(newType, Object.getPrototypeOf(t));
 }
 
 export function getQualifier(t: CQualifiedType<CType>): TypeQualifier | undefined {

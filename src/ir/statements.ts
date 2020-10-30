@@ -135,7 +135,7 @@ export class CReturn {
             }
         } else {
             if (!func.type.returnType.equals(value.type)) {
-                throw new ExpressionTypeError(node, "function return type", "a different type");
+                throw new ExpressionTypeError(value.node, "function return type", "a different type");
             }
         }
     }
