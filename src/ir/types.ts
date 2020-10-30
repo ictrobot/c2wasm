@@ -121,7 +121,7 @@ export class CArithmetic {
     }
 
     equals(t: object): boolean {
-        return this === t;
+        return t instanceof CArithmetic && t.type === this.type && t.bytes === this.bytes;
     }
 
     static readonly Fp32 = new CArithmetic("float", 4, "float");
@@ -140,7 +140,8 @@ export class CArithmetic {
 export const CSizeT = CArithmetic.U32;
 
 export function addQualifier<T extends CType>(t: T, qualifier?: TypeQualifier): CQualifiedType<T> {
-    return Object.assign(t, {qualifier});
+    // TODO test this
+    return Object.setPrototypeOf({qualifier}, t);
 }
 
 export function getQualifier(t: CQualifiedType<CType>): TypeQualifier | undefined {
@@ -167,7 +168,7 @@ export function usualArithmeticConversion(t1: CArithmetic, t2: CArithmetic): CAr
     return CArithmetic.S32;
 }
 
-export function getArithmeticType(specifierList: ReadonlyArray<TypeSpecifier & string>): CArithmetic | undefined {
+export function getArithmeticType(specifierList: ReadonlyArray<TypeSpecifier & string>): CArithmetic | CVoid | undefined {
     const copy = specifierList.slice();
 
     function remove(s: TypeSpecifier & string) {
@@ -184,7 +185,9 @@ export function getArithmeticType(specifierList: ReadonlyArray<TypeSpecifier & s
         return x;
     }
 
-    if (remove("double")) {
+    if (remove("void")) {
+        return check(new CVoid());
+    } else if (remove("double")) {
         remove("long");
         return check(CArithmetic.Fp64);
     } else if (remove("float")) {

@@ -27,7 +27,9 @@ export class CIdentifier {
     readonly lvalue: boolean;
 
     constructor(readonly node: ParseNode, readonly value: CDeclaration) {
-        this.lvalue = (value.type.qualifier !== "const") && !(value.type instanceof CFuncType);
+        // TODO const values whilst allowing initial assignment
+        // (value.type.qualifier !== "const") &&
+        this.lvalue = !(value.type instanceof CFuncType);
     }
 
     get type(): CType {

@@ -2,6 +2,7 @@ import type * as pt from "../parsing/parsetree";
 import type {CFuncDefinition, CVariable} from "./declarations";
 import type {CExpression, CConstant} from "./expressions";
 import {Scope} from "./scope";
+import {ExpressionTypeError, asArithmeticOrPointer} from "./type_checking";
 
 export type CStatement =
     CCompoundStatement | CExpressionStatement | CNop |
@@ -11,9 +12,8 @@ export type CStatement =
 export class CCompoundStatement {
     readonly scope: Scope;
     readonly statements: CStatement[] = [];
-    readonly variables: CVariable[] = [];
 
-    constructor(readonly node: pt.CompoundStatement, readonly parent: CStatement | CFuncDefinition) {
+    constructor(readonly node: pt.ParseNode, readonly parent: CStatement | CFuncDefinition) {
         this.scope = new Scope(node, parent.scope);
     }
 
@@ -45,6 +45,7 @@ export class CIf {
     elseBody?: CStatement;
 
     constructor(readonly node: pt.IfStatement, readonly test: CExpression, readonly parent: CStatement) {
+        asArithmeticOrPointer(test.node, test.type);
     }
 
     get scope(): Scope {
@@ -53,8 +54,8 @@ export class CIf {
 }
 
 export class CForLoop {
-    init?: CExpressionStatement | CNop | CVariable;
-    test?: CExpressionStatement;
+    init?: CExpressionStatement | CExpressionStatement[] | CNop;
+    test?: CExpressionStatement | CNop;
     update?: CExpression;
     body?: CStatement;
 
@@ -69,6 +70,7 @@ export class CWhileLoop {
     body?: CStatement;
 
     constructor(readonly node: pt.WhileLoop, readonly test: CExpression, readonly parent: CStatement) {
+        asArithmeticOrPointer(test.node, test.type);
     }
 
     get scope(): Scope {
@@ -80,6 +82,7 @@ export class CDoLoop {
     body?: CStatement;
 
     constructor(readonly node: pt.DoWhileLoop, readonly test: CExpression, readonly parent: CStatement) {
+        asArithmeticOrPointer(test.node, test.type);
     }
 
     get scope(): Scope {
@@ -88,7 +91,7 @@ export class CDoLoop {
 }
 
 export class CSwitch {
-    children: {cases: CConstant[], body: CStatement[], default: boolean}[] = [];
+    children: {cases: CConstant[], body: CCompoundStatement, default: boolean}[] = [];
 
     constructor(readonly node: pt.SwitchStatement, readonly expression: CExpression, readonly parent: CStatement) {
     }
@@ -123,7 +126,18 @@ export class CBreak {
 export class CReturn {
     constructor(readonly node: pt.ReturnStatement,
                 readonly func: CFuncDefinition,
+                readonly value: CExpression | undefined,
                 readonly parent: CStatement) {
+
+        if (value === undefined) {
+            if (func.type.returnType.bytes > 0) {
+                throw new ExpressionTypeError(node, "`return;`", "`return [expression]`");
+            }
+        } else {
+            if (!func.type.returnType.equals(value.type)) {
+                throw new ExpressionTypeError(node, "function return type", "a different type");
+            }
+        }
     }
 
     get scope(): Scope {

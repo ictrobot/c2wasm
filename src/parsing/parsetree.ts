@@ -509,7 +509,7 @@ export class ForLoop extends Statement {
 
     constructor(loc: Location,
                 readonly init: ExpressionStatement | NoOp | Declaration,
-                readonly test: ExpressionStatement,
+                readonly test: ExpressionStatement | NoOp,
                 readonly update: Expression | undefined,
                 readonly body: Statement) {
         super(loc);

@@ -1,12 +1,12 @@
 import {CVariable, CFuncDefinition, CArgument, CFuncDeclaration} from "../ir/declarations";
 import {CAssignment, CIdentifier} from "../ir/expressions";
 import {Scope} from "../ir/scope";
-import {CStatement, CCompoundStatement, CExpressionStatement, CNop} from "../ir/statements";
-import {CType, getArithmeticType, CPointer, CFuncType, addQualifier, CNotFuncType} from "../ir/types";
-import {ExpressionStatement} from "../parsing/parsetree";
+import {CStatement, CCompoundStatement, CExpressionStatement, CNop, CIf, CForLoop, CWhileLoop, CDoLoop, CSwitch, CBreak, CContinue, CReturn} from "../ir/statements";
+import {CFuncType, addQualifier} from "../ir/types";
 import * as pt from "../parsing/parsetree";
 import {ParseTreeValidationError} from "../parsing/validation";
-import {ptExpression} from "./expr_transform";
+import {ptExpression, evalConstant} from "./expr_transform";
+import {getSpecifierType, getDeclaratorName, getDeclaratorType} from "./type_transform";
 
 export function transform(translationUnit: pt.TranslationUnit): Scope {
     const fileScope = new Scope();
@@ -75,7 +75,7 @@ function ptFunction(fn: pt.FunctionDefinition, scope: Scope): void {
     // add arguments as parameters to function's scope
     if (!type.parameterNames) throw new ParseTreeValidationError(fn, "Expected parameter names");
     for (let i = 0; i < type.parameterTypes.length; i++) {
-        cfn.scope.addIdentifier(new CArgument(type.parameterNames[i], type.parameterTypes[i]));
+        cfn.body.scope.addIdentifier(new CArgument(type.parameterNames[i], type.parameterTypes[i]));
     }
 
     // parse body
@@ -85,28 +85,79 @@ function ptFunction(fn: pt.FunctionDefinition, scope: Scope): void {
 function ptStatement(node: pt.Statement, parent: CStatement): CStatement {
     if (node instanceof pt.CompoundStatement) {
         return ptCompound(node, parent);
-    } else if (node instanceof ExpressionStatement) {
+
+    } else if (node instanceof pt.ExpressionStatement) {
         return new CExpressionStatement(node, ptExpression(node.expression, parent.scope), parent);
+
     } else if (node instanceof pt.IfStatement) {
-        // TODO
+        const s = new CIf(node, ptExpression(node.expression, parent.scope), parent);
+        s.ifBody = ptStatement(node.ifBody, s);
+        if (node.elseBody) s.elseBody = ptStatement(node.elseBody, s);
+        return s;
+
     } else if (node instanceof pt.ForLoop) {
-        // TODO
+        const s = new CForLoop(node, parent);
+        if (node.init instanceof pt.ExpressionStatement || node.init instanceof pt.NoOp) {
+            s.init = ptStatement(node.init, s) as CExpressionStatement | CNop;
+        } else {
+            s.init = ptDeclaration(node.init, s.scope, true)
+                .map(e => new CExpressionStatement(e.node, e, s));
+        }
+        s.test = ptStatement(node.test, s) as CExpressionStatement | CNop;
+        if (node.update) s.update = ptExpression(node.update, s.scope);
+        s.body = ptStatement(node.body, s);
+        return s;
+
     } else if (node instanceof pt.WhileLoop) {
-        // TODO
+        const s = new CWhileLoop(node, ptExpression(node.test, parent.scope), parent);
+        s.body = ptStatement(node.body, s);
+        return s;
+
     } else if (node instanceof pt.DoWhileLoop) {
-        // TODO
+        const s = new CDoLoop(node, ptExpression(node.test, parent.scope), parent);
+        s.body = ptStatement(node.body, s);
+        return s;
+
     } else if (node instanceof pt.ContinueStatement) {
-        // TODO
+        let p: CStatement = parent;
+        while (!(p instanceof CForLoop || p instanceof CWhileLoop || p instanceof CDoLoop)) {
+            if (p.parent instanceof CFuncDefinition) {
+                throw new ParseTreeValidationError(node, "No target for continue statement");
+            }
+            p = p.parent;
+        }
+        return new CContinue(node, p, parent);
+
     } else if (node instanceof pt.BreakStatement) {
-        // TODO
+        let p: CStatement = parent;
+        while (!(p instanceof CForLoop || p instanceof CWhileLoop || p instanceof CDoLoop || p instanceof CSwitch)) {
+            if (p.parent instanceof CFuncDefinition) {
+                throw new ParseTreeValidationError(node, "No target for break statement");
+            }
+            p = p.parent;
+        }
+        return new CBreak(node, p, parent);
+
     } else if (node instanceof pt.SwitchStatement) {
-        // TODO
-    } else if (node instanceof pt.CaseStatement) {
-        // TODO
-    } else if (node instanceof pt.DefaultStatement) {
-        // TODO
+        const s = new CSwitch(node, ptExpression(node.expression, parent.scope), parent);
+        ptSwitchBody(s, node);
+        return s;
+
+    } else if (node instanceof pt.ReturnStatement) {
+        let p: CStatement | CFuncDefinition = parent;
+        while (!(p instanceof CFuncDefinition)) p = p.parent;
+
+        const value = node.value ? ptExpression(node.value, parent.scope) : undefined;
+        return new CReturn(node, p, value, parent);
+
     } else if (node instanceof pt.NoOp) {
         return new CNop(node, parent);
+
+    } else if (node instanceof pt.CaseStatement) {
+        // allowed case/default statements handled in ptSwitchBody
+        throw new ParseTreeValidationError(node, "Unexpected case statement");
+    } else if (node instanceof pt.DefaultStatement) {
+        throw new ParseTreeValidationError(node, "Unexpected default statement");
     }
 
     throw new ParseTreeValidationError(node, "Unknown statement type");
@@ -114,85 +165,53 @@ function ptStatement(node: pt.Statement, parent: CStatement): CStatement {
 
 function ptCompound(node: pt.CompoundStatement, parent: CStatement | CFuncDefinition): CCompoundStatement {
     const c = parent instanceof CFuncDefinition ? parent.body : new CCompoundStatement(node, parent);
-    for (const child of node.body) {
-        if (child instanceof pt.Declaration) {
-            for (const assignment of ptDeclaration(child, c.scope, true)) {
-                // add initializers to body of the statement to ensure they happen in the correct order
-                c.statements.push(new CExpressionStatement(assignment.node, assignment, c));
-            }
-        } else {
-            c.statements.push(ptStatement(child, c));
-        }
-    }
+    for (const child of node.body) _compoundBody(child, c);
     return c;
 }
 
-function getDeclaratorType(type: CType, declarator: pt.Declarator | pt.AbstractDeclarator, scope: Scope): CType {
-    let d: pt.Declarator | pt.AbstractDeclarator | undefined = declarator;
-    while (d && !(d instanceof pt.IdentifierDeclarator)) {
-        if (d instanceof pt.PointerDeclarator || d instanceof pt.AbstractPointerDeclarator) {
-            let ptr: pt.Pointer | undefined = d.pointer;
-            while (ptr) {
-                type = new CPointer(type, ptr.qualifierList?.includes("const"));
-                ptr = ptr.body;
-            }
-            d = d.body;
-        } else if (d instanceof pt.ArrayDeclarator || d instanceof pt.AbstractArrayDeclarator) {
-            // need to support evaluating the constant expression to a number
-            // and getting the length from the initializer
-            throw new ParseTreeValidationError(declarator, "Not implemented"); // TODO
-        } else { // d instanceof pt.(Abstract)FunctionDeclarator
-            const parameterTypes = [];
-            let parameterNames = undefined;
+function _compoundBody(child: pt.Declaration | pt.Statement, c: CCompoundStatement) {
+    if (child instanceof pt.Declaration) {
+        for (const assignment of ptDeclaration(child, c.scope, true)) {
+            // add initializers to body of the statement to ensure they happen in the correct order
+            c.statements.push(new CExpressionStatement(assignment.node, assignment, c));
+        }
+    } else {
+        c.statements.push(ptStatement(child, c));
+    }
+}
 
-            for (const param of d.args ?? []) {
-                let type = getSpecifierType(param.typeInfo, scope);
-                if (param.declarator) type = getDeclaratorType(type, param.declarator, scope);
-                if (param.typeInfo.qualifierList.length) type = addQualifier(type, param.typeInfo.qualifierList[0]);
-                if (type instanceof CFuncType) {
-                    throw new ParseTreeValidationError(param, "Functions cannot be parameters");
-                }
-                parameterTypes.push(type);
-
-                if (param.declarator && !param.declarator.abstractDeclarator) {
-                    parameterNames ??= [];
-                    parameterNames.push(getDeclaratorName(param.declarator));
-                }
-
-                if (parameterNames && parameterNames.length !== parameterTypes.length) {
-                    throw new ParseTreeValidationError(param, "Unexpected mix of abstract & non-abstract declarators");
-                }
+function ptSwitchBody(s: CSwitch, node: pt.SwitchStatement) {
+    if (!(node.body instanceof pt.CompoundStatement)) {
+        throw new ParseTreeValidationError(node, "Expected switch statement to have a compound statement body");
+    }
+    const children = node.body.body.slice();
+    while (children.length > 0) {
+        const child = children.shift();
+        if (child instanceof pt.CaseStatement || child instanceof pt.DefaultStatement) {
+            let block;
+            if (s.children.length > 0 && s.children[s.children.length - 1].body.statements.length === 0) {
+                // multiple cases in a row
+                block = s.children[s.children.length - 1];
+            } else {
+                block = {cases: [], default: false, body: new CCompoundStatement(node, s)};
+                s.children.push(block);
             }
 
-            if (parameterTypes.length === 0) {
-                // ensure parameterNames are always non-null in function definitions
-                parameterNames = [];
+            if (child instanceof pt.CaseStatement) {
+                block.cases.push(evalConstant(child.value));
+            } else {
+                block.default = true;
             }
 
-            if (d.body && !(d.body instanceof pt.IdentifierDeclarator)) {
-                throw new ParseTreeValidationError(d.body, "Unexpected declarator");
+            // case and default statements eat a statement
+            children.unshift(child.body);
+        } else if (child) {
+            // handle other statements as if this was a compound statement
+            if (s.children.length === 0) {
+                throw new ParseTreeValidationError(child, "Unexpected first statement inside a switch statement");
             }
-            return new CFuncType(type as CNotFuncType, parameterTypes, parameterNames);
+            const compound = s.children[s.children.length - 1].body;
+            _compoundBody(child, compound);
         }
     }
-    return type;
-}
-
-function getDeclaratorName(declarator: pt.Declarator | pt.InitDeclarator): string {
-    while (!(declarator instanceof pt.IdentifierDeclarator)) {
-        declarator = declarator.body;
-    }
-    return declarator.id;
-}
-
-function getSpecifierType(d: pt.SpecifierQualifiers | pt.DeclarationSpecifiers, scope: Scope): CType {
-    const specifiers = d.specifierList;
-    if (specifiers.every(x => typeof x === 'string')) {
-        // basic type
-        const type = getArithmeticType(specifiers as ReadonlyArray<pt.TypeSpecifier & string>);
-        if (type) return type;
-        throw new ParseTreeValidationError(d, "Invalid arithmetic type");
-    }
-    // support struct, union, enum
-    throw new ParseTreeValidationError(d, "Not implemented"); // TODO
 }
