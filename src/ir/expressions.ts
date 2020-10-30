@@ -50,9 +50,12 @@ export class CStringLiteral {
     readonly lvalue = false;
     readonly type: CArray;
 
-    constructor(readonly node: ParseNode, readonly value: string) {
-        // allow for null character and TODO utf8 encoding
-        this.type = new CArray(CArithmetic.U8, value.length + 1);
+    constructor(readonly node: ParseNode, readonly value: BigInt[]) {
+        //TODO utf8?
+        if (value.length === 0 || value[value.length - 1] !== 0n) {
+            throw new checks.ExpressionTypeError(node, "null terminated char[]", "char[]");
+        }
+        this.type = new CArray(CArithmetic.U8, value.length);
     }
 }
 

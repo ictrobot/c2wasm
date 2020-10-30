@@ -1,4 +1,4 @@
-import {CExpression, CConstant, CEvaluable} from "../ir/expressions";
+import {CExpression, CConstant, CEvaluable, CIdentifier, CFunctionCall, CMemberAccess, CDereference, CConditional, CAssignment, CStringLiteral} from "../ir/expressions";
 import {Scope} from "../ir/scope";
 import {CArithmetic} from "../ir/types";
 import {ParseNode} from "../parsing/parsetree";
@@ -12,10 +12,47 @@ const tempFakeConstant = new CConstant(new class extends ParseNode {
 export function ptExpression(e: pt.Expression, scope: Scope): CExpression {
     if (e instanceof pt.ConstantExpression) {
         return ptExpression(e.expr, scope);
+
     } else if (e instanceof pt.Constant) {
         return ptConstant(e);
+
+    } else if (e instanceof pt.Identifier) {
+        return new CIdentifier(e, scope.lookupIdentifier(e.name));
+
+    } else if (e instanceof pt.StringLiteral) {
+        const arr: BigInt[] = [];
+        for (const char of e.value) {
+            const codePoint = unescapeChar(char).codePointAt(0);
+            if (codePoint) arr.push(BigInt(codePoint));
+        }
+        arr.push(0n); // null terminator
+        return new CStringLiteral(e, arr);
+
+    } else if (e instanceof pt.UnaryExpression) {
+        return ptUnary(e, scope);
+
+    } else if (e instanceof pt.BinaryExpression) {
+        return ptBinary(e, scope);
+
+    } else if (e instanceof pt.FunctionCallExpression) {
+        return new CFunctionCall(e, ptExpression(e.fn, scope), (e.args ?? []).map(e => ptExpression(e, scope)));
+
+    } else if (e instanceof pt.MemberAccessExpression) {
+        let body = ptExpression(e.lhs, scope);
+        if (e.pointer) { // transform pointer access
+            body = new CDereference(e, body);
+        }
+        return new CMemberAccess(e, body, e.rhs);
+
+    } else if (e instanceof pt.ConditionalExpression) {
+        return new CConditional(e, ptExpression(e.condition, scope), ptExpression(e.trueValue, scope), ptExpression(e.falseValue, scope));
+
+    } else if (e instanceof pt.AssignmentExpression) {
+        return new CAssignment(e, ptExpression(e.lhs, scope), ptExpression(e.rhs, scope));
+
     }
-    return tempFakeConstant;
+
+    throw new ParseTreeValidationError(e, "Invalid expression");
 }
 
 export function evalConstant(c: pt.ConstantExpression): CConstant {
@@ -25,6 +62,14 @@ export function evalConstant(c: pt.ConstantExpression): CConstant {
         return expr.evaluate();
     }
     throw new ParseTreeValidationError(c, "Invalid constant expression");
+}
+
+function ptUnary(e: pt.UnaryExpression, scope: Scope): CExpression {
+    return tempFakeConstant;
+}
+
+function ptBinary(e: pt.BinaryExpression, scope: Scope): CExpression {
+    return tempFakeConstant;
 }
 
 function ptConstant(e: pt.Constant): CConstant {
@@ -67,7 +112,7 @@ function ptConstant(e: pt.Constant): CConstant {
                 return new CConstant(e, type, num);
             }
         }
-        throw new ParseTreeValidationError(e, "Integer constant too large for it's type");
+        throw new ParseTreeValidationError(e, "Integer constant too large for its type");
     } else if (e.valueType === "float") {
         if (value.endsWith("f")) {
             value = value.slice(0, -1);
