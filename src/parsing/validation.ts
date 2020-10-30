@@ -1,4 +1,4 @@
-import {getArithmeticType} from "../ir/types";
+import {getArithmeticType} from "../tree/types";
 import {ParseNode, TypeSpecifier} from "./parsetree";
 import * as pt from "./parsetree";
 

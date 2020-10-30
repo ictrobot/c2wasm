@@ -1,5 +1,5 @@
-import {toIR} from "../src/ir";
-import {CArithmetic} from "../src/ir/types";
+import {toIR} from "../src/tree";
+import {CArithmetic} from "../src/tree/types";
 
 const testInput = `
 static const int F = 5;
@@ -116,7 +116,7 @@ function update(input: string) {
 
 if (typeof window !== 'undefined' && window.document) {
     window.document.write(`
-        <h1>c2wasm IR</h1>
+        <h1>c2wasm ctree</h1>
         <div>
             <textarea id="textInput" rows="20" style="width: 100%">${testInput}</textarea>
 
