@@ -1,11 +1,9 @@
+import {ParseNode, ParseTreeValidationError, pt} from "../../parsing";
 import {CExpression, CConstant, CEvaluable, CIdentifier, CFunctionCall, CMemberAccess, CDereference, CConditional,
     CAssignment, CStringLiteral, CIncrDecr, CAddressOf, CUnaryPlusMinus, CBitwiseNot, CLogicalNot, CSizeof, CAddSub,
-    CCast, CComma, CMulDiv, CMod, CShift, CRelational, CEquality, CBitwiseAndOr, CLogicalAndOr} from "../ir/expressions";
-import {Scope} from "../ir/scope";
-import {CArithmetic} from "../ir/types";
-import * as pt from "../parsing/parsetree";
-import {ParseNode} from "../parsing/parsetree";
-import {ParseTreeValidationError} from "../parsing/validation";
+    CCast, CComma, CMulDiv, CMod, CShift, CRelational, CEquality, CBitwiseAndOr, CLogicalAndOr} from "../expressions";
+import {Scope} from "../scope";
+import {CArithmetic} from "../types";
 import {getType} from "./type_transform";
 
 export function ptExpression(e: pt.Expression, scope: Scope): CExpression {

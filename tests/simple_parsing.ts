@@ -1,5 +1,5 @@
 import test from 'ava';
-import {parse} from "../src/parsing/parser";
+import {parse} from "../src/parsing";
 
 test('valid C decodes', t => {
     t.truthy(parse(`

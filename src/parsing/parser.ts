@@ -59,7 +59,7 @@ export function parse(input: string): parsetree.TranslationUnit {
     }
 }
 
-function locationString(loc: parsetree.Location, input: string): string | undefined {
+export function locationString(loc: parsetree.Location, input: string): string | undefined {
     const lines = input.split("\n");
     if (loc.first_line - 1 >= lines.length) return;
 

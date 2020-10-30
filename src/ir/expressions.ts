@@ -1,4 +1,4 @@
-import type {ParseNode} from "../parsing/parsetree";
+import type {ParseNode} from "../parsing";
 import type {CDeclaration} from "./declarations";
 import * as checks from "./type_checking";
 import {

@@ -1,4 +1,4 @@
-import {parse} from "./parsing/parser";
+import {parse} from "./parsing";
 
 const C_SOURCE = `
 int main() {

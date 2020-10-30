@@ -1,5 +1,4 @@
-import {parse} from "../src/parsing/parser";
-import {Location} from "../src/parsing/parsetree";
+import {parse, Location} from "../src/parsing";
 
 const testInput = `
 int factorial(int v) {

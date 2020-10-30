@@ -1,14 +1,13 @@
-import {CVariable, CFuncDefinition, CArgument, CFuncDeclaration} from "../ir/declarations";
-import {CAssignment, CIdentifier} from "../ir/expressions";
-import {Scope} from "../ir/scope";
-import {CStatement, CCompoundStatement, CExpressionStatement, CNop, CIf, CForLoop, CWhileLoop, CDoLoop, CSwitch, CBreak, CContinue, CReturn} from "../ir/statements";
-import {CFuncType, addQualifier} from "../ir/types";
-import * as pt from "../parsing/parsetree";
-import {ParseTreeValidationError} from "../parsing/validation";
+import {CVariable, CFuncDefinition, CArgument, CFuncDeclaration} from "../declarations";
+import {CAssignment, CIdentifier} from "../expressions";
+import {Scope} from "../scope";
+import {CStatement, CCompoundStatement, CExpressionStatement, CNop, CIf, CForLoop, CWhileLoop, CDoLoop, CSwitch, CBreak, CContinue, CReturn} from "../statements";
+import {CFuncType, addQualifier} from "../types";
+import {ParseTreeValidationError, pt} from "../../parsing";
 import {ptExpression, evalConstant} from "./expr_transform";
 import {getSpecifierType, getDeclaratorName, getDeclaratorType, getType} from "./type_transform";
 
-export function transform(translationUnit: pt.TranslationUnit): Scope {
+export function ptTransform(translationUnit: pt.TranslationUnit): Scope {
     const fileScope = new Scope();
     for (const decl of translationUnit) {
         if (decl instanceof pt.FunctionDefinition) {

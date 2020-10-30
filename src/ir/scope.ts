@@ -1,4 +1,4 @@
-import type {ParseNode} from "../parsing/parsetree";
+import type {ParseNode} from "../parsing";
 import {CFuncDeclaration, CFuncDefinition, CVariable} from "./declarations";
 import type {CDeclaration} from "./declarations";
 import type {CCompound} from "./types";

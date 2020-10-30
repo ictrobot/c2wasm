@@ -1,4 +1,4 @@
-import type {ParseNode} from "../parsing/parsetree";
+import type {ParseNode} from "../parsing";
 import type {CExpression} from "./expressions";
 import {CArithmetic, CArray, CPointer, CStruct, CUnion, CType, CFuncType} from "./types";
 

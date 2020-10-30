@@ -1,7 +1,6 @@
-import {Scope} from "../ir/scope";
-import {CType, getArithmeticType, CPointer, addQualifier, CFuncType, CNotFuncType, CVoid} from "../ir/types";
-import * as pt from "../parsing/parsetree";
-import {ParseTreeValidationError} from "../parsing/validation";
+import {Scope} from "../scope";
+import {CType, getArithmeticType, CPointer, addQualifier, CFuncType, CNotFuncType, CVoid} from "../types";
+import {ParseTreeValidationError, pt} from "../../parsing/";
 
 type GeneralTypeDecl = {
     typeInfo: pt.SpecifierQualifiers | pt.DeclarationSpecifiers,
