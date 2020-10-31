@@ -62,7 +62,10 @@ export class CStruct {
     }
 
     equals(t: object): boolean {
-        return false; // TODO implement struct comparison
+        /** "Structures, unions and enumerations with different tags are distinct,
+         * and a tagless union, structure, or enumeration specifies a unique type" */
+        if (this.name === undefined) return this === t;
+        return t instanceof CStruct && t.name === this.name;
     }
 
     memberType(m: string): CType {
@@ -83,7 +86,8 @@ export class CUnion {
     }
 
     equals(t: object): boolean {
-        return false; // TODO implement union comparison
+        if (this.name === undefined) return this === t;
+        return t instanceof CUnion && t.name === this.name;
     }
 
     memberType(m: string): CType {
@@ -101,7 +105,8 @@ export class CEnum {
     }
 
     equals(t: object): boolean {
-        return false; // TODO implement enum comparison
+        if (this.name === undefined) return this === t;
+        return t instanceof CEnum && t.name === this.name;
     }
 }
 
