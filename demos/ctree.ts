@@ -92,10 +92,11 @@ function displayObject(parent: HTMLElement, key: string, obj: any): void {
 }
 
 function update(input: string) {
-    const top = window.document.getElementById("identifiers");
+    const identifiers = window.document.getElementById("identifiers");
+    const tags = window.document.getElementById("tags");
     const errors = window.document.getElementById("errors");
-    if (!top || !errors) throw new Error("Element not found");
-    top.innerHTML = "";
+    if (!identifiers || !tags || !errors) throw new Error("Element not found");
+    identifiers.innerHTML = tags.innerText = "";
     currentId = 0;
     displayedMap = new WeakMap<any, number>();
 
@@ -109,7 +110,10 @@ function update(input: string) {
 
     errors.innerHTML = "";
     for (const [key, value] of (ir as any).identifiers) {
-        displayObject(top, key, value);
+        displayObject(identifiers, key, value);
+    }
+    for (const [key, value] of (ir as any).tags) {
+        displayObject(tags, key, value);
     }
 }
 
@@ -121,7 +125,10 @@ if (typeof window !== 'undefined' && window.document) {
             <textarea id="textInput" rows="20" style="width: 100%">${testInput}</textarea>
 
             <pre id="errors"></pre>
+            <h3>Identifiers:</h3>
             <ul id="identifiers" class="treelist"></ul>
+            <h3>Tags:</h3>
+            <ul id="tags" class="treelist"></ul>
         </div>
 
         <style>

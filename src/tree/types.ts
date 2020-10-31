@@ -142,12 +142,28 @@ export class CUnion {
     }
 }
 
+export type CEnumValue = {name: string, value: number};
 export class CEnum {
     readonly typeName = "enum";
     readonly bytes = 4;
-    readonly incomplete = false;
+    private _values: ReadonlyArray<CEnumValue> | undefined;
 
-    constructor(readonly values: {name: string, value: number}[], readonly name?: string) {
+    constructor(readonly name: string | undefined) {
+    }
+
+    get values(): ReadonlyArray<CEnumValue> {
+        if (this._values === undefined) throw new Error("Can't get values of an incomplete enum");
+        return this._values;
+    }
+
+    set values(children: ReadonlyArray<CEnumValue>) {
+        if (this._values !== undefined) throw new Error("Can't redefine an enum's values");
+        if (children.length === 0) throw new Error("Enum must have one or more value");
+        this._values = children;
+    }
+
+    get incomplete(): boolean {
+        return this._values === undefined;
     }
 
     equals(t: object): boolean {

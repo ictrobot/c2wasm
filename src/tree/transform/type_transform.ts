@@ -1,6 +1,7 @@
+import {CVariable} from "../declarations";
 import {CExpression, CInitializer} from "../expressions";
 import {Scope} from "../scope";
-import {CType, getArithmeticType, CPointer, addQualifier, CFuncType, CNotFuncType, CArray} from "../types";
+import {CType, getArithmeticType, CPointer, addQualifier, CFuncType, CNotFuncType, CArray, CEnum, CStruct, CUnion} from "../types";
 import {ParseTreeValidationError, pt} from "../../parsing/";
 import {evalConstant} from "./expr_transform";
 
@@ -87,13 +88,49 @@ export function getDeclaratorName(declarator: pt.Declarator | pt.InitDeclarator)
 
 export function getSpecifierType(d: pt.SpecifierQualifiers | pt.DeclarationSpecifiers, scope: Scope): CType {
     const specifiers = d.specifierList;
-    if (specifiers.every(x => typeof x === 'string')) {
-        // basic type
+    const singleSpecifier = specifiers.length === 1 ? specifiers[0] : undefined;
+    if (singleSpecifier instanceof pt.StructUnionSpecifier) {
+        const type = singleSpecifier.structure === "struct" ? CStruct : CUnion;
+        const structure = new type(singleSpecifier.id);
+        if (!singleSpecifier.declarations) return structure;
+        if (singleSpecifier.id) scope.addTag(structure);
+
+        const values = [];
+        for (const declaration of singleSpecifier.declarations) {
+            const baseType = getSpecifierType(declaration.typeInfo, scope);
+            for (const declarator of declaration.list) {
+                const type = addQualifier(getDeclaratorType(baseType, declarator, scope), declaration.typeInfo.qualifierList[0]);
+                const name = getDeclaratorName(declarator);
+                if (type.incomplete || type.bytes === 0) {
+                    throw new ParseTreeValidationError(declarator, "Type must be complete");
+                }
+                values.push(new CVariable(name, type as CNotFuncType));
+            }
+        }
+        structure.members = values;
+        return structure;
+    } else if (singleSpecifier instanceof pt.EnumSpecifier) {
+        const cEnum = new CEnum(singleSpecifier.id);
+        if (!singleSpecifier.body) return cEnum;
+        if (singleSpecifier.id) scope.addTag(cEnum);
+
+        let nextValue = 0;
+        const values = [];
+        for (const e of singleSpecifier.body) {
+            // TODO actually make enum constants accessible (as ints or their own type?)
+
+            if (e.value) nextValue = Number(evalConstant(e.value).value);
+            values.push({name: e.id, value: nextValue++});
+        }
+        cEnum.values = values;
+        return cEnum;
+    } else if (specifiers.every(x => typeof x === 'string')) {
+        // arithmetic or void
         const type = getArithmeticType(specifiers as ReadonlyArray<pt.TypeSpecifier & string>);
         if (type) return type;
-        throw new ParseTreeValidationError(d, "Invalid arithmetic type");
+    } else if (specifiers.find(x => x instanceof pt.CustomTypeSpecifier)) {
+        throw new ParseTreeValidationError(d, "Not implemented"); // TODO
     }
 
-    // support struct, union, enum
-    throw new ParseTreeValidationError(d, "Not implemented"); // TODO
+    throw new ParseTreeValidationError(d, "Invalid specifier");
 }
