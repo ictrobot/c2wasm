@@ -269,7 +269,7 @@ export class InitDeclarator extends ParseNode {
         if (initializer instanceof AssignmentExpression) {
             yield initializer;
         } else if (Array.isArray(initializer)) {
-            yield* this.exploreInitializer(initializer);
+            for (const x of initializer) yield* this.exploreInitializer(x);
         }
     }
 }
