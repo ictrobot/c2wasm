@@ -369,7 +369,7 @@ initializer
 
 initializer_list
     : initializer                                                                       -> [$1]
-    | initializer_list ',' initializer                                                  -> ($1.push($2), $1)
+    | initializer_list ',' initializer                                                  -> ($1.push($3), $1)
     ;
 
 statement
