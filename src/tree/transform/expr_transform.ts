@@ -19,7 +19,7 @@ export function ptExpression(e: pt.Expression, scope: Scope): CExpression {
     } else if (e instanceof pt.StringLiteral) {
         const arr: BigInt[] = [];
         for (const char of e.value) {
-            const codePoint = unescapeChar(char).codePointAt(0);
+            const codePoint = unescapeChar(char, e).codePointAt(0);
             if (codePoint) arr.push(BigInt(codePoint));
         }
         arr.push(0n); // null terminator

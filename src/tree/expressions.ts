@@ -3,7 +3,7 @@ import type {CDeclaration} from "./declarations";
 import * as checks from "./type_checking";
 import {
     CArithmetic, CType, CArray, CPointer, CUnion, CStruct,
-    CSizeT, usualArithmeticConversion, integerPromotion, CFuncType
+    CSizeT, usualArithmeticConversion, integerPromotion, CFuncType, CVoid
 } from "./types";
 
 export type CExpression =
@@ -55,6 +55,11 @@ export class CStringLiteral {
         }
         this.type = new CArray(CArithmetic.U8, value.length);
     }
+
+    toInitializer(): CInitializer {
+        const constants: CConstant[] = this.value.map(x => new CConstant(this.node, CArithmetic.U8, x));
+        return new CInitializer(this.node, constants, this.type);
+    }
 }
 
 export class CFunctionCall {
@@ -96,7 +101,9 @@ export class CSizeof {
     readonly type = CSizeT;
 
     constructor(readonly node: ParseNode, readonly body: CType) {
-        // TODO check body valid sizeof type
+        if (body.incomplete || body.bytes === 0 || body instanceof CFuncType) {
+            throw new checks.ExpressionTypeError(node, "Complete non-function type", body.typeName);
+        }
     }
 }
 
@@ -146,7 +153,7 @@ export class CLogicalNot {
     readonly type = CArithmetic.S32;
 
     constructor(readonly node: ParseNode, readonly body: CExpression) {
-        checks.asArrayOrPointer(body.node, body.type);
+        checks.asArithmeticOrPointer(body.node, body.type);
     }
 }
 
@@ -188,7 +195,7 @@ export class CAddSub {
         this.type = usualArithmeticConversion(
             checks.asArithmetic(lhs.node, lhs.type),
             checks.asArithmetic(rhs.node, rhs.type));
-        // TODO allow pointers
+        // TODO allow pointers to complete types
     }
 }
 
@@ -264,25 +271,29 @@ export class CAssignment {
     readonly lvalue = false;
     readonly type: CType;
 
-    constructor(readonly node: ParseNode, readonly lhs: CExpression, readonly rhs: CExpression) {
+    // rhs may require casting
+    constructor(readonly node: ParseNode, readonly lhs: CExpression, readonly rhs: CExpression | CInitializer) {
         CAssignment.checkLvalue(lhs);
+        this.type = lhs.type;
 
-        if (lhs.type instanceof CArithmetic && rhs.type instanceof CArithmetic) {
-            this.type = usualArithmeticConversion(lhs.type, rhs.type);
-        } else if (lhs.type.equals(rhs.type)) {
-            this.type = this.lhs.type;
-        } else {
-            // TODO implement full type rules including casting const 0 to ptr
-            throw new checks.ExpressionTypeError(node, "assignment to have the same type", "different types");
-        }
+        CAssignment.checkAssignmentValid(node, lhs.type, rhs.type);
     }
 
     private static checkLvalue(e: CExpression) {
         checks.checkLvalue(e, true);
-        if (e.type instanceof CArray || e.type instanceof CFuncType) {
+        if (e.type instanceof CArray || e.type instanceof CFuncType || e.type.incomplete || e.type.bytes === 0) {
             throw new checks.ExpressionTypeError(e.node, "Assignable lvalue", e.type.typeName);
         }
-        // TODO implement const and incomplete type checks
+    }
+
+    static checkAssignmentValid(node: ParseNode, varType: CType, valueType: CType): void {
+        if (varType instanceof CArithmetic && valueType instanceof CArithmetic) {
+            return;
+        } else if (varType.equals(valueType)) {
+            return;
+        }
+        // TODO implement full type rules including casting const 0 to ptr
+        throw new checks.ExpressionTypeError(node, "assignment to have the same type", "different types");
     }
 }
 
@@ -292,5 +303,65 @@ export class CComma {
 
     constructor(readonly node: ParseNode, readonly lhs: CExpression, readonly rhs: CExpression) {
         this.type = rhs.type;
+    }
+}
+
+/** Special type of expression permitted only in declarations */
+export class CInitializer {
+    private _type: CType;
+
+    constructor(readonly node: ParseNode, readonly body: (CExpression | CInitializer)[], type?: CType) {
+        // default to a void array which is invalid but lets the array size be used when declaring arrays
+        this._type = type ?? new CArray(new CVoid(), body.length);
+
+        // convert string literals to list initializers
+        for (let i = 0; i < this.body.length; i++) {
+            const value = this.body[i];
+            if (value instanceof CStringLiteral) this.body[i] = value.toInitializer();
+        }
+    }
+
+    get type(): CType {
+        return this._type;
+    }
+
+    set type(value: CType) {
+        // TODO nested type checking
+        let error = false;
+        if (value instanceof CArray) {
+            if (this.body.length > (value.length ?? Infinity)) error = true;
+        } else if (value instanceof CStruct) {
+            if (this.body.length > value.members.length) error = true;
+        } else if (value instanceof CUnion) {
+            if (this.body.length > 1) error = true;
+        } else {
+            error = true;
+        }
+        if (error) throw new checks.ExpressionTypeError(this.node, "initializer to match type", "non-matching initializer");
+        this._type = value;
+    }
+
+    evaluate(): (CConstant | CStringLiteral)[] {
+        const value = [];
+        // TODO take into account not every member has to be specified when nesting
+        for (const child of this.body) {
+            if (child instanceof CInitializer) {
+                value.push(...child.evaluate());
+            } else if (child instanceof CEvaluable) {
+                value.push(child.evaluate());
+            } else if (child instanceof CStringLiteral) {
+                value.push(child);
+            }
+        }
+        return value;
+    }
+
+    asStatic(): this {
+        for (const child of this.body) {
+            if (!(child instanceof CInitializer || child instanceof CEvaluable)) {
+                throw new checks.ExpressionTypeError(child.node, "constant expression", "non-constant expression");
+            }
+        }
+        return this;
     }
 }

@@ -1,7 +1,8 @@
 import {CVariable, CFuncDefinition, CArgument, CFuncDeclaration} from "../declarations";
-import {CAssignment, CIdentifier} from "../expressions";
+import {CAssignment, CIdentifier, CExpression, CEvaluable, CInitializer, CStringLiteral} from "../expressions";
 import {Scope} from "../scope";
 import {CStatement, CCompoundStatement, CExpressionStatement, CNop, CIf, CForLoop, CWhileLoop, CDoLoop, CSwitch, CBreak, CContinue, CReturn} from "../statements";
+import {ExpressionTypeError} from "../type_checking";
 import {CFuncType, addQualifier} from "../types";
 import {ParseTreeValidationError, pt} from "../../parsing";
 import {ptExpression, evalConstant} from "./expr_transform";
@@ -22,12 +23,21 @@ export function ptTransform(translationUnit: pt.TranslationUnit): Scope {
 function ptDeclaration(declaration: pt.Declaration, scope: Scope, inFunction: boolean): CAssignment[] {
     const declType = getSpecifierType(declaration.typeInfo, scope);
     const assignments = [];
-    for (const entry of declaration.list) {
+    for (let entry of declaration.list) {
         const name = getDeclaratorName(entry);
-        let type = getDeclaratorType(declType, entry instanceof pt.InitDeclarator ? entry.body : entry, scope);
+
+        let initialValue: CExpression | CInitializer | undefined;
+        if (entry instanceof pt.InitDeclarator) {
+            initialValue = ptInitializer(entry, entry.initializer, scope);
+            entry = entry.body;
+        }
+
+        let type = getDeclaratorType(declType, entry, scope, initialValue);
         type = addQualifier(type, declaration.typeInfo.qualifierList[0]);
 
-        if (type instanceof CFuncType) {
+        if (type.incomplete) {
+            throw new ExpressionTypeError(entry, "complete type", "incomplete type");
+        } else if (type instanceof CFuncType) {
             // function declarations
             scope.addIdentifier(new CFuncDeclaration(name, type, declaration.typeInfo.storageList[0]));
         } else {
@@ -35,28 +45,37 @@ function ptDeclaration(declaration: pt.Declaration, scope: Scope, inFunction: bo
             const cvar = new CVariable(name, type, declaration.typeInfo.storageList[0]);
             scope.addIdentifier(cvar);
 
-            if (entry instanceof pt.InitDeclarator) {
-                // initialized variable
-                const initialValue = entry.initializer;
+            if (initialValue) {
+                if (initialValue instanceof CInitializer) initialValue.type = type;
 
-                if (Array.isArray(initialValue)) {
-                    // support struct initialization
-                    throw new ParseTreeValidationError(entry, "Not implemented"); // TODO
+                if (inFunction && cvar.storage !== "static") {
+                    const assignment = new CAssignment(entry, new CIdentifier(entry, cvar, true), initialValue);
+                    assignments.push(assignment);
                 } else {
-                    const value = ptExpression(initialValue as pt.Expression, scope);
-                    const assignment = new CAssignment(entry, new CIdentifier(entry, cvar, true), value);
-                    if (inFunction) {
-                        // in function so return assignment to be added to body of fn
-                        assignments.push(assignment);
+                    // static initialization, must be constant and evaluated at compile time
+                    if (initialValue instanceof CEvaluable) {
+                        cvar.staticValue = initialValue.evaluate();
+                    } else if (initialValue instanceof CInitializer) {
+                        cvar.staticValue = initialValue.asStatic();
+                    } else if (initialValue instanceof CStringLiteral) {
+                        cvar.staticValue = initialValue.toInitializer();
                     } else {
-                        // add initializer to var declaration
-                        cvar.initial = assignment;
+                        throw new ExpressionTypeError(initialValue.node, "constant expression", "non-constant expression");
                     }
+                    CAssignment.checkAssignmentValid(entry, type, cvar.staticValue.type);
                 }
             }
         }
     }
     return assignments;
+}
+
+function ptInitializer(node: pt.ParseNode, initializer: pt.Initializer, scope: Scope): CExpression | CInitializer {
+    if (Array.isArray(initializer)) {
+        return new CInitializer(node, initializer.map(x => ptInitializer(node, x, scope)));
+    } else {
+        return ptExpression(initializer as pt.Expression, scope);
+    }
 }
 
 function ptFunction(fn: pt.FunctionDefinition, scope: Scope): void {

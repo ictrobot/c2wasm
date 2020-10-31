@@ -1,6 +1,6 @@
 import type {ParseNode} from "../parsing";
 import type {CExpression} from "./expressions";
-import {CArithmetic, CArray, CPointer, CStruct, CUnion, CType, CFuncType} from "./types";
+import {CArithmetic, CPointer, CStruct, CUnion, CType, CFuncType, checkTypeComplete} from "./types";
 
 export class ExpressionTypeError extends Error {
     name = "ExpressionTypeError";
@@ -37,18 +37,13 @@ export function asArithmeticOrPointer(node: ParseNode, t: CType): CArithmetic | 
     throw new ExpressionTypeError(node, "arithmetic or pointer", t.typeName);
 }
 
-export function asArrayOrPointer(node: ParseNode, t: CType): CArray | CPointer {
-    if (t instanceof CArray) return t;
-    if (t instanceof CPointer) return t;
-    throw new ExpressionTypeError(node, "array or pointer", t.typeName);
-}
-
 export function asFunction(node: ParseNode, t: CType): CFuncType {
     if (t instanceof CFuncType) return t;
     throw new ExpressionTypeError(node, "function", t.typeName);
 }
 
 export function asStructOrUnion(node: ParseNode, t: CType): CStruct | CUnion {
+    checkTypeComplete(t);
     if (t instanceof CStruct) return t;
     if (t instanceof CUnion) return t;
     throw new ExpressionTypeError(node, "struct or union", t.typeName);

@@ -1,6 +1,8 @@
+import {CExpression, CInitializer} from "../expressions";
 import {Scope} from "../scope";
-import {CType, getArithmeticType, CPointer, addQualifier, CFuncType, CNotFuncType, CVoid} from "../types";
+import {CType, getArithmeticType, CPointer, addQualifier, CFuncType, CNotFuncType, CArray} from "../types";
 import {ParseTreeValidationError, pt} from "../../parsing/";
+import {evalConstant} from "./expr_transform";
 
 type GeneralTypeDecl = {
     typeInfo: pt.SpecifierQualifiers | pt.DeclarationSpecifiers,
@@ -14,7 +16,11 @@ export function getType(o: GeneralTypeDecl, scope: Scope): CType {
     return type;
 }
 
-export function getDeclaratorType(type: CType, declarator: pt.Declarator | pt.AbstractDeclarator, scope: Scope): CType {
+export function getDeclaratorType(type: CType,
+                                  declarator: pt.Declarator | pt.AbstractDeclarator,
+                                  scope: Scope,
+                                  initialValue?: CExpression | CInitializer): CType {
+
     let d: pt.Declarator | pt.AbstractDeclarator | undefined = declarator;
 
     while (d && !(d instanceof pt.IdentifierDeclarator)) {
@@ -27,10 +33,14 @@ export function getDeclaratorType(type: CType, declarator: pt.Declarator | pt.Ab
             d = d.body;
 
         } else if (d instanceof pt.ArrayDeclarator || d instanceof pt.AbstractArrayDeclarator) {
-            // need to support evaluating the constant expression to a number
-            // and getting the length from the initializer
-            throw new ParseTreeValidationError(declarator, "Not implemented"); // TODO
+            type = new CArray(type);
+            if (d.length) {
+                type.length = Number(evalConstant(d.length).value);
+            } else if (initialValue && initialValue.type instanceof CArray) {
+                type.length = initialValue.type.length;
+            }
 
+            d = d.body;
         } else { // d instanceof pt.(Abstract)FunctionDeclarator
             const parameterTypes = [];
             let parameterNames = undefined;

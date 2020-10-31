@@ -8,10 +8,13 @@ export type CQualifiedType<T extends CType> = T & {qualifier?: TypeQualifier};
 export class CFuncType {
     readonly typeName = "function";
     readonly bytes = 0;
+    readonly incomplete = false;
 
     constructor(readonly returnType: CQualifiedType<CNotFuncType>,
                 readonly parameterTypes: CQualifiedType<CNotFuncType>[],
                 public parameterNames?: string[]) {
+        checkTypeComplete(returnType);
+        parameterTypes.forEach(checkTypeComplete);
     }
 
     equals(t: Object): boolean {
@@ -25,8 +28,10 @@ export class CFuncType {
 export class CPointer {
     readonly typeName = "pointer";
     readonly bytes = 4;
+    readonly incomplete = false;
 
     constructor(readonly type: CType, readonly constant: boolean = false) {
+        // allow pointers to incomplete types
     }
 
     equals(t: object): boolean {
@@ -37,11 +42,17 @@ export class CPointer {
 export class CArray {
     readonly typeName = "array";
 
-    constructor(readonly type: CType, readonly length: number) {
+    constructor(readonly type: CType, public length?: number) {
+        checkTypeComplete(type);
     }
 
     get bytes(): number {
+        if (this.length === undefined) throw new Error("Tried to get size of incomplete type");
         return this.type.bytes * this.length;
+    }
+
+    get incomplete(): boolean {
+        return this.length === undefined;
     }
 
     equals(t: object): boolean {
@@ -53,12 +64,29 @@ export type CCompound = CStruct | CUnion | CEnum;
 
 export class CStruct {
     readonly typeName = "struct";
+    private _members: ReadonlyArray<CVariable> | undefined;
 
-    constructor(readonly children: CVariable[], readonly name?: string) {
+    constructor(readonly name: string | undefined) {
+    }
+
+    get members(): ReadonlyArray<CVariable> {
+        if (this._members === undefined) throw new Error("Can't get members of an incomplete struct");
+        return this._members;
+    }
+
+    set members(children: ReadonlyArray<CVariable>) {
+        if (this._members !== undefined) throw new Error("Can't redefine a struct's members");
+        if (children.length === 0) throw new Error("Struct must have one or more member");
+        this._members = children;
     }
 
     get bytes(): number {
-        return this.children.reduce((total, x) => total + x.type.bytes, 0);
+        if (this.incomplete) throw new Error("Tried to get size of incomplete type");
+        return this.members.reduce((total, x) => total + x.type.bytes, 0);
+    }
+
+    get incomplete(): boolean {
+        return this._members === undefined;
     }
 
     equals(t: object): boolean {
@@ -69,7 +97,7 @@ export class CStruct {
     }
 
     memberType(m: string): CType {
-        const member = this.children.find(x => x.name === m);
+        const member = this.members.find(x => x.name === m);
         if (member) return member.type;
         throw new Error(`Struct does not contain member ${member}`);
     }
@@ -77,12 +105,29 @@ export class CStruct {
 
 export class CUnion {
     readonly typeName = "union";
+    private _members: ReadonlyArray<CVariable> | undefined;
 
-    constructor(readonly children: CVariable[], readonly name?: string) {
+    constructor(readonly name: string | undefined) {
+    }
+
+    get members(): ReadonlyArray<CVariable> {
+        if (this._members === undefined) throw new Error("Can't get members of an incomplete union");
+        return this._members;
+    }
+
+    set members(children: ReadonlyArray<CVariable>) {
+        if (this._members !== undefined) throw new Error("Can't redefine a union's members");
+        if (children.length === 0) throw new Error("Struct must have one or more member");
+        this._members = children;
     }
 
     get bytes(): number {
-        return this.children.reduce((total, x) => Math.max(total, x.type.bytes), 0);
+        if (this.incomplete) throw new Error("Tried to get size of incomplete type");
+        return this.members.reduce((total, x) => Math.max(total, x.type.bytes), 0);
+    }
+
+    get incomplete(): boolean {
+        return this._members === undefined;
     }
 
     equals(t: object): boolean {
@@ -91,7 +136,7 @@ export class CUnion {
     }
 
     memberType(m: string): CType {
-        const member = this.children.find(x => x.name === m);
+        const member = this.members.find(x => x.name === m);
         if (member) return member.type;
         throw new Error(`Union does not contain member ${member}`);
     }
@@ -100,6 +145,7 @@ export class CUnion {
 export class CEnum {
     readonly typeName = "enum";
     readonly bytes = 4;
+    readonly incomplete = false;
 
     constructor(readonly values: {name: string, value: number}[], readonly name?: string) {
     }
@@ -113,6 +159,7 @@ export class CEnum {
 export class CVoid {
     readonly typeName = "void";
     readonly bytes = 0;
+    readonly incomplete = false;
 
     equals(t: object): boolean {
         return t instanceof CVoid;
@@ -121,6 +168,7 @@ export class CVoid {
 
 export class CArithmetic {
     readonly typeName = "arithmetic";
+    readonly incomplete = false;
 
     private constructor(readonly name: string, readonly bytes: number, readonly type: "float" | "signed" | "unsigned") {
     }
@@ -240,4 +288,13 @@ export function getArithmeticType(specifierList: ReadonlyArray<TypeSpecifier & s
         return check(CArithmetic.S32);
     }
     return undefined;
+}
+
+export function checkTypeComplete<T extends CType>(type: T): T {
+    if (type.incomplete) {
+        throw new class extends Error {
+            name = "IncompleteTypeError";
+        }("Invalid use of an incomplete type");
+    }
+    return type;
 }

@@ -1,6 +1,6 @@
 import type * as pt from "../parsing/parsetree";
 import type {CFuncDefinition, CVariable} from "./declarations";
-import type {CExpression, CConstant} from "./expressions";
+import {CExpression, CConstant, CAssignment} from "./expressions";
 import {Scope} from "./scope";
 import {ExpressionTypeError, asArithmeticOrPointer} from "./type_checking";
 
@@ -126,7 +126,7 @@ export class CBreak {
 export class CReturn {
     constructor(readonly node: pt.ReturnStatement,
                 readonly func: CFuncDefinition,
-                readonly value: CExpression | undefined,
+                public value: CExpression | undefined,
                 readonly parent: CStatement) {
 
         if (value === undefined) {
@@ -135,7 +135,7 @@ export class CReturn {
             }
         } else {
             if (!func.type.returnType.equals(value.type)) {
-                throw new ExpressionTypeError(value.node, "function return type", "a different type");
+                CAssignment.checkAssignmentValid(node, func.type.returnType, value.type);
             }
         }
     }

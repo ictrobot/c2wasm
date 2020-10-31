@@ -1,6 +1,7 @@
 import type {FunctionDefinition} from "../parsing/parsetree";
 import type {StorageClass} from "../parsing/parsetree";
-import type {CAssignment} from "./expressions";
+import type {CInitializer} from "./expressions";
+import type {CConstant} from "./expressions";
 import type {Scope} from "./scope";
 import {CCompoundStatement} from "./statements";
 import type {CFuncType, CNotFuncType, CQualifiedType} from "./types";
@@ -8,7 +9,7 @@ import type {CFuncType, CNotFuncType, CQualifiedType} from "./types";
 export type CDeclaration = CVariable | CArgument | CFuncDefinition | CFuncDeclaration;
 
 export class CVariable {
-    initial?: CAssignment;
+    staticValue?: CConstant | CInitializer;
 
     constructor(readonly name: string,
                 readonly type: CQualifiedType<CNotFuncType>,
