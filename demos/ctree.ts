@@ -2,19 +2,9 @@ import {toIR} from "../src/tree";
 import {CArithmetic} from "../src/tree/types";
 
 const testInput = `
-static const int F = 5;
+static const struct {int a; int b;} myPair = {2, 5};
 
 int test(int v) {
-  switch (v) {
-    case 1:
-    case 2:
-      v += F + 0xFF;
-      break;
-    case 4:
-    case 5:
-    default:
-      return 3;
-  } 
   if (v < 2) {
     for (long a = 3; a < 5; a++) {
       return (int) (3.0f);
@@ -31,7 +21,7 @@ let displayedMap: WeakMap<any, number> = new WeakMap();
 function getId(obj: object): [id: number, isNew: boolean] {
     let id = displayedMap.get(obj);
     if (id === undefined) {
-        id = ++currentId;
+        id = currentId++;
         displayedMap.set(obj, id);
         return [id, true];
     }
@@ -50,7 +40,9 @@ function displayObject(parent: HTMLElement, key: string, obj: any): void {
     const [id, idNew] = getId(obj);
     li.classList.add(`objID${id}`);
     if (idNew) li.id = `objID${id}`;
-    li.innerHTML = `<span class="key">${key}:</span> <code>${Object.getPrototypeOf(obj).constructor.name}</code>`;
+    li.innerHTML = `<span class="key">${key}:</span> <code>${obj instanceof CArithmetic ? obj.name : Object.getPrototypeOf(obj).constructor.name}</code>`;
+    if (obj instanceof CArithmetic && !(obj as any).qualifier) return; // reduce tree clutter
+
     if (idNew) {
         li.innerHTML += ` <span class="id">[${id}]</span>`;
     } else {
@@ -58,7 +50,7 @@ function displayObject(parent: HTMLElement, key: string, obj: any): void {
     }
 
     // add children
-    if (idNew || obj instanceof CArithmetic) {
+    if (idNew) {
         // tree setup
         li.classList.add("expandable");
         li.addEventListener("click", e => {
@@ -109,6 +101,7 @@ function update(input: string) {
     }
 
     errors.innerHTML = "";
+    getId(ir);
     for (const [key, value] of (ir as any).identifiers) {
         displayObject(identifiers, key, value);
     }
@@ -125,6 +118,7 @@ if (typeof window !== 'undefined' && window.document) {
             <textarea id="textInput" rows="20" style="width: 100%">${testInput}</textarea>
 
             <pre id="errors"></pre>
+            <div id="objID0"></div>
             <h3>Identifiers:</h3>
             <ul id="identifiers" class="treelist"></ul>
             <h3>Tags:</h3>
