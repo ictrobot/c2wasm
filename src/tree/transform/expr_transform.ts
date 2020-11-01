@@ -18,9 +18,14 @@ export function ptExpression(e: pt.Expression, scope: Scope): CExpression {
 
     } else if (e instanceof pt.StringLiteral) {
         const arr: BigInt[] = [];
-        for (const char of e.value) {
-            const codePoint = unescapeChar(char, e).codePointAt(0);
-            if (codePoint) arr.push(BigInt(codePoint));
+        const charRegex = /[^\\\n"]|\\(?:[^x0-7\n]|x[0-9a-fA-F]{1,2}|[0-7]{1,3})/y;
+        while (charRegex.lastIndex < e.value.length) {
+            const match = charRegex.exec(e.value);
+            if (match && charRegex.lastIndex !== 0) {
+                arr.push(BigInt(unescapeChar(match[0], e).codePointAt(0) ?? 0));
+            } else {
+                throw new ParseTreeValidationError(e, "Invalid string literal");
+            }
         }
         arr.push(0n); // null terminator
         return new CStringLiteral(e, arr);
