@@ -1,12 +1,12 @@
 import {CVariable, CFuncDefinition, CArgument, CFuncDeclaration} from "../declarations";
-import {CAssignment, CIdentifier, CExpression, CEvaluable, CInitializer, CStringLiteral, CConstant} from "../expressions";
+import {CAssignment, CIdentifier, CExpression, CEvaluable, CInitializer, CStringLiteral} from "../expressions";
 import {Scope} from "../scope";
 import {CStatement, CCompoundStatement, CExpressionStatement, CNop, CIf, CForLoop, CWhileLoop, CDoLoop, CSwitch, CBreak, CContinue, CReturn} from "../statements";
 import {ExpressionTypeError} from "../type_checking";
-import {CFuncType, addQualifier} from "../types";
+import {CFuncType} from "../types";
 import {ParseTreeValidationError, pt} from "../../parsing";
 import {ptExpression, evalConstant} from "./expr_transform";
-import {getSpecifierType, getDeclaratorName, getDeclaratorType, getType} from "./type_transform";
+import {getDeclaratorName, getDeclaratorType, getType} from "./type_transform";
 
 export function ptTransform(translationUnit: pt.TranslationUnit): Scope {
     const fileScope = new Scope();
@@ -21,7 +21,7 @@ export function ptTransform(translationUnit: pt.TranslationUnit): Scope {
 }
 
 function ptDeclaration(declaration: pt.Declaration, scope: Scope, inFunction: boolean): CAssignment[] {
-    const declType = getSpecifierType(declaration.typeInfo, scope);
+    const declType = getType(declaration, scope);
     const assignments = [];
     for (let entry of declaration.list) {
         const name = getDeclaratorName(entry);
@@ -32,8 +32,7 @@ function ptDeclaration(declaration: pt.Declaration, scope: Scope, inFunction: bo
             entry = entry.body;
         }
 
-        let type = getDeclaratorType(declType, entry, scope, initialValue);
-        type = addQualifier(type, declaration.typeInfo.qualifierList[0]);
+        const type = getDeclaratorType(declType, entry, scope, initialValue);
 
         if (type.incomplete) {
             throw new ExpressionTypeError(entry, "complete type", "incomplete type");
@@ -49,8 +48,8 @@ function ptDeclaration(declaration: pt.Declaration, scope: Scope, inFunction: bo
                 if (initialValue instanceof CInitializer) initialValue.type = type;
 
                 if (inFunction && cvar.storage !== "static") {
-                    const assignment = new CAssignment(entry, new CIdentifier(entry, cvar, true), initialValue, undefined);
-                    assignments.push(assignment);
+                    const id = new CIdentifier(entry, cvar);
+                    assignments.push(new CAssignment(entry, id, initialValue, undefined, true));
                 } else {
                     // static initialization, must be constant and evaluated at compile time
                     if (initialValue instanceof CEvaluable) {
@@ -80,9 +79,8 @@ function ptInitializer(node: pt.ParseNode, initializer: pt.Initializer, scope: S
 
 function ptFunction(fn: pt.FunctionDefinition, scope: Scope): void {
     // fn type
-    let type = getType(fn, scope);
+    const type = getType(fn, scope);
     if (!(type instanceof CFuncType)) throw new ParseTreeValidationError(fn, "Unexpected declarator");
-    type = addQualifier(type, fn.typeInfo.qualifierList[0]);
     // fn name
     const name = getDeclaratorName(fn.declarator);
 

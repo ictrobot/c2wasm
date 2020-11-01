@@ -29,13 +29,15 @@ export class CPointer {
     readonly typeName = "pointer";
     readonly bytes = 4;
     readonly incomplete = false;
+    readonly qualifier?: TypeQualifier;
 
-    constructor(readonly type: CType, readonly constant: boolean = false) {
+    constructor(readonly type: CType, constant: boolean = false) {
         // allow pointers to incomplete types
+        if (constant) this.qualifier = "const";
     }
 
     equals(t: object): boolean {
-        return t instanceof CPointer && t.constant === this.constant && this.type.equals(t.type);
+        return t instanceof CPointer && t.qualifier === this.qualifier && this.type.equals(t.type);
     }
 }
 

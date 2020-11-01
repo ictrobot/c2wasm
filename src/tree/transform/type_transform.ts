@@ -13,6 +13,7 @@ type GeneralTypeDecl = {
 /** helper function for specifier & declarator type */
 export function getType(o: GeneralTypeDecl, scope: Scope): CType {
     let type = getSpecifierType(o.typeInfo, scope);
+    if (o.typeInfo.qualifierList.length) type = addQualifier(type, o.typeInfo.qualifierList[0]);
     if (o.declarator) type = getDeclaratorType(type, o.declarator, scope);
     return type;
 }
@@ -47,9 +48,7 @@ export function getDeclaratorType(type: CType,
             let parameterNames = undefined;
 
             for (const param of d.args ?? []) {
-                let type = getSpecifierType(param.typeInfo, scope);
-                if (param.declarator) type = getDeclaratorType(type, param.declarator, scope);
-                if (param.typeInfo.qualifierList.length) type = addQualifier(type, param.typeInfo.qualifierList[0]);
+                const type = getType(param, scope);
                 if (type instanceof CFuncType) {
                     throw new ParseTreeValidationError(param, "Functions cannot be parameters");
                 }
@@ -86,7 +85,7 @@ export function getDeclaratorName(declarator: pt.Declarator | pt.InitDeclarator)
     return declarator.id;
 }
 
-export function getSpecifierType(d: pt.SpecifierQualifiers | pt.DeclarationSpecifiers, scope: Scope): CType {
+function getSpecifierType(d: pt.SpecifierQualifiers | pt.DeclarationSpecifiers, scope: Scope): CType {
     const specifiers = d.specifierList;
     const singleSpecifier = specifiers.length === 1 ? specifiers[0] : undefined;
 
@@ -106,9 +105,9 @@ export function getSpecifierType(d: pt.SpecifierQualifiers | pt.DeclarationSpeci
 
         const values = [];
         for (const declaration of singleSpecifier.declarations) {
-            const baseType = getSpecifierType(declaration.typeInfo, scope);
+            const baseType = getType(declaration, scope);
             for (const declarator of declaration.list) {
-                const type = addQualifier(getDeclaratorType(baseType, declarator, scope), declaration.typeInfo.qualifierList[0]);
+                const type = getDeclaratorType(baseType, declarator, scope);
                 const name = getDeclaratorName(declarator);
                 if (type.incomplete || type.bytes === 0) {
                     throw new ParseTreeValidationError(declarator, "Type must be complete");

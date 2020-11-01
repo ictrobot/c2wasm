@@ -35,9 +35,9 @@ export class CConstant extends CEvaluable {
 export class CIdentifier extends CEvaluable {
     readonly lvalue: boolean;
 
-    constructor(readonly node: ParseNode, readonly value: CDeclaration, readonly initialAssignment: boolean = false) {
+    constructor(readonly node: ParseNode, readonly value: CDeclaration) {
         super();
-        this.lvalue = (initialAssignment || value.type.qualifier !== "const") && !(value.type instanceof CFuncType);
+        this.lvalue = !(value.type instanceof CFuncType);
     }
 
     get type(): CType {
@@ -304,10 +304,17 @@ export class CAssignment {
     readonly type: CType;
 
     // rhs may require casting
-    constructor(readonly node: ParseNode, readonly lhs: CExpression, readonly rhs: CExpression | CInitializer, readonly assignmentType: pt.AssignmentType) {
-        CAssignment.checkLvalue(lhs);
+    constructor(readonly node: ParseNode, readonly lhs: CExpression, readonly rhs: CExpression | CInitializer,
+                readonly assignmentType: pt.AssignmentType, readonly initialAssignment: boolean = false) {
+        // check lvalue
+        checks.checkLvalue(lhs, true);
+        if (lhs.type instanceof CArray || lhs.type instanceof CFuncType ||
+            lhs.type.incomplete || lhs.type.bytes === 0 || (getQualifier(lhs.type) === "const" && !initialAssignment)) {
+            throw new checks.ExpressionTypeError(lhs.node, "assignable lvalue");
+        }
         this.type = lhs.type;
 
+        // check assignment types are valid
         if (assignmentType) {
             if (rhs instanceof CInitializer) {
                 throw new checks.ExpressionTypeError(node,"simple assignments with structure initializers");
@@ -335,14 +342,6 @@ export class CAssignment {
         }
     }
 
-    private static checkLvalue(e: CExpression) {
-        checks.checkLvalue(e, true);
-        if (e.type instanceof CArray || e.type instanceof CFuncType ||
-            e.type.incomplete || e.type.bytes === 0 || getQualifier(e.type) === "const") {
-            throw new checks.ExpressionTypeError(e.node, "assignable lvalue", e.type.typeName);
-        }
-    }
-
     static checkAssignmentValid(node: ParseNode, varType: CType, value: CExpression | CInitializer): void {
         // also allow constant 0 to be assigned to a pointer
         if (varType instanceof CPointer && value instanceof CConstant) {
@@ -359,6 +358,8 @@ export class CAssignment {
         if (varType instanceof CPointer && valueType instanceof CPointer) {
             // void pointers can be assigned to any pointer and any pointer can be assigned to a void pointer
             if (varType.type instanceof CVoid || valueType.type instanceof CVoid) return;
+            // allow non-constant pointers to be assigned to constant pointers
+            if (varType.type.equals(valueType.type) && valueType.qualifier !== "const") return;
         }
 
         throw new checks.ExpressionTypeError(node, varType.typeName, valueType.typeName);
