@@ -1,5 +1,5 @@
 import {CVariable, CFuncDefinition, CArgument, CFuncDeclaration} from "../declarations";
-import {CAssignment, CIdentifier, CExpression, CEvaluable, CInitializer, CStringLiteral} from "../expressions";
+import {CAssignment, CIdentifier, CExpression, CEvaluable, CInitializer, CStringLiteral, CConstant} from "../expressions";
 import {Scope} from "../scope";
 import {CStatement, CCompoundStatement, CExpressionStatement, CNop, CIf, CForLoop, CWhileLoop, CDoLoop, CSwitch, CBreak, CContinue, CReturn} from "../statements";
 import {ExpressionTypeError} from "../type_checking";
@@ -49,7 +49,7 @@ function ptDeclaration(declaration: pt.Declaration, scope: Scope, inFunction: bo
                 if (initialValue instanceof CInitializer) initialValue.type = type;
 
                 if (inFunction && cvar.storage !== "static") {
-                    const assignment = new CAssignment(entry, new CIdentifier(entry, cvar, true), initialValue);
+                    const assignment = new CAssignment(entry, new CIdentifier(entry, cvar, true), initialValue, undefined);
                     assignments.push(assignment);
                 } else {
                     // static initialization, must be constant and evaluated at compile time
@@ -62,7 +62,7 @@ function ptDeclaration(declaration: pt.Declaration, scope: Scope, inFunction: bo
                     } else {
                         throw new ExpressionTypeError(initialValue.node, "constant expression", "non-constant expression");
                     }
-                    CAssignment.checkAssignmentValid(entry, type, cvar.staticValue.type);
+                    CAssignment.checkAssignmentValid(entry, type, cvar.staticValue);
                 }
             }
         }

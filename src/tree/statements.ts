@@ -135,7 +135,7 @@ export class CReturn {
             }
         } else {
             if (!func.type.returnType.equals(value.type)) {
-                CAssignment.checkAssignmentValid(node, func.type.returnType, value.type);
+                CAssignment.checkAssignmentValid(node, func.type.returnType, value);
             }
         }
     }

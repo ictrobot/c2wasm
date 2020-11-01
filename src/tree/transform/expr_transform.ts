@@ -60,7 +60,7 @@ export function ptExpression(e: pt.Expression, scope: Scope): CExpression {
         return new CConditional(e, ptExpression(e.condition, scope), ptExpression(e.trueValue, scope), ptExpression(e.falseValue, scope));
 
     } else if (e instanceof pt.AssignmentExpression) {
-        return new CAssignment(e, ptExpression(e.lhs, scope), ptExpression(e.rhs, scope));
+        return new CAssignment(e, ptExpression(e.lhs, scope), ptExpression(e.rhs, scope), e.assignType);
 
     }
 

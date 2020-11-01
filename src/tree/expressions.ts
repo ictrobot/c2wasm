@@ -1,9 +1,9 @@
-import type {ParseNode} from "../parsing";
+import type {ParseNode, pt} from "../parsing";
 import type {CDeclaration, CVariable} from "./declarations";
 import * as checks from "./type_checking";
 import {
     CArithmetic, CType, CArray, CPointer, CUnion, CStruct,
-    CSizeT, usualArithmeticConversion, integerPromotion, CFuncType, CVoid, CEnum, checkTypeComplete
+    CSizeT, usualArithmeticConversion, integerPromotion, CFuncType, CVoid, CEnum, checkTypeComplete, getQualifier
 } from "./types";
 
 export type CExpression =
@@ -84,7 +84,7 @@ export class CFunctionCall {
             throw new checks.ExpressionTypeError(node, `${this.fnType.parameterTypes.length} argument(s)`, `${args.length}`);
         }
         for (let i = 0; i < args.length; i++) {
-            CAssignment.checkAssignmentValid(args[i].node, this.fnType.parameterTypes[i], args[i].type);
+            CAssignment.checkAssignmentValid(args[i].node, this.fnType.parameterTypes[i], args[i]);
         }
     }
 }
@@ -304,28 +304,64 @@ export class CAssignment {
     readonly type: CType;
 
     // rhs may require casting
-    constructor(readonly node: ParseNode, readonly lhs: CExpression, readonly rhs: CExpression | CInitializer) {
+    constructor(readonly node: ParseNode, readonly lhs: CExpression, readonly rhs: CExpression | CInitializer, readonly assignmentType: pt.AssignmentType) {
         CAssignment.checkLvalue(lhs);
         this.type = lhs.type;
 
-        CAssignment.checkAssignmentValid(node, lhs.type, rhs.type);
+        if (assignmentType) {
+            if (rhs instanceof CInitializer) {
+                throw new checks.ExpressionTypeError(node,"simple assignments with structure initializers");
+            }
+            let rhsType = rhs.type;
+
+            // typecheck `lhs op= rhs` as `lhs = lhs op rhs`
+            // LHS only evaluated once so can't just be transformed: see `a[i++] += 1;`
+            switch (assignmentType) {
+            case "mul": rhsType = new CMulDiv(node, lhs, rhs, "*").type; break;
+            case "div": rhsType = new CMulDiv(node, lhs, rhs, "/").type; break;
+            case "mod": rhsType = new CMod(node, lhs, rhs).type; break;
+            case "add": rhsType = new CAddSub(node, lhs, rhs, "+").type; break;
+            case "sub": rhsType = new CAddSub(node, lhs, rhs, "-").type; break;
+            case "leftShift": rhsType = new CShift(node, lhs, rhs, "left").type; break;
+            case "rightShift": rhsType = new CShift(node, lhs, rhs, "right").type; break;
+            case "bitwiseAnd": rhsType = new CBitwiseAndOr(node, lhs, rhs, "and").type; break;
+            case "bitwiseOr": rhsType = new CBitwiseAndOr(node, lhs, rhs, "or").type; break;
+            case "bitwiseXor": rhsType = new CBitwiseAndOr(node, lhs, rhs, "xor").type; break;
+            default: throw new checks.ExpressionTypeError(node, "valid assignment type");
+            }
+            CAssignment._checkAssignmentTypeValid(node, lhs.type, rhsType);
+        } else {
+            CAssignment.checkAssignmentValid(node, lhs.type, rhs);
+        }
     }
 
     private static checkLvalue(e: CExpression) {
         checks.checkLvalue(e, true);
-        if (e.type instanceof CArray || e.type instanceof CFuncType || e.type.incomplete || e.type.bytes === 0) {
-            throw new checks.ExpressionTypeError(e.node, "Assignable lvalue", e.type.typeName);
+        if (e.type instanceof CArray || e.type instanceof CFuncType ||
+            e.type.incomplete || e.type.bytes === 0 || getQualifier(e.type) === "const") {
+            throw new checks.ExpressionTypeError(e.node, "assignable lvalue", e.type.typeName);
         }
     }
 
-    static checkAssignmentValid(node: ParseNode, varType: CType, valueType: CType): void {
-        if (varType instanceof CArithmetic && (valueType instanceof CArithmetic || valueType instanceof CEnum)) {
-            return;
-        } else if (varType.equals(valueType)) {
-            return;
+    static checkAssignmentValid(node: ParseNode, varType: CType, value: CExpression | CInitializer): void {
+        // also allow constant 0 to be assigned to a pointer
+        if (varType instanceof CPointer && value instanceof CConstant) {
+            if (value.value === 0n) return;
         }
-        // TODO implement full assignment type rules
-        throw new checks.ExpressionTypeError(node, "assignment to have the same type", "different types");
+        this._checkAssignmentTypeValid(node, varType, value.type);
+    }
+
+    private static _checkAssignmentTypeValid(node: ParseNode, varType: CType, valueType: CType): void {
+        if (varType.equals(valueType)) return;
+        if (varType instanceof CArithmetic && (valueType instanceof CArithmetic || valueType instanceof CEnum)) {
+            return; // arithmetic types always assignable
+        }
+        if (varType instanceof CPointer && valueType instanceof CPointer) {
+            // void pointers can be assigned to any pointer and any pointer can be assigned to a void pointer
+            if (varType.type instanceof CVoid || valueType.type instanceof CVoid) return;
+        }
+
+        throw new checks.ExpressionTypeError(node, varType.typeName, valueType.typeName);
     }
 }
 
@@ -400,7 +436,7 @@ export class CInitializer {
         if (expr instanceof CInitializer) {
             expr.type = desiredType;
         } else {
-            CAssignment.checkAssignmentValid(expr.node, desiredType, expr.type);
+            CAssignment.checkAssignmentValid(expr.node, desiredType, expr);
         }
     }
 }

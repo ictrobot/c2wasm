@@ -152,17 +152,17 @@ assignment_expression
     ;
 
 assignment_operator
-    : '='                                                                               -> "assign"
-    | MUL_ASSIGN                                                                        -> "mulAssign"
-    | DIV_ASSIGN                                                                        -> "divAssign"
-    | MOD_ASSIGN                                                                        -> "modAssign"
-    | ADD_ASSIGN                                                                        -> "addAssign"
-    | SUB_ASSIGN                                                                        -> "subAssign"
-    | LEFT_ASSIGN                                                                       -> "leftAssign"
-    | RIGHT_ASSIGN                                                                      -> "rightAssign"
-    | AND_ASSIGN                                                                        -> "andAssign"
-    | XOR_ASSIGN                                                                        -> "xorAssign"
-    | OR_ASSIGN                                                                         -> "orAssign"
+    : '='                                                                               -> undefined
+    | MUL_ASSIGN                                                                        -> "mul"
+    | DIV_ASSIGN                                                                        -> "div"
+    | MOD_ASSIGN                                                                        -> "mod"
+    | ADD_ASSIGN                                                                        -> "add"
+    | SUB_ASSIGN                                                                        -> "sub"
+    | LEFT_ASSIGN                                                                       -> "leftShift"
+    | RIGHT_ASSIGN                                                                      -> "rightShift"
+    | AND_ASSIGN                                                                        -> "bitwiseAnd"
+    | XOR_ASSIGN                                                                        -> "bitwiseXor"
+    | OR_ASSIGN                                                                         -> "bitwiseOr"
     ;
 
 expression

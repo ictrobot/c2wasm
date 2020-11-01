@@ -103,7 +103,7 @@ export class CastExpression extends Expression {
 export class FunctionCallExpression extends Expression {
     readonly type = "functionCall";
 
-    constructor(loc: Location, readonly fn: Expression, readonly args: ReadonlyArray<AssignmentExpression> = []) {
+    constructor(loc: Location, readonly fn: Expression, readonly args: ReadonlyArray<Expression> = []) {
         super(loc);
     }
 
@@ -139,10 +139,11 @@ export class ConditionalExpression extends Expression {
     }
 }
 
+export type AssignmentType = undefined | "mul" | "div" | "mod" | "add" | "sub" | "leftShift"| "rightShift" | "bitwiseAnd" | "bitwiseXor" | "bitwiseOr";
 export class AssignmentExpression extends Expression {
     readonly type = "assign";
 
-    constructor(loc: Location, readonly assignType: string, readonly lhs: Expression, readonly rhs: Expression) {
+    constructor(loc: Location, readonly assignType: AssignmentType, readonly lhs: Expression, readonly rhs: Expression) {
         super(loc);
     }
 
