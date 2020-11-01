@@ -135,8 +135,6 @@ export function getSpecifierType(d: pt.SpecifierQualifiers | pt.DeclarationSpeci
         let nextValue = 0;
         const values = [];
         for (const e of singleSpecifier.body) {
-            // TODO actually make enum constants accessible (as ints or their own type?)
-
             if (e.value) nextValue = Number(evalConstant(e.value).value);
 
             const enumConstant = new CVariable(e.id, addQualifier(cEnum, "const"), scope.isTop ? undefined : "static");
@@ -154,7 +152,7 @@ export function getSpecifierType(d: pt.SpecifierQualifiers | pt.DeclarationSpeci
         if (type) return type;
 
     } else if (specifiers.find(x => x instanceof pt.CustomTypeSpecifier)) {
-        throw new ParseTreeValidationError(d, "Not implemented"); // TODO
+        throw new ParseTreeValidationError(d, "Not implemented"); // TODO implement custom types
     }
 
     throw new ParseTreeValidationError(d, "Invalid specifier");

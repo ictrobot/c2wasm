@@ -58,7 +58,7 @@ export class CStringLiteral {
     readonly type: CArray;
 
     constructor(readonly node: ParseNode, readonly value: BigInt[]) {
-        //TODO utf8?
+        // currently only supports UTF8
         if (value.length === 0 || value[value.length - 1] !== 0n) {
             throw new checks.ExpressionTypeError(node, "null terminated char[]", "char[]");
         }
@@ -77,7 +77,7 @@ export class CFunctionCall {
 
     constructor(readonly node: ParseNode, readonly body: CExpression, readonly args: CExpression[]) {
         this.type = checks.asFunction(body.node, body.type).returnType;
-        // TODO check types of parameters
+        // TODO check type and number of function parameters
     }
 }
 
@@ -203,7 +203,7 @@ export class CAddSub {
         this.type = usualArithmeticConversion(
             checks.asArithmetic(lhs.node, lhs.type),
             checks.asArithmetic(rhs.node, rhs.type));
-        // TODO allow pointers to complete types
+        // TODO allow pointers to complete types to be added or subtracted
     }
 }
 
@@ -269,7 +269,7 @@ export class CConditional {
         } else if (this.trueValue.type.equals(this.falseValue.type)) {
             this.type = this.trueValue.type;
         } else {
-            // TODO implement full type rules including casting const 0 to ptr
+            // TODO implement full type rules for conditional expressions
             throw new checks.ExpressionTypeError(node, "both branches to have the same type", "different types");
         }
     }
@@ -300,7 +300,7 @@ export class CAssignment {
         } else if (varType.equals(valueType)) {
             return;
         }
-        // TODO implement full type rules including casting const 0 to ptr
+        // TODO implement full assignment type rules
         throw new checks.ExpressionTypeError(node, "assignment to have the same type", "different types");
     }
 }
@@ -334,7 +334,7 @@ export class CInitializer {
     }
 
     set type(value: CType) {
-        // TODO nested type checking
+        // TODO nested initializer type checking
         let error = false;
         if (value instanceof CArray) {
             if (this.body.length > (value.length ?? Infinity)) error = true;
@@ -351,7 +351,7 @@ export class CInitializer {
 
     evaluate(): (CConstant | CStringLiteral)[] {
         const value = [];
-        // TODO take into account not every member has to be specified when nesting
+        // TODO take into account not every member has to be specified when nesting initializers
         for (const child of this.body) {
             if (child instanceof CInitializer) {
                 value.push(...child.evaluate());
