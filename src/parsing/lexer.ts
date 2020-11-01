@@ -1,9 +1,9 @@
 import moo from "moo";
 
 const keywords = [
-    "if", "break", "case", "char", "const", "continue", "default", "do", "double", "else", "extern", "float", "for",
-    "int", "long", "return", "short", "signed", "sizeof", "static", "struct", "switch", "union", "unsigned", "void",
-    "while",
+    "if", "break", "case", "char", "const", "continue", "default", "do", "double", "else", "enum", "extern", "float",
+    "for", "int", "long", "return", "short", "signed", "sizeof", "static", "struct", "switch", "union", "unsigned",
+    "void", "while",
 
     // currently unsupported (but still lex so parser throws error)
     "auto", "goto", "inline", "register", "typedef", "volatile"
