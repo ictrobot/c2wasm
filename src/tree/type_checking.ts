@@ -5,8 +5,8 @@ import {CArithmetic, CPointer, CStruct, CUnion, CType, CFuncType, checkTypeCompl
 export class ExpressionTypeError extends Error {
     name = "ExpressionTypeError";
 
-    constructor(readonly node: ParseNode, readonly wantedType: string, readonly actualType: string) {
-        super(`Expected ${wantedType} but got ${actualType} instead!`);
+    constructor(readonly node: ParseNode, readonly wantedType: string, readonly actualType?: string) {
+        super(actualType ? `Expected ${wantedType} but got ${actualType} instead!` : `Expected ${wantedType}`);
     }
 }
 

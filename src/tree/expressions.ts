@@ -334,42 +334,49 @@ export class CInitializer {
     }
 
     set type(value: CType) {
-        // TODO nested initializer type checking
-        let error = false;
+        const error = () => {
+            throw new checks.ExpressionTypeError(this.node, "initializer to match type");
+        };
+
         if (value instanceof CArray) {
-            if (this.body.length > (value.length ?? Infinity)) error = true;
+            if (this.body.length > (value.length ?? Infinity)) error();
+            this.body.forEach(x => CInitializer.typeCheck(value.type, x));
+
         } else if (value instanceof CStruct) {
-            if (this.body.length > value.members.length) error = true;
+            if (this.body.length > value.members.length) error();
+            this.body.forEach((x, i) => CInitializer.typeCheck(value.members[i].type, x));
+
         } else if (value instanceof CUnion) {
-            if (this.body.length > 1) error = true;
+            if (this.body.length > 1) error();
+            if (this.body.length === 1) CInitializer.typeCheck(value.members[0].type, this.body[0]);
+
         } else {
-            error = true;
+            error();
         }
-        if (error) throw new checks.ExpressionTypeError(this.node, "initializer to match type", "non-matching initializer");
         this._type = value;
     }
 
-    evaluate(): (CConstant | CStringLiteral)[] {
-        const value = [];
-        // TODO take into account not every member has to be specified when nesting initializers
-        for (const child of this.body) {
-            if (child instanceof CInitializer) {
-                value.push(...child.evaluate());
-            } else if (child instanceof CEvaluable) {
-                value.push(child.evaluate());
-            } else if (child instanceof CStringLiteral) {
-                value.push(child);
-            }
-        }
-        return value;
-    }
-
     asStatic(): this {
-        for (const child of this.body) {
-            if (!(child instanceof CInitializer || child instanceof CEvaluable)) {
-                throw new checks.ExpressionTypeError(child.node, "constant expression", "non-constant expression");
+        for (let i = 0; i < this.body.length; i++) {
+            const child = this.body[i];
+            if (child instanceof CInitializer) {
+                child.asStatic();
+            } else if (child instanceof CEvaluable) {
+                this.body[i] = child.evaluate();
+            } else if (child instanceof CStringLiteral) {
+                this.body[i] = child.toInitializer().asStatic();
+            } else {
+                throw new checks.ExpressionTypeError(child.node, "constant expression");
             }
         }
         return this;
+    }
+
+    private static typeCheck(desiredType: CType, expr: CExpression | CInitializer) {
+        if (expr instanceof CInitializer) {
+            expr.type = desiredType;
+        } else {
+            CAssignment.checkAssignmentValid(expr.node, desiredType, expr.type);
+        }
     }
 }
