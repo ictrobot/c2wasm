@@ -73,11 +73,19 @@ export class CStringLiteral {
 
 export class CFunctionCall {
     readonly lvalue = false;
+    readonly fnType: CFuncType;
     readonly type: CType;
 
     constructor(readonly node: ParseNode, readonly body: CExpression, readonly args: CExpression[]) {
-        this.type = checks.asFunction(body.node, body.type).returnType;
-        // TODO check type and number of function parameters
+        this.fnType = checks.asFunction(body.node, body.type);
+        this.type = this.fnType.returnType;
+
+        if (this.fnType.parameterTypes.length !== args.length) {
+            throw new checks.ExpressionTypeError(node, `${this.fnType.parameterTypes.length} argument(s)`, `${args.length}`);
+        }
+        for (let i = 0; i < args.length; i++) {
+            CAssignment.checkAssignmentValid(args[i].node, this.fnType.parameterTypes[i], args[i].type);
+        }
     }
 }
 
