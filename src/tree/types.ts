@@ -101,7 +101,13 @@ export class CStruct {
     memberType(m: string): CType {
         const member = this.members.find(x => x.name === m);
         if (member) return member.type;
-        throw new Error(`Struct does not contain member ${member}`);
+        throw new Error(`Struct does not contain member "${m}"`);
+    }
+
+    hasConstMember(): boolean { // if the struct contains one or more const members
+        return this.members.find(m =>
+            getQualifier(m.type) || ((m.type instanceof CUnion || m.type instanceof CStruct) && m.type.hasConstMember())
+        ) !== undefined;
     }
 }
 
@@ -140,7 +146,13 @@ export class CUnion {
     memberType(m: string): CType {
         const member = this.members.find(x => x.name === m);
         if (member) return member.type;
-        throw new Error(`Union does not contain member ${member}`);
+        throw new Error(`Union does not contain member "${m}"`);
+    }
+
+    hasConstMember(): boolean {
+        return this.members.find(m =>
+            getQualifier(m.type) || ((m.type instanceof CUnion || m.type instanceof CStruct) && m.type.hasConstMember())
+        ) !== undefined;
     }
 }
 

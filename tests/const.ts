@@ -50,3 +50,42 @@ test('const int x[]', t => {
         }
     `));
 });
+
+test("struct with const member", t => {
+    t.truthy(toIR(`
+        struct T {
+            const int x;
+            int y;
+        };
+        
+        int test() {
+            struct T myT = {5, 3};
+            myT.y = 5;
+        }
+    `));
+
+    t.throws(() => toIR(`
+        struct T {
+            const int x;
+            int y;
+        };
+        
+        int test() {
+            struct T myT = {5, 3};
+            myT.x = 5;
+        }
+    `));
+
+    t.throws(() => toIR(`
+        struct T {
+            const int x;
+            int y;
+        };
+        
+        int test() {
+            struct T myT = {5, 3};
+            struct T myS = {1, 2};
+            myT = myS;
+        }
+    `));
+});

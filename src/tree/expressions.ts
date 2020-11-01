@@ -308,9 +308,12 @@ export class CAssignment {
                 readonly assignmentType: pt.AssignmentType, readonly initialAssignment: boolean = false) {
         // check lvalue
         checks.checkLvalue(lhs, true);
-        if (lhs.type instanceof CArray || lhs.type instanceof CFuncType ||
-            lhs.type.incomplete || lhs.type.bytes === 0 || (getQualifier(lhs.type) === "const" && !initialAssignment)) {
-            throw new checks.ExpressionTypeError(lhs.node, "assignable lvalue");
+        if (lhs.type instanceof CArray || lhs.type instanceof CFuncType || lhs.type.incomplete || lhs.type.bytes === 0) {
+            throw new checks.ExpressionTypeError(lhs.node, "assignable type");
+        } else if (getQualifier(lhs.type) === "const" && !initialAssignment) {
+            throw new checks.ExpressionTypeError(lhs.node, "non-const location");
+        } else if ((lhs.type instanceof CStruct || lhs.type instanceof CUnion) && lhs.type.hasConstMember() && !initialAssignment) {
+            throw new checks.ExpressionTypeError(lhs.node, "structure without a const member");
         }
         this.type = lhs.type;
 
