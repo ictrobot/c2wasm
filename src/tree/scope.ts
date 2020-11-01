@@ -14,14 +14,12 @@ export class Scope {
         return this.tags.get(tag) ?? this.parent?._getTag(tag);
     }
 
-    lookupTag<T extends CCompound>(tag: string, wantedType?: {new(...args: any[]): T}): T {
+    lookupTag<T extends CCompound>(tag: string, wantedType?: {new(...args: any[]): T}): T | undefined {
         const result = this._getTag(tag);
-        if (!result) {
-            throw new Error("Failed to find `" + tag + "`");
-        } else if (wantedType && wantedType.prototype !== Object.getPrototypeOf(result)) {
+        if (wantedType && result && wantedType.prototype !== Object.getPrototypeOf(result)) {
             throw new Error("`" + tag + "` was already declared as a different type!");
         }
-        return result as T;
+        return result as T | undefined;
     }
 
     addTag(value: CCompound): void {
@@ -57,5 +55,9 @@ export class Scope {
             if (decl instanceof CVariable) vars.push(decl);
         }
         return vars;
+    }
+
+    get isTop(): boolean {
+        return this.parent === undefined;
     }
 }

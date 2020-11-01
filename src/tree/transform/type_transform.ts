@@ -1,5 +1,5 @@
 import {CVariable} from "../declarations";
-import {CExpression, CInitializer} from "../expressions";
+import {CExpression, CInitializer, CConstant} from "../expressions";
 import {Scope} from "../scope";
 import {CType, getArithmeticType, CPointer, addQualifier, CFuncType, CNotFuncType, CArray, CEnum, CStruct, CUnion} from "../types";
 import {ParseTreeValidationError, pt} from "../../parsing/";
@@ -89,11 +89,20 @@ export function getDeclaratorName(declarator: pt.Declarator | pt.InitDeclarator)
 export function getSpecifierType(d: pt.SpecifierQualifiers | pt.DeclarationSpecifiers, scope: Scope): CType {
     const specifiers = d.specifierList;
     const singleSpecifier = specifiers.length === 1 ? specifiers[0] : undefined;
+
     if (singleSpecifier instanceof pt.StructUnionSpecifier) {
         const type = singleSpecifier.structure === "struct" ? CStruct : CUnion;
-        const structure = new type(singleSpecifier.id);
+        let structure = new type(singleSpecifier.id);
+        if (singleSpecifier.id) {
+            // lookup tag and if it already exists use its instance
+            const existing: CStruct | CUnion = scope.lookupTag(singleSpecifier.id, type as any) as any;
+            if (existing) {
+                structure = existing;
+            } else {
+                scope.addTag(structure);
+            }
+        }
         if (!singleSpecifier.declarations) return structure;
-        if (singleSpecifier.id) scope.addTag(structure);
 
         const values = [];
         for (const declaration of singleSpecifier.declarations) {
@@ -109,10 +118,19 @@ export function getSpecifierType(d: pt.SpecifierQualifiers | pt.DeclarationSpeci
         }
         structure.members = values;
         return structure;
+
     } else if (singleSpecifier instanceof pt.EnumSpecifier) {
-        const cEnum = new CEnum(singleSpecifier.id);
+        let cEnum = new CEnum(singleSpecifier.id);
+        if (singleSpecifier.id) {
+            // lookup tag and if it already exists use its instance
+            const existing = scope.lookupTag(singleSpecifier.id, CEnum);
+            if (existing) {
+                cEnum = existing;
+            } else {
+                scope.addTag(cEnum);
+            }
+        }
         if (!singleSpecifier.body) return cEnum;
-        if (singleSpecifier.id) scope.addTag(cEnum);
 
         let nextValue = 0;
         const values = [];
@@ -120,14 +138,21 @@ export function getSpecifierType(d: pt.SpecifierQualifiers | pt.DeclarationSpeci
             // TODO actually make enum constants accessible (as ints or their own type?)
 
             if (e.value) nextValue = Number(evalConstant(e.value).value);
+
+            const enumConstant = new CVariable(e.id, addQualifier(cEnum, "const"), scope.isTop ? undefined : "static");
+            enumConstant.staticValue = new CConstant(e, cEnum, nextValue);
+            scope.addIdentifier(enumConstant);
+
             values.push({name: e.id, value: nextValue++});
         }
         cEnum.values = values;
         return cEnum;
+
     } else if (specifiers.every(x => typeof x === 'string')) {
         // arithmetic or void
         const type = getArithmeticType(specifiers as ReadonlyArray<pt.TypeSpecifier & string>);
         if (type) return type;
+
     } else if (specifiers.find(x => x instanceof pt.CustomTypeSpecifier)) {
         throw new ParseTreeValidationError(d, "Not implemented"); // TODO
     }

@@ -1,9 +1,9 @@
 import type {ParseNode} from "../parsing";
-import type {CDeclaration} from "./declarations";
+import type {CDeclaration, CVariable} from "./declarations";
 import * as checks from "./type_checking";
 import {
     CArithmetic, CType, CArray, CPointer, CUnion, CStruct,
-    CSizeT, usualArithmeticConversion, integerPromotion, CFuncType, CVoid
+    CSizeT, usualArithmeticConversion, integerPromotion, CFuncType, CVoid, CEnum
 } from "./types";
 
 export type CExpression =
@@ -23,7 +23,7 @@ export abstract class CEvaluable {
 export class CConstant extends CEvaluable {
     readonly lvalue = false;
 
-    constructor(readonly node: ParseNode, readonly type: CArithmetic, readonly value: BigInt | number) {
+    constructor(readonly node: ParseNode, readonly type: CArithmetic | CEnum, readonly value: BigInt | number) {
         super();
     }
 
@@ -32,15 +32,24 @@ export class CConstant extends CEvaluable {
     }
 }
 
-export class CIdentifier {
+export class CIdentifier extends CEvaluable {
     readonly lvalue: boolean;
 
     constructor(readonly node: ParseNode, readonly value: CDeclaration, readonly initialAssignment: boolean = false) {
+        super();
         this.lvalue = (initialAssignment || value.type.qualifier !== "const") && !(value.type instanceof CFuncType);
     }
 
     get type(): CType {
         return this.value.type;
+    }
+
+    evaluate(): CConstant {
+        // only constant if points to an enum identifier
+        if (this.value.type.typeName === "enum" && (this.value as CVariable).staticValue instanceof CConstant) {
+            return (this.value as CVariable).staticValue as CConstant;
+        }
+        throw new checks.ExpressionTypeError(this.node, "constant expression", "non-enum constant identifier");
     }
 }
 
@@ -75,12 +84,11 @@ export class CFunctionCall {
 export class CMemberAccess {
     readonly lvalue: boolean;
     readonly type: CType;
-    readonly body: CStruct | CUnion;
 
     /** transform `e->member` to `(*e).member` before calling */
-    constructor(readonly node: ParseNode, body: CExpression, readonly member: string) {
-        this.body = checks.asStructOrUnion(body.node, body.type);
-        this.type = this.body.memberType(member);
+    constructor(readonly node: ParseNode, readonly body: CExpression, readonly member: string) {
+        const type = checks.asStructOrUnion(body.node, body.type);
+        this.type = type.memberType(member);
         this.lvalue = body.lvalue && !(this.type instanceof CArray);
     }
 }
@@ -287,7 +295,7 @@ export class CAssignment {
     }
 
     static checkAssignmentValid(node: ParseNode, varType: CType, valueType: CType): void {
-        if (varType instanceof CArithmetic && valueType instanceof CArithmetic) {
+        if (varType instanceof CArithmetic && (valueType instanceof CArithmetic || valueType instanceof CEnum)) {
             return;
         } else if (varType.equals(valueType)) {
             return;

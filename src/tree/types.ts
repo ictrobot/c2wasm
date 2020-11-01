@@ -175,7 +175,7 @@ export class CEnum {
 export class CVoid {
     readonly typeName = "void";
     readonly bytes = 0;
-    readonly incomplete = false;
+    readonly incomplete = true;
 
     equals(t: object): boolean {
         return t instanceof CVoid;
@@ -230,9 +230,24 @@ export class CArithmetic {
 
 export const CSizeT = CArithmetic.U32;
 
+
+const constType = Symbol("const"); // hidden property key
+
 export function addQualifier<T extends CType>(t: T, qualifier?: TypeQualifier): CQualifiedType<T> {
-    const newType = Object.assign({}, t, {qualifier});
-    return Object.setPrototypeOf(newType, Object.getPrototypeOf(t));
+    if (qualifier === undefined) return t;
+    if (Object.prototype.hasOwnProperty.call(t, "qualifier")) {
+        throw new Error("Type already has a qualifier");
+    }
+
+    const baseType = t as Record<typeof constType, any>;
+    if (baseType[constType]) {
+        // const type already exists
+        return baseType[constType];
+    }
+
+    const type = Object.setPrototypeOf({qualifier, _base: t}, t);
+    baseType[constType] = type;
+    return type;
 }
 
 export function getQualifier(t: CQualifiedType<CType>): TypeQualifier | undefined {
