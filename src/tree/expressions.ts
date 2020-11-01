@@ -319,8 +319,8 @@ export class CInitializer {
     private _type: CType;
 
     constructor(readonly node: ParseNode, readonly body: (CExpression | CInitializer)[], type?: CType) {
-        // default to a void array which is invalid but lets the array size be used when declaring arrays
-        this._type = type ?? new CArray(new CVoid(), body.length);
+        // default to a void* array which isn't the true type but lets the array size be used when declaring arrays
+        this._type = type ?? new CArray(new CPointer(new CVoid()), body.length);
 
         // convert string literals to list initializers
         for (let i = 0; i < this.body.length; i++) {
