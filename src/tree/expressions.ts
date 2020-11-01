@@ -3,7 +3,7 @@ import type {CDeclaration, CVariable} from "./declarations";
 import * as checks from "./type_checking";
 import {
     CArithmetic, CType, CArray, CPointer, CUnion, CStruct,
-    CSizeT, usualArithmeticConversion, integerPromotion, CFuncType, CVoid, CEnum
+    CSizeT, usualArithmeticConversion, integerPromotion, CFuncType, CVoid, CEnum, checkTypeComplete
 } from "./types";
 
 export type CExpression =
@@ -103,12 +103,14 @@ export class CMemberAccess {
 
 export class CIncrDecr {
     readonly lvalue = false;
-    readonly type: CArithmetic;
+    readonly type: CArithmetic | CPointer;
 
     constructor(readonly node: ParseNode, readonly body: CExpression,
                 readonly op: "++" | "--", readonly pos: "pre" | "post") {
         checks.checkLvalue(body, true);
-        this.type = checks.asArithmetic(body.node, body.type);
+
+        this.type = checks.asArithmeticOrPointer(body.node, body.type);
+        if (this.type instanceof CPointer) checkTypeComplete(this.type.type);
     }
 }
 
@@ -205,13 +207,27 @@ export class CMod {
 // Array subscript a[b] becomes *(a + b)
 export class CAddSub {
     readonly lvalue = false;
-    readonly type: CArithmetic;
+    readonly type: CArithmetic | CPointer;
 
     constructor(readonly node: ParseNode, readonly lhs: CExpression, readonly rhs: CExpression, readonly op: "+" | "-") {
-        this.type = usualArithmeticConversion(
-            checks.asArithmetic(lhs.node, lhs.type),
-            checks.asArithmetic(rhs.node, rhs.type));
-        // TODO allow pointers to complete types to be added or subtracted
+        if (lhs.type instanceof CPointer && rhs.type instanceof CPointer) { // both pointers
+            if (!lhs.type.equals(rhs.type)) throw new checks.ExpressionTypeError(node, "both pointers to have the same type");
+            checkTypeComplete(lhs.type.type);
+            this.type = lhs.type;
+
+        } else if (lhs.type instanceof CPointer) { // one pointer, one integral
+            checks.asInteger(rhs.node, rhs.type);
+            checkTypeComplete(lhs.type.type);
+            this.type = lhs.type;
+
+        } else if (rhs.type instanceof CPointer) { // one pointer, one integral
+            checks.asInteger(lhs.node, lhs.type);
+            checkTypeComplete(rhs.type.type);
+            this.type = rhs.type;
+
+        } else {
+            this.type = usualArithmeticConversion(checks.asArithmetic(lhs.node, lhs.type), checks.asArithmetic(rhs.node, rhs.type));
+        }
     }
 }
 
