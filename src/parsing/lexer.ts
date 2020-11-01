@@ -1,12 +1,12 @@
 import moo from "moo";
 
 const keywords = [
-    // probably unsupported tokens
-    "auto", "extern", "goto", "register", "inline", "enum",
+    "if", "break", "case", "char", "const", "continue", "default", "do", "double", "else", "extern", "float", "for",
+    "int", "long", "return", "short", "signed", "sizeof", "static", "struct", "switch", "union", "unsigned", "void",
+    "while",
 
-    "if", "break", "case", "char", "const", "continue", "default", "do", "double", "else", "float", "for", "int",
-    "long", "return", "short", "signed", "sizeof", "static", "struct", "switch", "typedef", "union", "unsigned",
-    "void", "volatile", "while"
+    // currently unsupported (but still lex so parser throws error)
+    "auto", "goto", "inline", "register", "typedef", "volatile"
 ];
 
 const simpleSymbols = [';','{','}',',',':','=','(',')','[',']','.','&','!','~','-','+','*','/','%','<','>','^','|','?'];
