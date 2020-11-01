@@ -9,7 +9,7 @@ const demoFiles = Object.fromEntries(require("fs")
         .map(fileName => [fileName.split(".")[0], demoPath + fileName]));
 
 
-module.exports = {
+module.exports = (env, argv) => ({
     entry: demoFiles,
     output: {
         filename: "[name].js",
@@ -29,6 +29,7 @@ module.exports = {
     })),
     target: "es2020",
     optimization: {
+        minimize: argv.mode !== "development",
         minimizer: [
             new TerserPlugin({
                 terserOptions: {
@@ -39,5 +40,5 @@ module.exports = {
             })
         ]
     },
-    devtool: "source-map",
-};
+    devtool: argv.mode !== "development" ? "source-map" : "eval-source-map",
+});
