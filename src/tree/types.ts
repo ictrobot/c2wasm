@@ -13,7 +13,7 @@ export class CFuncType {
     constructor(readonly returnType: CQualifiedType<CNotFuncType>,
                 readonly parameterTypes: CQualifiedType<CNotFuncType>[],
                 public parameterNames?: string[]) {
-        checkTypeComplete(returnType);
+        if (!(returnType instanceof CVoid)) checkTypeComplete(returnType);
         parameterTypes.forEach(checkTypeComplete);
     }
 
