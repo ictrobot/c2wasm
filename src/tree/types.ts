@@ -1,3 +1,4 @@
+import {CError} from "../c_error";
 import type {TypeSpecifier, TypeQualifier, ParseNode} from "../parsing/parsetree";
 import type {CVariable} from "./declarations";
 
@@ -340,10 +341,9 @@ export function getArithmeticType(specifierList: ReadonlyArray<TypeSpecifier & s
 
 export function checkTypeComplete<T extends CType>(type: T, node: ParseNode | undefined = type.node): T {
     if (type.incomplete) {
-        throw new class extends Error {
+        throw new class extends CError {
             name = "IncompleteTypeError";
-            node = node;
-        }("Invalid use of an incomplete type");
+        }("Invalid use of an incomplete type", node);
     }
     return type;
 }

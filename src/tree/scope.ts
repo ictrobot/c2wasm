@@ -1,6 +1,7 @@
+import {CError} from "../c_error";
 import type {ParseNode} from "../parsing";
-import {CFuncDeclaration, CFuncDefinition, CVariable} from "./declarations";
 import type {CDeclaration} from "./declarations";
+import {CFuncDeclaration, CFuncDefinition, CVariable} from "./declarations";
 import type {CCompound} from "./types";
 
 export class Scope {
@@ -68,10 +69,6 @@ export class Scope {
     }
 }
 
-class ScopeError extends Error {
+class ScopeError extends CError {
     name = "ScopeError";
-
-    constructor(message: string, readonly node?: ParseNode, readonly node2?: ParseNode) {
-        super(message);
-    }
 }

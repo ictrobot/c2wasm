@@ -1,12 +1,13 @@
+import {CError} from "../c_error";
 import type {ParseNode} from "../parsing";
 import type {CExpression} from "./expressions";
 import {CArithmetic, CPointer, CStruct, CUnion, CType, CFuncType, checkTypeComplete} from "./types";
 
-export class ExpressionTypeError extends Error {
+export class ExpressionTypeError extends CError {
     name = "ExpressionTypeError";
 
-    constructor(readonly node: ParseNode, readonly wantedType: string, readonly actualType?: string) {
-        super(actualType ? `Expected ${wantedType} but got ${actualType} instead!` : `Expected ${wantedType}`);
+    constructor(node: ParseNode, readonly wantedType: string, readonly actualType?: string) {
+        super(actualType ? `Expected ${wantedType} but got ${actualType} instead!` : `Expected ${wantedType}`, node);
     }
 }
 

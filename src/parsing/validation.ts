@@ -1,6 +1,7 @@
+import {CError} from "../c_error";
 import {getArithmeticType} from "../tree/types";
-import {ParseNode, TypeSpecifier} from "./parsetree";
 import * as pt from "./parsetree";
+import {ParseNode, TypeSpecifier} from "./parsetree";
 
 const validatorMap = new Map<typeof ParseNode, ((node: ParseNode, parents: ParseNode[]) => void)[]>();
 
@@ -17,11 +18,11 @@ export function validate<T extends Iterable<ParseNode>>(nodeList: T, parents: Pa
     return nodeList;
 }
 
-export class ParseTreeValidationError extends Error {
+export class ParseTreeValidationError extends CError {
     readonly name = "TreeValidationError";
 
-    constructor(readonly node: ParseNode | undefined, message: string) {
-        super(node && node.loc ? `Line ${node.loc.first_line + 1}: ${message}` : message);
+    constructor(node: ParseNode | undefined, message: string) {
+        super(node && node.loc ? `Line ${node.loc.first_line + 1}: ${message}` : message, node);
     }
 }
 

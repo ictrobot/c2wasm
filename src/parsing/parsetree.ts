@@ -1,4 +1,7 @@
-export type Location = {first_line: number, last_line: number, first_column: number, last_column: number};
+export type Location = {
+    first_line: number, last_line: number, first_column: number, last_column: number,
+    _source: string, _sourceId: number
+};
 
 export abstract class ParseNode {
     abstract readonly type: string;
