@@ -39,7 +39,7 @@ function ptDeclaration(declaration: pt.Declaration, scope: Scope, inFunction: bo
         }
 
         if (type.incomplete) {
-            throw new ExpressionTypeError(entry, "complete type", "incomplete type");
+            throw new ExpressionTypeError(type.node ?? entry, "complete type", "incomplete type");
         } else if (type instanceof CFuncType) {
             // function declarations
             scope.addIdentifier(new CFuncDeclaration(name, type, declaration.typeInfo.storageList[0]));

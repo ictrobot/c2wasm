@@ -1,4 +1,4 @@
-import type {TypeSpecifier, TypeQualifier} from "../parsing/parsetree";
+import type {TypeSpecifier, TypeQualifier, ParseNode} from "../parsing/parsetree";
 import type {CVariable} from "./declarations";
 
 export type CType = CNotFuncType | CFuncType;
@@ -10,11 +10,12 @@ export class CFuncType {
     readonly bytes = 0;
     readonly incomplete = false;
 
-    constructor(readonly returnType: CQualifiedType<CNotFuncType>,
+    constructor(readonly node: ParseNode | undefined,
+                readonly returnType: CQualifiedType<CNotFuncType>,
                 readonly parameterTypes: CQualifiedType<CNotFuncType>[],
                 public parameterNames?: string[]) {
         if (!(returnType instanceof CVoid)) checkTypeComplete(returnType);
-        parameterTypes.forEach(checkTypeComplete);
+        parameterTypes.forEach(x => checkTypeComplete(x));
     }
 
     equals(t: Object): boolean {
@@ -31,7 +32,7 @@ export class CPointer {
     readonly incomplete = false;
     readonly qualifier?: TypeQualifier;
 
-    constructor(readonly type: CType, constant: boolean = false) {
+    constructor(readonly node: ParseNode | undefined, readonly type: CType, constant: boolean = false) {
         // allow pointers to incomplete types
         if (constant) this.qualifier = "const";
     }
@@ -44,7 +45,7 @@ export class CPointer {
 export class CArray {
     readonly typeName = "array";
 
-    constructor(readonly type: CType, public length?: number) {
+    constructor(readonly node: ParseNode | undefined, readonly type: CType, public length?: number) {
         checkTypeComplete(type);
     }
 
@@ -68,7 +69,7 @@ export class CStruct {
     readonly typeName = "struct";
     private _members: ReadonlyArray<CVariable> | undefined;
 
-    constructor(readonly name: string | undefined) {
+    constructor(public node: ParseNode | undefined, readonly name: string | undefined) {
     }
 
     get members(): ReadonlyArray<CVariable> {
@@ -115,7 +116,7 @@ export class CUnion {
     readonly typeName = "union";
     private _members: ReadonlyArray<CVariable> | undefined;
 
-    constructor(readonly name: string | undefined) {
+    constructor(public node: ParseNode | undefined, readonly name: string | undefined) {
     }
 
     get members(): ReadonlyArray<CVariable> {
@@ -162,7 +163,7 @@ export class CEnum {
     readonly bytes = 4;
     private _values: ReadonlyArray<CEnumValue> | undefined;
 
-    constructor(readonly name: string | undefined) {
+    constructor(public node: ParseNode | undefined, readonly name: string | undefined) {
     }
 
     get values(): ReadonlyArray<CEnumValue> {
@@ -190,6 +191,7 @@ export class CVoid {
     readonly typeName = "void";
     readonly bytes = 0;
     readonly incomplete = true;
+    readonly node = undefined;
 
     equals(t: object): boolean {
         return t instanceof CVoid;
@@ -199,6 +201,7 @@ export class CVoid {
 export class CArithmetic {
     readonly typeName = "arithmetic";
     readonly incomplete = false;
+    readonly node = undefined;
 
     private constructor(readonly name: string, readonly bytes: number, readonly type: "float" | "signed" | "unsigned") {
     }
@@ -335,10 +338,11 @@ export function getArithmeticType(specifierList: ReadonlyArray<TypeSpecifier & s
     return undefined;
 }
 
-export function checkTypeComplete<T extends CType>(type: T): T {
+export function checkTypeComplete<T extends CType>(type: T, node: ParseNode | undefined = type.node): T {
     if (type.incomplete) {
         throw new class extends Error {
             name = "IncompleteTypeError";
+            node = node;
         }("Invalid use of an incomplete type");
     }
     return type;

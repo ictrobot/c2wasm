@@ -62,7 +62,7 @@ export class CStringLiteral {
         if (value.length === 0 || value[value.length - 1] !== 0n) {
             throw new checks.ExpressionTypeError(node, "null terminated char[]", "char[]");
         }
-        this.type = new CArray(CArithmetic.U8, value.length);
+        this.type = new CArray(node, CArithmetic.U8, value.length);
     }
 
     toInitializer(): CInitializer {
@@ -131,7 +131,7 @@ export class CAddressOf { // &
 
     constructor(readonly node: ParseNode, readonly body: CExpression) {
         checks.checkLvalue(body, true);
-        this.type = new CPointer(checks.asCType(body));
+        this.type = new CPointer(node, checks.asCType(body));
     }
 }
 
@@ -218,12 +218,12 @@ export class CAddSub {
         } else if (lhs.type instanceof CPointer || lhs.type instanceof CArray) { // one pointer, one integral
             checks.asInteger(rhs.node, rhs.type);
             checkTypeComplete(lhs.type.type);
-            this.type = lhs.type instanceof CPointer ? lhs.type : new CPointer(lhs.type.type);
+            this.type = lhs.type instanceof CPointer ? lhs.type : new CPointer(node, lhs.type.type);
 
         } else if (rhs.type instanceof CPointer || rhs.type instanceof CArray) { // one pointer, one integral
             checks.asInteger(lhs.node, lhs.type);
             checkTypeComplete(rhs.type.type);
-            this.type = rhs.type instanceof CPointer ? rhs.type : new CPointer(rhs.type.type);
+            this.type = rhs.type instanceof CPointer ? rhs.type : new CPointer(node, rhs.type.type);
 
         } else {
             this.type = usualArithmeticConversion(checks.asArithmetic(lhs.node, lhs.type), checks.asArithmetic(rhs.node, rhs.type));
@@ -384,7 +384,7 @@ export class CInitializer {
 
     constructor(readonly node: ParseNode, readonly body: (CExpression | CInitializer)[], type?: CType) {
         // default to a void* array which isn't the true type but lets the array size be used when declaring arrays
-        this._type = type ?? new CArray(new CPointer(new CVoid()), body.length);
+        this._type = type ?? new CArray(undefined, new CPointer(undefined, new CVoid()), body.length);
 
         // convert string literals to list initializers
         for (let i = 0; i < this.body.length; i++) {

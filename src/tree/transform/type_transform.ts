@@ -25,13 +25,13 @@ export function getDeclaratorType(type: CType, declarator: pt.Declarator | pt.Ab
         if (d instanceof pt.PointerDeclarator || d instanceof pt.AbstractPointerDeclarator) {
             let ptr: pt.Pointer | undefined = d.pointer;
             while (ptr) {
-                type = new CPointer(type, ptr.qualifierList?.includes("const"));
+                type = new CPointer(ptr, type, ptr.qualifierList?.includes("const"));
                 ptr = ptr.body;
             }
             d = d.body;
 
         } else if (d instanceof pt.ArrayDeclarator || d instanceof pt.AbstractArrayDeclarator) {
-            type = new CArray(type);
+            type = new CArray(d, type);
             if (d.length) {
                 type.length = Number(evalConstant(d.length).value);
                 if (type.length <= 0) throw new ParseTreeValidationError(d.length, "Invalid array length");
@@ -67,7 +67,7 @@ export function getDeclaratorType(type: CType, declarator: pt.Declarator | pt.Ab
             if (d.body && !(d.body instanceof pt.IdentifierDeclarator)) {
                 throw new ParseTreeValidationError(d.body, "Unexpected declarator");
             }
-            return new CFuncType(type as CNotFuncType, parameterTypes, parameterNames);
+            return new CFuncType(d, type as CNotFuncType, parameterTypes, parameterNames);
         }
     }
     return type;
@@ -86,7 +86,7 @@ function getSpecifierType(d: pt.SpecifierQualifiers | pt.DeclarationSpecifiers, 
 
     if (singleSpecifier instanceof pt.StructUnionSpecifier) {
         const type = singleSpecifier.structure === "struct" ? CStruct : CUnion;
-        let structure = new type(singleSpecifier.id);
+        let structure = new type(singleSpecifier, singleSpecifier.id);
         if (singleSpecifier.id) {
             // lookup tag and if it already exists use its instance
             const existing: CStruct | CUnion = scope.lookupTag(singleSpecifier.id, type as any) as any;
@@ -111,10 +111,11 @@ function getSpecifierType(d: pt.SpecifierQualifiers | pt.DeclarationSpecifiers, 
             }
         }
         structure.members = values;
+        structure.node = singleSpecifier;
         return structure;
 
     } else if (singleSpecifier instanceof pt.EnumSpecifier) {
-        let cEnum = new CEnum(singleSpecifier.id);
+        let cEnum = new CEnum(singleSpecifier, singleSpecifier.id);
         if (singleSpecifier.id) {
             // lookup tag and if it already exists use its instance
             const existing = scope.lookupTag(singleSpecifier.id, CEnum);
@@ -138,6 +139,7 @@ function getSpecifierType(d: pt.SpecifierQualifiers | pt.DeclarationSpecifiers, 
             values.push({name: e.id, value: nextValue++});
         }
         cEnum.values = values;
+        cEnum.node = singleSpecifier;
         return cEnum;
 
     } else if (specifiers.every(x => typeof x === 'string')) {
