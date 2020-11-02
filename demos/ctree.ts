@@ -2,16 +2,14 @@ import {toIR} from "../src/tree";
 import {CArithmetic} from "../src/tree/types";
 
 const testInput = `
-static const struct {int a; int b;} myPair = {2, 5};
+static const struct Node {
+  enum NodeType {TYPE_A = 3, TYPE_B} type;
+  char tag[8];
+  struct Node* child;
+} myPair = {TYPE_B, "testing"};
 
-int test(int v) {
-  if (v < 2) {
-    for (long a = 3; a < 5; a++) {
-      return (int) (3.0f);
-    }
-  } else {
-    return v < 2 ? 1 : v * test(v - 1);
-  }
+int getTag(struct Node *node) {
+  return node->type;
 }
 `.trimStart();
 

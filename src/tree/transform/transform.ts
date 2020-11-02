@@ -42,10 +42,10 @@ function ptDeclaration(declaration: pt.Declaration, scope: Scope, inFunction: bo
             throw new ExpressionTypeError(type.node ?? entry, "complete type", "incomplete type");
         } else if (type instanceof CFuncType) {
             // function declarations
-            scope.addIdentifier(new CFuncDeclaration(name, type, declaration.typeInfo.storageList[0]));
+            scope.addIdentifier(new CFuncDeclaration(entry, name, type, declaration.typeInfo.storageList[0]));
         } else {
             // variable
-            const cvar = new CVariable(name, type, declaration.typeInfo.storageList[0]);
+            const cvar = new CVariable(entry, name, type, declaration.typeInfo.storageList[0]);
             scope.addIdentifier(cvar);
 
             if (initialValue) {
@@ -88,13 +88,13 @@ function ptFunction(fn: pt.FunctionDefinition, scope: Scope): void {
     // fn name
     const name = getDeclaratorName(fn.declarator);
 
-    const cfn = new CFuncDefinition(name, type, fn.typeInfo.storageList[0], fn, scope);
+    const cfn = new CFuncDefinition(fn, name, type, fn.typeInfo.storageList[0], scope);
     scope.addIdentifier(cfn);
 
     // add arguments as parameters to function's scope
     if (!type.parameterNames) throw new ParseTreeValidationError(fn, "Expected parameter names");
     for (let i = 0; i < type.parameterTypes.length; i++) {
-        cfn.body.scope.addIdentifier(new CArgument(type.parameterNames[i], type.parameterTypes[i]));
+        cfn.body.scope.addIdentifier(new CArgument(fn, type.parameterNames[i], type.parameterTypes[i]));
     }
 
     // parse body

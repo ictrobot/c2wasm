@@ -1,5 +1,4 @@
-import type {FunctionDefinition} from "../parsing/parsetree";
-import type {StorageClass} from "../parsing/parsetree";
+import type {FunctionDefinition, ParseNode, StorageClass} from "../parsing/parsetree";
 import type {CInitializer} from "./expressions";
 import type {CConstant} from "./expressions";
 import type {Scope} from "./scope";
@@ -11,19 +10,21 @@ export type CDeclaration = CVariable | CArgument | CFuncDefinition | CFuncDeclar
 export class CVariable {
     staticValue?: CConstant | CInitializer;
 
-    constructor(readonly name: string,
+    constructor(readonly node: ParseNode,
+                readonly name: string,
                 readonly type: CQualifiedType<CNotFuncType>,
                 readonly storage?: StorageClass) {
     }
 }
 
 export class CArgument {
-    constructor(readonly name: string, readonly type: CQualifiedType<CNotFuncType>) {
+    constructor(readonly node: ParseNode, readonly name: string, readonly type: CQualifiedType<CNotFuncType>) {
     }
 }
 
 export class CFuncDeclaration {
-    constructor(readonly name: string,
+    constructor(readonly node: ParseNode,
+                readonly name: string,
                 readonly type: CQualifiedType<CFuncType>,
                 readonly storage: StorageClass | undefined) {
     }
@@ -32,10 +33,10 @@ export class CFuncDeclaration {
 export class CFuncDefinition {
     readonly body: CCompoundStatement;
 
-    constructor(readonly name: string,
+    constructor(readonly node: FunctionDefinition,
+                readonly name: string,
                 readonly type: CQualifiedType<CFuncType>,
                 readonly storage: StorageClass | undefined,
-                readonly node: FunctionDefinition,
                 readonly translationUnit: Scope) {
         this.body = new CCompoundStatement(node.body, this);
     }

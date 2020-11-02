@@ -8,7 +8,11 @@ export function toIR(source: string): Scope {
         return ptTransform(translationUnit);
     } catch (e) {
         if (e?.node?.loc) { // Transform errors
-            e.message += "\n\n" + (locationString(e.node.loc, source) ?? "");
+            e.message += "\n\nLocation:\n" + (locationString(e.node.loc, source) ?? "");
+
+            if (e?.node2?.loc) {
+                e.message += "\nSecondary location:\n" + (locationString(e.node2.loc, source) ?? "");
+            }
         }
         throw e;
     }

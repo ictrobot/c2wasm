@@ -14,17 +14,17 @@ export class Scope {
         return this.tags.get(tag) ?? this.parent?._getTag(tag);
     }
 
-    lookupTag<T extends CCompound>(tag: string, wantedType?: {new(...args: any[]): T}): T | undefined {
+    lookupTag<T extends CCompound>(tag: string, wantedType?: {new(...args: any[]): T}, node?: ParseNode): T | undefined {
         const result = this._getTag(tag);
         if (wantedType && result && wantedType.prototype !== Object.getPrototypeOf(result)) {
-            throw new Error("`" + tag + "` was already declared as a different type!");
+            throw new ScopeError("`" + tag + "` was already declared as a " + result.typeName, result.node, node);
         }
         return result as T | undefined;
     }
 
     addTag(value: CCompound): void {
-        if (!value.name) throw new Error("Cannot add nameless compound type to scope");
-        if (this._getTag(value.name)) throw new Error("Compound type `" + value.name + "` is already defined!");
+        if (!value.name) throw new Error("Cannot add nameless compound type to scope"); // shouldn't happen
+        if (this._getTag(value.name)) throw new ScopeError("Compound type `" + value.name + "` is already defined!", value.node);
         this.tags.set(value.name, value);
     }
 
@@ -32,19 +32,25 @@ export class Scope {
         return this.identifiers.get(name) ?? this.parent?._getId(name);
     }
 
-    lookupIdentifier(name: string): CDeclaration {
+    lookupIdentifier(name: string, node?: ParseNode): CDeclaration {
         const result = this._getId(name);
         if (!result) {
-            throw new Error("Failed to find `" + name + "`");
+            throw new ScopeError("Failed to find `" + name + "`", node);
         }
         return result;
     }
 
     addIdentifier(value: CDeclaration): void {
-        const existing = this._getId(value.name);
-        if (existing && !(existing instanceof CFuncDeclaration && value instanceof CFuncDefinition && existing.type.equals(value.type))) {
-            // allow function declarations to be replaced with function definitions
-            throw new Error("Identifier `" + value.name + "` is already defined!");
+        const existing = this.identifiers.get(value.name); // allowing redefining identifiers defined in parent scopes
+        if (existing) {
+            if (existing.type.equals(value.type) && existing instanceof CFuncDeclaration && value instanceof CFuncDefinition) {
+                // allow replacement of function declaration with definition
+            } else if (existing.type.equals(value.type) && (existing instanceof CFuncDeclaration || value instanceof CFuncDeclaration)) {
+                // allow function declarations to be redeclared (but don't override instance in scope)
+                return;
+            } else {
+                throw new ScopeError("Identifier `" + value.name + "` is already defined in this scope!", existing.node, value.node);
+            }
         }
         this.identifiers.set(value.name, value);
     }
@@ -59,5 +65,13 @@ export class Scope {
 
     get isTop(): boolean {
         return this.parent === undefined;
+    }
+}
+
+class ScopeError extends Error {
+    name = "ScopeError";
+
+    constructor(message: string, readonly node?: ParseNode, readonly node2?: ParseNode) {
+        super(message);
     }
 }

@@ -51,9 +51,9 @@ export function parse(input: string): parsetree.TranslationUnit {
         return validate(tree);
     } catch (e) {
         if (e?.hash?.loc) { // Jison parse errors
-            e.message += "\n\n" + (locationString(e.hash.loc, input) ?? "");
+            e.message += "\n\nLocation:\n" + (locationString(e.hash.loc, input) ?? "");
         } else if (e?.node?.loc) { // Validation errors
-            e.message += "\n\n" + (locationString(e.node.loc, input) ?? "");
+            e.message += "\n\nLocation:\n" + (locationString(e.node.loc, input) ?? "");
         }
         throw e;
     }
@@ -63,7 +63,7 @@ export function locationString(loc: parsetree.Location, input: string): string |
     const lines = input.split("\n");
     if (loc.first_line - 1 >= lines.length) return;
 
-    let output = "Location:\n";
+    let output = "";
 
     const lnumDigits = Math.ceil(Math.log10(loc.last_line + 4));
     function outputLine(lnum: number) {

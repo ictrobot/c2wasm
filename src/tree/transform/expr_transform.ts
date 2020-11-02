@@ -14,7 +14,7 @@ export function ptExpression(e: pt.Expression, scope: Scope): CExpression {
         return ptConstant(e);
 
     } else if (e instanceof pt.Identifier) {
-        return new CIdentifier(e, scope.lookupIdentifier(e.name));
+        return new CIdentifier(e, scope.lookupIdentifier(e.name, e));
 
     } else if (e instanceof pt.StringLiteral) {
         const arr: BigInt[] = [];

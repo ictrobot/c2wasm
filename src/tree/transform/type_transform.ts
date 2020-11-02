@@ -89,7 +89,7 @@ function getSpecifierType(d: pt.SpecifierQualifiers | pt.DeclarationSpecifiers, 
         let structure = new type(singleSpecifier, singleSpecifier.id);
         if (singleSpecifier.id) {
             // lookup tag and if it already exists use its instance
-            const existing: CStruct | CUnion = scope.lookupTag(singleSpecifier.id, type as any) as any;
+            const existing: CStruct | CUnion = scope.lookupTag(singleSpecifier.id, type as any, singleSpecifier) as any;
             if (existing) {
                 structure = existing;
             } else {
@@ -107,7 +107,7 @@ function getSpecifierType(d: pt.SpecifierQualifiers | pt.DeclarationSpecifiers, 
                 if (type.incomplete || type.bytes === 0) {
                     throw new ParseTreeValidationError(declarator, "Type must be complete");
                 }
-                values.push(new CVariable(name, type as CNotFuncType));
+                values.push(new CVariable(declaration, name, type as CNotFuncType));
             }
         }
         structure.members = values;
@@ -118,7 +118,7 @@ function getSpecifierType(d: pt.SpecifierQualifiers | pt.DeclarationSpecifiers, 
         let cEnum = new CEnum(singleSpecifier, singleSpecifier.id);
         if (singleSpecifier.id) {
             // lookup tag and if it already exists use its instance
-            const existing = scope.lookupTag(singleSpecifier.id, CEnum);
+            const existing = scope.lookupTag(singleSpecifier.id, CEnum, singleSpecifier);
             if (existing) {
                 cEnum = existing;
             } else {
@@ -132,7 +132,7 @@ function getSpecifierType(d: pt.SpecifierQualifiers | pt.DeclarationSpecifiers, 
         for (const e of singleSpecifier.body) {
             if (e.value) nextValue = Number(evalConstant(e.value).value);
 
-            const enumConstant = new CVariable(e.id, addQualifier(cEnum, "const"), scope.isTop ? undefined : "static");
+            const enumConstant = new CVariable(e, e.id, addQualifier(cEnum, "const"), scope.isTop ? undefined : "static");
             enumConstant.staticValue = new CConstant(e, cEnum, nextValue);
             scope.addIdentifier(enumConstant);
 
