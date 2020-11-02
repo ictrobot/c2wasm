@@ -131,7 +131,7 @@ export class CReturn {
 
         if (value === undefined) {
             if (func.type.returnType.bytes > 0) {
-                throw new ExpressionTypeError(node, "`return;`", "`return [expression]`");
+                throw new ExpressionTypeError(node, "`return [expression]`", "`return;`");
             }
         } else {
             if (!func.type.returnType.equals(value.type)) {

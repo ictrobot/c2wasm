@@ -3,7 +3,7 @@ import {CAssignment, CIdentifier, CExpression, CEvaluable, CInitializer, CString
 import {Scope} from "../scope";
 import {CStatement, CCompoundStatement, CExpressionStatement, CNop, CIf, CForLoop, CWhileLoop, CDoLoop, CSwitch, CBreak, CContinue, CReturn} from "../statements";
 import {ExpressionTypeError} from "../type_checking";
-import {CFuncType} from "../types";
+import {CFuncType, CVoid} from "../types";
 import {ParseTreeValidationError, pt} from "../../parsing";
 import {ptExpression, evalConstant} from "./expr_transform";
 import {getDeclaratorName, getDeclaratorType, getType} from "./type_transform";
@@ -95,6 +95,35 @@ function ptFunction(fn: pt.FunctionDefinition, scope: Scope): void {
 
     // parse body
     ptCompound(fn.body, cfn);
+
+    // check function always returns
+    if (!(type.returnType instanceof CVoid) && !checkReturns(cfn.body)) {
+        throw new ParseTreeValidationError(fn.body, "Non-void function may not return");
+    }
+}
+
+function checkReturns(statement: CStatement | undefined): boolean {
+    if (statement instanceof CReturn) {
+        return true;
+    } else if (statement instanceof CCompoundStatement) {
+        for (let i = 0; i < statement.statements.length; i++) {
+            if (checkReturns(statement.statements[i])) {
+                if (i !== statement.statements.length - 1) {
+                    throw new ParseTreeValidationError(statement.statements[i + 1].node, "Statement after return");
+                }
+                return true;
+            }
+        }
+    } else if (statement instanceof CIf) {
+        return checkReturns(statement.ifBody) && checkReturns(statement.elseBody);
+    } else if (statement instanceof CDoLoop) {
+        return checkReturns(statement.body);
+    } else if (statement instanceof CSwitch) {
+        // if every child returns and there's a default statement then switch is safe
+        return statement.children.every(x => checkReturns(x.body)) &&
+            statement.children.find(x => x.default) !== undefined;
+    }
+    return false;
 }
 
 function ptStatement(node: pt.Statement, parent: CStatement): CStatement {
