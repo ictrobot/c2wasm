@@ -3,7 +3,7 @@ import {CAssignment, CIdentifier, CExpression, CEvaluable, CInitializer, CString
 import {Scope} from "../scope";
 import {CStatement, CCompoundStatement, CExpressionStatement, CNop, CIf, CForLoop, CWhileLoop, CDoLoop, CSwitch, CBreak, CContinue, CReturn} from "../statements";
 import {ExpressionTypeError} from "../type_checking";
-import {CFuncType, CVoid} from "../types";
+import {CFuncType, CVoid, CArray} from "../types";
 import {ParseTreeValidationError, pt} from "../../parsing";
 import {ptExpression, evalConstant} from "./expr_transform";
 import {getDeclaratorName, getDeclaratorType, getType} from "./type_transform";
@@ -32,7 +32,11 @@ function ptDeclaration(declaration: pt.Declaration, scope: Scope, inFunction: bo
             entry = entry.body;
         }
 
-        const type = getDeclaratorType(declType, entry, scope, initialValue);
+        const type = getDeclaratorType(declType, entry, scope);
+        if (initialValue?.type instanceof CArray && type instanceof CArray && type.incomplete) {
+            // initialize array length from initializer if incomplete
+            type.length = initialValue.type.length;
+        }
 
         if (type.incomplete) {
             throw new ExpressionTypeError(entry, "complete type", "incomplete type");

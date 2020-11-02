@@ -1,5 +1,5 @@
 import {CVariable} from "../declarations";
-import {CExpression, CInitializer, CConstant} from "../expressions";
+import {CConstant} from "../expressions";
 import {Scope} from "../scope";
 import {CType, getArithmeticType, CPointer, addQualifier, CFuncType, CNotFuncType, CArray, CEnum, CStruct, CUnion} from "../types";
 import {ParseTreeValidationError, pt} from "../../parsing/";
@@ -18,11 +18,7 @@ export function getType(o: GeneralTypeDecl, scope: Scope): CType {
     return type;
 }
 
-export function getDeclaratorType(type: CType,
-                                  declarator: pt.Declarator | pt.AbstractDeclarator,
-                                  scope: Scope,
-                                  initialValue?: CExpression | CInitializer): CType {
-
+export function getDeclaratorType(type: CType, declarator: pt.Declarator | pt.AbstractDeclarator, scope: Scope): CType {
     let d: pt.Declarator | pt.AbstractDeclarator | undefined = declarator;
 
     while (d && !(d instanceof pt.IdentifierDeclarator)) {
@@ -38,8 +34,7 @@ export function getDeclaratorType(type: CType,
             type = new CArray(type);
             if (d.length) {
                 type.length = Number(evalConstant(d.length).value);
-            } else if (initialValue && initialValue.type instanceof CArray) {
-                type.length = initialValue.type.length;
+                if (type.length <= 0) throw new ParseTreeValidationError(d.length, "Invalid array length");
             }
 
             d = d.body;

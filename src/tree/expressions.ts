@@ -215,15 +215,15 @@ export class CAddSub {
             checkTypeComplete(lhs.type.type);
             this.type = lhs.type;
 
-        } else if (lhs.type instanceof CPointer) { // one pointer, one integral
+        } else if (lhs.type instanceof CPointer || lhs.type instanceof CArray) { // one pointer, one integral
             checks.asInteger(rhs.node, rhs.type);
             checkTypeComplete(lhs.type.type);
-            this.type = lhs.type;
+            this.type = lhs.type instanceof CPointer ? lhs.type : new CPointer(lhs.type.type);
 
-        } else if (rhs.type instanceof CPointer) { // one pointer, one integral
+        } else if (rhs.type instanceof CPointer || rhs.type instanceof CArray) { // one pointer, one integral
             checks.asInteger(lhs.node, lhs.type);
             checkTypeComplete(rhs.type.type);
-            this.type = rhs.type;
+            this.type = rhs.type instanceof CPointer ? rhs.type : new CPointer(rhs.type.type);
 
         } else {
             this.type = usualArithmeticConversion(checks.asArithmetic(lhs.node, lhs.type), checks.asArithmetic(rhs.node, rhs.type));
@@ -308,7 +308,7 @@ export class CAssignment {
                 readonly assignmentType: pt.AssignmentType, readonly initialAssignment: boolean = false) {
         // check lvalue
         checks.checkLvalue(lhs, true);
-        if (lhs.type instanceof CArray || lhs.type instanceof CFuncType || lhs.type.incomplete || lhs.type.bytes === 0) {
+        if ((lhs.type instanceof CArray && !initialAssignment) || lhs.type instanceof CFuncType || lhs.type.incomplete) {
             throw new checks.ExpressionTypeError(lhs.node, "assignable type");
         } else if (getQualifier(lhs.type) === "const" && !initialAssignment) {
             throw new checks.ExpressionTypeError(lhs.node, "non-const location");
