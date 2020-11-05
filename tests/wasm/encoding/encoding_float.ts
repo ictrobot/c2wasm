@@ -1,6 +1,6 @@
 import test from "ava";
+import {f64, f32} from "../../../src/wasm/base_types";
 import {encodeF32, encodeF64} from "../../../src/wasm/encoding";
-import {f32, f64} from "../../../src/wasm/wtypes";
 
 test('f32 encoding', t => {
     for (const [value, result] of _f32_testcases) {

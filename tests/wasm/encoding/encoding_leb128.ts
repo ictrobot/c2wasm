@@ -1,6 +1,6 @@
 import test from "ava";
-import {encodeU64, encodeS64} from "../../../src/wasm/encoding";
-import {u64, s64} from "../../../src/wasm/wtypes";
+import {i64, u64} from "../../../src/wasm/base_types";
+import {encodeU64, encodeI64} from "../../../src/wasm/encoding";
 
 test('unsigned leb128 encoding', t => {
     for (const [value, result] of _unsigned_testcases) {
@@ -10,7 +10,7 @@ test('unsigned leb128 encoding', t => {
 
 test("signed leb128 encoding", t => {
     for (const [value, result] of _signed_testcases) {
-        t.deepEqual(encodeS64(value as s64), result);
+        t.deepEqual(encodeI64(value as i64), result);
     }
 });
 

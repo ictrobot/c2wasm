@@ -1,4 +1,4 @@
-import {byte, u32, u64, s32, s64, f32, f64} from "./wtypes";
+import type {f64, f32, i64, i32, u64, u32, byte} from "./base_types";
 
 export function encodeF32(n: f32): byte[] {
     const buffer = new ArrayBuffer(4);
@@ -26,14 +26,14 @@ export function encodeU64(n: u64): byte[] {
     return unsignedLeb128(n) as byte[];
 }
 
-export function encodeS32(n: s32): byte[] {
+export function encodeI32(n: i32): byte[] {
     if (n > 2n ** 31n - 1n || n < -(2n ** 31n)) {
         throw new Error(`Value ${n} outside of range for s32`);
     }
     return signedLeb128(n) as byte[];
 }
 
-export function encodeS64(n: s64): byte[] {
+export function encodeI64(n: i64): byte[] {
     if (n > 2n ** 63n - 1n || n < -(2n ** 63n)) {
         throw new Error(`Value ${n} outside of range for s64`);
     }
