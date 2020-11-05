@@ -52,7 +52,8 @@
           "words": true,
           "nonwords": false
         }],
-        "@typescript-eslint/ban-types": "off"
+        "@typescript-eslint/ban-types": "off",
+        "@typescript-eslint/ban-ts-comment": "off"
       }
     }
   ]
