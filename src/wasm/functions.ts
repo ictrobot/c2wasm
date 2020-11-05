@@ -1,31 +1,31 @@
-import {funcidx, localidx, byte, u32} from "./base_types";
+import {funcidx, localidx, byte, u32, typeidx} from "./base_types";
 import {encodeU32} from "./encoding";
-import {Instruction} from "./instructions";
 import {ModuleBuilder} from "./module";
-import {ValueType, ResultType, FunctionType} from "./wtypes";
+import {ValueType, ResultType, FunctionType, encodeVec} from "./wtypes";
 
-export class WBaseFunction {
-    constructor(readonly parent: ModuleBuilder, readonly type: FunctionType) {
+
+export class WImportedFunction {
+    constructor(private readonly idxFn: (x: WImportedFunction) => funcidx,
+                readonly type: FunctionType,
+                readonly module: string,
+                readonly name: string) {
     }
 
     getIndex(): funcidx {
-        throw "TODO";
+        return this.idxFn(this);
     }
 }
 
-export class WImportedFunction extends WBaseFunction {
-    constructor(parent: ModuleBuilder, type: FunctionType, readonly module: string, readonly name: string) {
-        super(parent, type);
-    }
-}
-
-export class WFunction extends WBaseFunction {
-    constructor(parent: ModuleBuilder,
-                type: FunctionType,
+export class WFunction {
+    constructor(private readonly idxFn: (x: WFunction) => funcidx,
+                readonly type: FunctionType,
                 readonly locals: ValueType[],
-                readonly body: Instruction[],
+                readonly body: (() => byte[])[],
                 readonly exportName?: string) {
-        super(parent, type);
+    }
+
+    getIndex(): funcidx {
+        return this.idxFn(this);
     }
 
     toBytes(): byte[] {
@@ -45,20 +45,20 @@ export class WFunction extends WBaseFunction {
         if (lastType) locals.push([count, lastType]);
 
         // encode function body
-        const code: byte[] = locals.map(x => [...encodeU32(x[0] as u32), x[1]]).flat(); // locals
-        code.push(...this.body.flat(), 0x0B as byte); // expression
-        code.push(...encodeU32(BigInt(code.length) as u32));
+        const code: byte[] = encodeVec(locals.map(x => [...encodeU32(x[0] as u32), x[1]])); // locals
+        code.push(...this.body.map(x => x()).flat(), 0x0B as byte); // expression
+        code.unshift(...encodeU32(BigInt(code.length) as u32));
         return code;
     }
 }
 
 export class WFunctionBuilder {
-    private _arguments: WLocal[];
-    private _locals: WLocal[] = [];
+    private readonly _arguments: WLocal[];
+    private readonly _locals: WLocal[] = [];
     _getIndex?: () => funcidx;
 
     constructor(readonly parent: ModuleBuilder, args: ResultType) {
-        this._arguments = args.map(t => new WLocal(this._localidx, t));
+        this._arguments = args.map(t => new WLocal(this._localidx.bind(this), t));
     }
 
     get locals(): ReadonlyArray<WLocal> {
@@ -66,16 +66,20 @@ export class WFunctionBuilder {
     }
 
     addLocal(t: ValueType): WLocal {
-        return new WLocal(this._localidx, t);
+        return new WLocal(this._localidx.bind(this), t);
     }
 
     get args(): ReadonlyArray<WLocal> {
         return this._arguments;
     }
 
-    getIndex(): funcidx {
-        if (this._getIndex) return this._getIndex();
-        throw "Function still in construction";
+    get self(): {getIndex(): funcidx} {
+        return {
+            getIndex: () => {
+                if (this._getIndex) return this._getIndex();
+                throw "Function still in construction";
+            }
+        };
     }
 
     private _localidx(l: WLocal) {

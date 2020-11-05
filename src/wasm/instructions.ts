@@ -2,22 +2,22 @@ import {byte, u32, labelidx, funcidx, typeidx, localidx, globalidx, i32, i64, f3
 import {encodeU32, encodeI32, encodeI64, encodeF32, encodeF64} from "./encoding";
 import {ValueType} from "./wtypes";
 
-export type Instruction = byte[] & {__type_instr__: void};
+type Instruction = (() => byte[]);
 
 export const Instructions = {
     // control instructions
     unreachable: zeroArgs(0x00),
     nop: zeroArgs(0x01),
-    block(type: ValueType | undefined, body: Instruction[]): Instruction {
-        return [0x02 as byte, ...encodeBlockType(type), ...body.flat(), 0x0B as byte] as Instruction;
+    block: (type: ValueType | undefined, body: Instruction[]) => () => {
+        return [0x02 as byte, ...encodeBlockType(type), ...body.map(x => x()).flat(), 0x0B as byte];
     },
-    loop(type: ValueType | undefined, body: Instruction[]): Instruction {
-        return [0x03 as byte, ...encodeBlockType(type), ...body.flat(), 0x0B as byte] as Instruction;
+    loop: (type: ValueType | undefined, body: Instruction[]) => () => {
+        return [0x03 as byte, ...encodeBlockType(type), ...body.map(x => x()).flat(), 0x0B as byte];
     },
-    if(type: ValueType | undefined, body: Instruction[], elseBody?: Instruction[]): Instruction {
-        const instr = [0x04 as byte, ...encodeBlockType(type), ...body.flat()] as Instruction;
+    if: (type: ValueType | undefined, body: Instruction[], elseBody?: Instruction[]) => () => {
+        const instr = [0x04 as byte, ...encodeBlockType(type), ...body.map(x => x()).flat()];
         if (elseBody) {
-            instr.push(0x05 as byte, ...elseBody.flat());
+            instr.push(0x05 as byte, ...elseBody.map(x => x()).flat());
         }
         instr.push(0x0B as byte);
         return instr;
@@ -65,9 +65,7 @@ export const Instructions = {
         store16: memArg(0x3B),
 
 
-        const(x: bigint | i32): Instruction {
-            return [0x41 as byte, ...encodeI32(x as i32)] as Instruction;
-        },
+        const: (x: bigint | i32) => () => [0x41 as byte, ...encodeI32(x as i32)],
 
         eqz: zeroArgs(0x45),
         eq: zeroArgs(0x46),
@@ -125,9 +123,7 @@ export const Instructions = {
         store32: memArg(0x3E),
 
 
-        const(x: bigint | i64): Instruction {
-            return [0x42 as byte, ...encodeI64(x as i64)] as Instruction;
-        },
+        const: (x: bigint | i64) => () => [0x42 as byte, ...encodeI64(x as i64)],
 
         eqz: zeroArgs(0x50),
         eq: zeroArgs(0x51),
@@ -178,9 +174,7 @@ export const Instructions = {
         store: memArg(0x38),
 
 
-        const(x: number | f32): Instruction {
-            return [0x43 as byte, ...encodeF32(x as f32)] as Instruction;
-        },
+        const: (x: number | f32) => () => [0x43 as byte, ...encodeF32(x as f32)],
 
         eq: zeroArgs(0x5B),
         ne: zeroArgs(0x5C),
@@ -218,9 +212,7 @@ export const Instructions = {
         store: memArg(0x39),
 
 
-        const(x: number | f64): Instruction {
-            return [0x44 as byte, ...encodeF64(x as f64)] as Instruction;
-        },
+        const: (x: number | f64) => () => [0x44 as byte, ...encodeF64(x as f64)],
 
         eq: zeroArgs(0x61),
         ne: zeroArgs(0x62),
@@ -263,8 +255,8 @@ function encodeBlockType(t: ValueType | undefined): byte[] {
 
 function zeroArgs(opcode: number, ...extra: number[]): () => Instruction {
     // always return the same instance
-    const instr = [opcode, ...extra] as Instruction;
-    return () => instr;
+    const instr = [opcode, ...extra] as byte[];
+    return () => () => instr;
 }
 
 // either an index or an object with that index
@@ -277,9 +269,9 @@ function encodeIndex<T extends u32>(idx: index<T>): byte[] {
 }
 
 function indexArg<T extends u32>(opcode: number): (x: index<T>) => Instruction {
-    return (i) => [opcode as byte, ...encodeIndex(i)] as Instruction;
+    return (i) => () => [opcode as byte, ...encodeIndex(i)];
 }
 
 function memArg(opcode: number): (align: u32, offset: u32) => Instruction {
-    return (align, offset) => [opcode as byte, ...encodeU32(align), ...encodeU32(offset)] as Instruction;
+    return (align, offset) => () => [opcode as byte, ...encodeU32(align), ...encodeU32(offset)];
 }

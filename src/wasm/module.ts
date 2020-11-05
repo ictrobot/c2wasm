@@ -1,7 +1,6 @@
-import {byte, u32, typeidx} from "./base_types";
+import {byte, u32, typeidx, funcidx} from "./base_types";
 import {encodeU32, encodeUtf8} from "./encoding";
 import {WFunctionBuilder, WFunction, WImportedFunction} from "./functions";
-import {Instruction} from "./instructions";
 import {encodeVec, ResultType, encodeFunctionType, FunctionType} from "./wtypes";
 
 export class ModuleBuilder {
@@ -9,17 +8,21 @@ export class ModuleBuilder {
     private _importedFunctions: WImportedFunction[] = [];
 
     function(params: ResultType, returnValue: ResultType,
-             body: (b: WFunctionBuilder) => Instruction[], exportName?: string): WFunction {
+             body: (b: WFunctionBuilder) => (() => byte[])[], exportName?: string): WFunction {
         const builder = new WFunctionBuilder(this, params);
         const instructions = body(builder);
-        const fn = new WFunction(this, [params, returnValue], builder.locals.map(x => x.type), instructions, exportName);
-        builder._getIndex = fn.getIndex; // enable recursive calls in builder
+        const fn = new WFunction(this._funcIndex.bind(this),
+            [params, returnValue],
+            builder.locals.map(x => x.type),
+            instructions,
+            exportName);
+        builder._getIndex = fn.getIndex.bind(fn); // enable recursive calls in builder
         this._functions.push(fn);
         return fn;
     }
 
     importFunction(param: ResultType, returnValue: ResultType, module: string, name: string): WImportedFunction {
-        const fn = new WImportedFunction(this, [param, returnValue], module, name);
+        const fn = new WImportedFunction(this._funcIndex.bind(this), [param, returnValue], module, name);
         this._importedFunctions.push(fn);
         return fn;
     }
@@ -32,11 +35,12 @@ export class ModuleBuilder {
         return [
             0x00, 0x61, 0x73, 0x6D, // magic
             0x01, 0x00, 0x00, 0x00, // version
-            encodeSection(1, types), // type section
-            encodeSection(2, imports), // import section
-            encodeSection(3, funcTypes), // func types,
+            ...encodeSection(1, types), // type section
+            ...encodeSection(2, imports), // import section
+            ...encodeSection(3, funcTypes), // func types,
+            ...encodeSection(7, this._encodeExports()),
 
-            encodeSection(10, this._functions.map(x => x.toBytes())) // code section
+            ...encodeSection(10, this._functions.map(x => x.toBytes())) // code section
         ] as byte[];
     }
 
@@ -49,7 +53,6 @@ export class ModuleBuilder {
         return module.instance.exports;
     }
 
-
     private _encodeImports(funcTypes: byte[][]): byte[][] {
         const imports: byte[][] = [];
 
@@ -58,6 +61,28 @@ export class ModuleBuilder {
         }
 
         return imports;
+    }
+
+    private _encodeExports(): byte[][] {
+        const exports: byte[][] = [];
+
+        for (const i of this._functions) {
+            if (i.exportName) exports.push([...encodeUtf8(i.exportName), 0x00 as byte, ...encodeU32(i.getIndex())]);
+        }
+
+        return exports;
+    }
+
+    private _funcIndex(fn: WFunction | WImportedFunction): funcidx {
+        let idx: number;
+        if (fn instanceof WImportedFunction) {
+            idx = this._importedFunctions.indexOf(fn);
+        } else {
+            idx = this._functions.indexOf(fn);
+        }
+        if (idx < 0) throw "Function not found?";
+        if (fn instanceof WFunction) idx += this._importedFunctions.length;
+        return BigInt(idx) as funcidx;
     }
 }
 
