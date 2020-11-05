@@ -65,8 +65,8 @@ export const Instructions = {
         store16: memArg(0x3B),
 
 
-        const(x: i32): Instruction {
-            return [0x41 as byte, ...encodeI32(x)] as Instruction;
+        const(x: bigint | i32): Instruction {
+            return [0x41 as byte, ...encodeI32(x as i32)] as Instruction;
         },
 
         eqz: zeroArgs(0x45),
@@ -125,8 +125,8 @@ export const Instructions = {
         store32: memArg(0x3E),
 
 
-        const(x: i64): Instruction {
-            return [0x42 as byte, ...encodeI64(x)] as Instruction;
+        const(x: bigint | i64): Instruction {
+            return [0x42 as byte, ...encodeI64(x as i64)] as Instruction;
         },
 
         eqz: zeroArgs(0x50),
@@ -178,8 +178,8 @@ export const Instructions = {
         store: memArg(0x38),
 
 
-        const(x: f32): Instruction {
-            return [0x43 as byte, ...encodeF32(x)] as Instruction;
+        const(x: number | f32): Instruction {
+            return [0x43 as byte, ...encodeF32(x as f32)] as Instruction;
         },
 
         eq: zeroArgs(0x5B),
@@ -218,8 +218,8 @@ export const Instructions = {
         store: memArg(0x39),
 
 
-        const(x: f64): Instruction {
-            return [0x44 as byte, ...encodeF64(x)] as Instruction;
+        const(x: number | f64): Instruction {
+            return [0x44 as byte, ...encodeF64(x as f64)] as Instruction;
         },
 
         eq: zeroArgs(0x61),
