@@ -4,6 +4,14 @@ import type {CDeclaration} from "./declarations";
 import {CFuncDeclaration, CFuncDefinition, CVariable} from "./declarations";
 import type {CCompound} from "./types";
 
+/**
+ * Represents a scope storing identifiers (variables & functions) and tags (struct, union & enum names) in the IR.
+ * Each one has a parent scope excluding the base scope for the translation unit.
+ *
+ * e.g. base scope (function declarations) <- function scope (contains parameters) <- compound statement scope (fn locals).
+ *
+ * If a tag or identifier isn't found in the current scope, parents are checked.
+ */
 export class Scope {
     private tags = new Map<string, CCompound>(); // names of structs, unions & enums
     private identifiers = new Map<string, CDeclaration>(); // names of variables and functions
@@ -12,6 +20,7 @@ export class Scope {
     }
 
     private _getTag(tag: string): CCompound | undefined {
+        // perform recursive lookup in parents if not found
         return this.tags.get(tag) ?? this.parent?._getTag(tag);
     }
 

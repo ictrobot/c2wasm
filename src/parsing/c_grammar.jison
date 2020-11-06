@@ -4,6 +4,9 @@
 %}
 %%
 
+// modified version of the C99 grammar to strip out some features which are C99 or out of scope
+// constructs a parse tree using the classes in parsetree.ts
+
 // return either a translation_unit (one or more declarations) or nothing
 ast_tree
     : translation_unit EOF                                                              {{ return $1; }}

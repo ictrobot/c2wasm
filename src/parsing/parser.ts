@@ -44,8 +44,8 @@ class WrappedLexer {
         this.yytext = undefined;
 
         lexer.reset(input);
-        this.yylloc._source = input;
-        this.yylloc._sourceId = nextSourceId++;
+        this.yylloc._source = input; // store source on the parser tokens, allowing error information to be easily printed
+        this.yylloc._sourceId = nextSourceId++; // identifier which can be used to check if tokens are from the same file
     }
 }
 

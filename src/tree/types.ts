@@ -2,6 +2,7 @@ import {CError} from "../c_error";
 import type {TypeSpecifier, TypeQualifier, ParseNode} from "../parsing/parsetree";
 import type {CVariable} from "./declarations";
 
+// types for expressions and declarations in the IR
 export type CType = CNotFuncType | CFuncType;
 export type CNotFuncType = CCompound | CArithmetic | CPointer | CArray | CVoid;
 export type CQualifiedType<T extends CType> = T & {qualifier?: TypeQualifier};
@@ -15,6 +16,7 @@ export class CFuncType {
                 readonly returnType: CQualifiedType<CNotFuncType>,
                 readonly parameterTypes: CQualifiedType<CNotFuncType>[],
                 public parameterNames?: string[]) {
+        // return type and parameter types must be complete
         if (!(returnType instanceof CVoid)) checkTypeComplete(returnType);
         parameterTypes.forEach(x => checkTypeComplete(x));
     }
@@ -151,7 +153,7 @@ export class CUnion {
         throw new Error(`Union does not contain member "${m}"`);
     }
 
-    hasConstMember(): boolean {
+    hasConstMember(): boolean { // if the union has one or more const members
         return this.members.find(m =>
             getQualifier(m.type) || ((m.type instanceof CUnion || m.type instanceof CStruct) && m.type.hasConstMember())
         ) !== undefined;
@@ -251,6 +253,13 @@ export const CSizeT = CArithmetic.U32;
 
 const constType = Symbol("const"); // hidden property key
 
+/**
+ * Add a qualifier to a type.
+ *
+ * This creates a new object with the qualifier attached, using the existing type as its prototype, allowing it to be
+ * treated as the existing type. This new object is also cached on the existing type using a field referenced by a
+ * symbol, so it can't be accessed when enumerating the fields and doesn't affect existing code.
+ */
 export function addQualifier<T extends CType>(t: T, qualifier?: TypeQualifier): CQualifiedType<T> {
     if (qualifier === undefined) return t;
     if (Object.prototype.hasOwnProperty.call(t, "qualifier")) {
@@ -272,12 +281,14 @@ export function getQualifier(t: CQualifiedType<CType>): TypeQualifier | undefine
     return t?.qualifier;
 }
 
+/** integer promotion from the C standard */
 export function integerPromotion(t: CArithmetic): CArithmetic {
     if (t.type === "float") return t;
     if (t.bytes < CArithmetic.S32.bytes) return CArithmetic.S32;
     return t;
 }
 
+/** "The usual arithmetic conversions" from the C standard */
 export function usualArithmeticConversion(t1: CArithmetic, t2: CArithmetic): CArithmetic {
     if (t1 === CArithmetic.Fp64 || t2 === CArithmetic.Fp64) return CArithmetic.Fp64;
     if (t1 === CArithmetic.Fp32 || t2 === CArithmetic.Fp32) return CArithmetic.Fp32;
@@ -292,10 +303,11 @@ export function usualArithmeticConversion(t1: CArithmetic, t2: CArithmetic): CAr
     return CArithmetic.S32;
 }
 
+/** Convert a list of specifier strings (e.g. "signed", "int") into a CType instance. */
 export function getArithmeticType(specifierList: ReadonlyArray<TypeSpecifier & string>): CArithmetic | CVoid | undefined {
     const copy = specifierList.slice();
 
-    function remove(s: TypeSpecifier & string) {
+    function remove(s: TypeSpecifier & string) { // remove an item from a list if present, and return whether it was
         const idx = copy.indexOf(s);
         if (idx > -1) {
             copy.splice(idx, 1);
@@ -304,15 +316,15 @@ export function getArithmeticType(specifierList: ReadonlyArray<TypeSpecifier & s
         return false;
     }
 
-    function check<T>(x: T): T | undefined {
-        if (copy.length > 0) return undefined;
+    function check<T>(x: T): T | undefined { // check that there are no specifiers left to be processed
+        if (copy.length > 0) return undefined; // extra specifiers so this type is invalid (e.g. "unsigned signed int")
         return x;
     }
 
-    if (remove("void")) {
-        return check(new CVoid());
+    if (remove("void")) { // if "void" in list
+        return check(new CVoid()); // then the type must be void, check no extra specifiers were provided
     } else if (remove("double")) {
-        remove("long");
+        remove("long"); // remove "long" if present, as treating "long double" as normal doubles
         return check(CArithmetic.Fp64);
     } else if (remove("float")) {
         return check(CArithmetic.Fp32);
@@ -321,12 +333,12 @@ export function getArithmeticType(specifierList: ReadonlyArray<TypeSpecifier & s
         remove("unsigned");
         return check(CArithmetic.U8);
     } else if (remove("short")) {
-        remove("int");
+        remove("int"); // remove optional "int" ("short int" === "int")
         if (remove("unsigned")) return check(CArithmetic.U16);
         remove("signed");
         return check(CArithmetic.S16);
     } else if (remove("long")) {
-        remove("long");
+        remove("long"); // remove an 2nd "long" if present, as treating "long long" as "long"
         remove("int");
         if (remove("unsigned")) return check(CArithmetic.U64);
         remove("signed");
@@ -339,6 +351,7 @@ export function getArithmeticType(specifierList: ReadonlyArray<TypeSpecifier & s
     return undefined;
 }
 
+/** Assert that type is complete */
 export function checkTypeComplete<T extends CType>(type: T, node: ParseNode | undefined = type.node): T {
     if (type.incomplete) {
         throw new class extends CError {

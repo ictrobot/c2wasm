@@ -6,6 +6,8 @@ import {
     CSizeT, usualArithmeticConversion, integerPromotion, CFuncType, CVoid, CEnum, checkTypeComplete, getQualifier
 } from "./types";
 
+// Classes to represent all the possible expression types in the IR
+
 export type CExpression =
     CConstant | CIdentifier | CStringLiteral |
     CFunctionCall | CMemberAccess | CIncrDecr | // postfix
@@ -16,6 +18,8 @@ export type CExpression =
     CBitwiseAndOr | CLogicalAndOr |
     CConditional | CAssignment | CComma;
 
+/** if the expression can be evaluated to a constant at compile time, extend this class.
+ * Used for integer constants for enum values, switch statements, static initializers, etc */
 export abstract class CEvaluable {
     abstract evaluate(): CConstant;
 }
@@ -66,6 +70,7 @@ export class CStringLiteral {
     }
 
     toInitializer(): CInitializer {
+        // convert to an array of chars
         const constants: CConstant[] = this.value.map(x => new CConstant(this.node, CArithmetic.U8, x));
         return new CInitializer(this.node, constants, this.type);
     }
@@ -80,6 +85,7 @@ export class CFunctionCall {
         this.fnType = checks.asFunction(body.node, body.type);
         this.type = this.fnType.returnType;
 
+        // check arguments correct for the function type
         if (this.fnType.parameterTypes.length !== args.length) {
             throw new checks.ExpressionTypeError(node, `${this.fnType.parameterTypes.length} argument(s)`, `${args.length}`);
         }
@@ -282,7 +288,7 @@ export class CLogicalAndOr {
     }
 }
 
-export class CConditional {
+export class CConditional { // [test] ? [trueValue] : [falseValue]
     readonly lvalue = false;
     readonly type: CType;
 
@@ -397,21 +403,24 @@ export class CInitializer {
         return this._type;
     }
 
+    /** Once the initializer is recursively constructed and the declaration's type is known, set the type of the
+     * initializer to the type of the declaration, checking that this initializer is valid for the provided type */
     set type(value: CType) {
         const error = () => {
             throw new checks.ExpressionTypeError(this.node, "initializer to match type");
         };
 
         if (value instanceof CArray) {
-            if (this.body.length > (value.length ?? Infinity)) error();
+            if (this.body.length > (value.length ?? Infinity)) error(); // too many elements in this initializer
             this.body.forEach(x => CInitializer.typeCheck(value.type, x));
 
         } else if (value instanceof CStruct) {
-            if (this.body.length > value.members.length) error();
+            if (this.body.length > value.members.length) error(); // too many members
             this.body.forEach((x, i) => CInitializer.typeCheck(value.members[i].type, x));
 
         } else if (value instanceof CUnion) {
             if (this.body.length > 1) error();
+            // unions have to be initialized to the first member in the union
             if (this.body.length === 1) CInitializer.typeCheck(value.members[0].type, this.body[0]);
 
         } else {
@@ -420,6 +429,7 @@ export class CInitializer {
         this._type = value;
     }
 
+    /** If this is a static initializer, recursively check that the body is evaluable at compile time */
     asStatic(): this {
         for (let i = 0; i < this.body.length; i++) {
             const child = this.body[i];
