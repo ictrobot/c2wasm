@@ -18,6 +18,7 @@ export function getType(o: GeneralTypeDecl, scope: Scope): CType {
     return type;
 }
 
+/** transform the CType from a type specifier into the declarator type */
 export function getDeclaratorType(type: CType, declarator: pt.Declarator | pt.AbstractDeclarator, scope: Scope): CType {
     let d: pt.Declarator | pt.AbstractDeclarator | undefined = declarator;
 
@@ -80,6 +81,7 @@ export function getDeclaratorName(declarator: pt.Declarator | pt.InitDeclarator)
     return declarator.id;
 }
 
+/** Get the base type from the list of specifiers */
 function getSpecifierType(d: pt.SpecifierQualifiers | pt.DeclarationSpecifiers, scope: Scope): CType {
     const specifiers = d.specifierList;
     const singleSpecifier = specifiers.length === 1 ? specifiers[0] : undefined;
@@ -88,7 +90,7 @@ function getSpecifierType(d: pt.SpecifierQualifiers | pt.DeclarationSpecifiers, 
         const type = singleSpecifier.structure === "struct" ? CStruct : CUnion;
         let structure = new type(singleSpecifier, singleSpecifier.id);
         if (singleSpecifier.id) {
-            // lookup tag and if it already exists use its instance
+            // lookup tag and if it already exists use the existing instance
             const existing: CStruct | CUnion = scope.lookupTag(singleSpecifier.id, type as any, singleSpecifier) as any;
             if (existing) {
                 structure = existing;
@@ -98,20 +100,22 @@ function getSpecifierType(d: pt.SpecifierQualifiers | pt.DeclarationSpecifiers, 
         }
         if (!singleSpecifier.declarations) return structure;
 
-        const values = [];
+        const values = []; // populate struct/union members if provided
         for (const declaration of singleSpecifier.declarations) {
             const baseType = getType(declaration, scope);
+
             for (const declarator of declaration.list) {
                 const type = getDeclaratorType(baseType, declarator, scope);
                 const name = getDeclaratorName(declarator);
                 if (type.incomplete || type.bytes === 0) {
                     throw new ParseTreeValidationError(declarator, "Type must be complete");
                 }
+
                 values.push(new CVariable(declaration, name, type as CNotFuncType));
             }
         }
         structure.members = values;
-        structure.node = singleSpecifier;
+        structure.node = singleSpecifier; // set the parse node to point to the node which actually defined the members
         return structure;
 
     } else if (singleSpecifier instanceof pt.EnumSpecifier) {
@@ -127,14 +131,15 @@ function getSpecifierType(d: pt.SpecifierQualifiers | pt.DeclarationSpecifiers, 
         }
         if (!singleSpecifier.body) return cEnum;
 
+        // enum members either provide their own value or use the last value + 1, starting at 0
         let nextValue = 0;
         const values = [];
-        for (const e of singleSpecifier.body) {
+        for (const e of singleSpecifier.body) { // populate enum
             if (e.value) nextValue = Number(evalConstant(e.value).value);
 
             const enumConstant = new CVariable(e, e.id, addQualifier(cEnum, "const"), scope.isTop ? undefined : "static");
             enumConstant.staticValue = new CConstant(e, cEnum, nextValue);
-            scope.addIdentifier(enumConstant);
+            scope.addIdentifier(enumConstant); // add the enum member as a constant to the scope
 
             values.push({name: e.id, value: nextValue++});
         }
@@ -148,7 +153,7 @@ function getSpecifierType(d: pt.SpecifierQualifiers | pt.DeclarationSpecifiers, 
         if (type) return type;
 
     } else if (specifiers.find(x => x instanceof pt.CustomTypeSpecifier)) {
-        throw new ParseTreeValidationError(d, "Not implemented"); // TODO implement custom types
+        throw new ParseTreeValidationError(d, "Not implemented"); // TODO implement custom types (typedef)
     }
 
     throw new ParseTreeValidationError(d, "Invalid specifier");

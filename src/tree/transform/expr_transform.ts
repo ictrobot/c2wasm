@@ -6,8 +6,10 @@ import {Scope} from "../scope";
 import {CArithmetic} from "../types";
 import {getType} from "./type_transform";
 
+/** Transform expressions from the parse tree */
 export function ptExpression(e: pt.Expression, scope: Scope): CExpression {
     if (e instanceof pt.ConstantExpression) {
+        // pt.ConstantExpression is a wrapped class in the parse tree denoting where constant expressions are expected.
         return ptExpression(e.expr, scope);
 
     } else if (e instanceof pt.Constant) {
@@ -17,13 +19,14 @@ export function ptExpression(e: pt.Expression, scope: Scope): CExpression {
         return new CIdentifier(e, scope.lookupIdentifier(e.name, e));
 
     } else if (e instanceof pt.StringLiteral) {
-        const arr: BigInt[] = [];
+        const arr: BigInt[] = []; // split the literal into characters taking into account escape sequences
         const charRegex = /[^\\\n"]|\\(?:[^x0-7\n]|x[0-9a-fA-F]{1,2}|[0-7]{1,3})/y;
         while (charRegex.lastIndex < e.value.length) {
             const match = charRegex.exec(e.value);
             if (match && charRegex.lastIndex !== 0) {
-                arr.push(BigInt(unescapeChar(match[0], e).codePointAt(0) ?? 0));
+                arr.push(BigInt(unescapeChar(match[0], e).codePointAt(0) ?? 0)); // unescape the char if needed
             } else {
+                // regex didn't match the body for some reason, this shouldn't happen
                 throw new ParseTreeValidationError(e, "Invalid string literal");
             }
         }
@@ -51,7 +54,7 @@ export function ptExpression(e: pt.Expression, scope: Scope): CExpression {
 
     } else if (e instanceof pt.MemberAccessExpression) {
         let body = ptExpression(e.lhs, scope);
-        if (e.pointer) { // transform pointer access
+        if (e.pointer) { // transform pointer access, `e->member` to `(*e).member`
             body = new CDereference(e, body);
         }
         return new CMemberAccess(e, body, e.rhs);
@@ -67,6 +70,7 @@ export function ptExpression(e: pt.Expression, scope: Scope): CExpression {
     throw new ParseTreeValidationError(e, "Invalid expression");
 }
 
+/** Evaluate an expression at compile time to a constant */
 export function evalConstant(c: pt.ConstantExpression): CConstant {
     const expr = ptExpression(c.expr, new Scope());
     if (expr instanceof CEvaluable) {
@@ -77,6 +81,7 @@ export function evalConstant(c: pt.ConstantExpression): CConstant {
 }
 
 function ptUnary(e: pt.UnaryExpression, scope: Scope): CExpression {
+    // transform unary expressions
     const body = ptExpression(e.body, scope);
     if (e.type === "prefixIncrement") return new CIncrDecr(e, body, "++", "pre");
     if (e.type === "prefixDecrement") return new CIncrDecr(e, body, "--", "pre");
@@ -93,6 +98,7 @@ function ptUnary(e: pt.UnaryExpression, scope: Scope): CExpression {
 }
 
 function ptBinary(e: pt.BinaryExpression, scope: Scope): CExpression {
+    // transform binary expressions
     const lhs = ptExpression(e.lhs, scope), rhs = ptExpression(e.rhs, scope);
 
     if (e.type === "mul") return new CMulDiv(e, lhs, rhs, "*");
@@ -125,9 +131,15 @@ function ptBinary(e: pt.BinaryExpression, scope: Scope): CExpression {
     throw new ParseTreeValidationError(e, "Invalid binary expression");
 }
 
+/** Transform a constant
+ *
+ * This is quite complicated because we have to work out what type to give the constant, following the rules set out in
+ * the standard
+ */
 function ptConstant(e: pt.Constant): CConstant {
     let value = e.value;
     let type: CArithmetic;
+
     if (e.valueType === "int" || e.valueType === "oct" || e.valueType === "hex") {
         let unsigned = false, long = false;
         value = value.toLowerCase();
@@ -144,8 +156,20 @@ function ptConstant(e: pt.Constant): CConstant {
             value = value.slice(0, -1);
             unsigned = true;
         }
-        const num = BigInt(value);
 
+        let num: bigint; // all integer constants are stored as BigInt
+        if (e.valueType !== "oct") {
+            // BigInt constructor natively handles decimal values and hexadecimal values prefixed with 0x
+            num = BigInt(value);
+        } else {
+            // Have to manually construct octal constants
+            num = 0n;
+            for (let i = 0; i < value.length - 1; i++) { // ignore the leading 0
+                num += BigInt(value[value.length - 1 - i]) * (8n ** BigInt(i));
+            }
+        }
+
+        // Choose the list of possible types from the suffixes and the constant type used (decimal, hex, octal)
         let possibleTypes;
         if (e.valueType === "int" && !unsigned && !long) {
             possibleTypes = [CArithmetic.S32, CArithmetic.S64, CArithmetic.U64];
@@ -159,14 +183,16 @@ function ptConstant(e: pt.Constant): CConstant {
             possibleTypes = [CArithmetic.U32, CArithmetic.U64];
         }
 
-        // find smallest type which fits value
+        // find smallest acceptable type which fits the value
         for (const type of possibleTypes) {
             if (num >= type.minValue && num <= type.maxValue) {
                 return new CConstant(e, type, num);
             }
         }
         throw new ParseTreeValidationError(e, "Integer constant too large for its type");
+
     } else if (e.valueType === "float") {
+        // floats default to double unless suffixed with "f"
         if (value.endsWith("f")) {
             value = value.slice(0, -1);
             type = CArithmetic.Fp32;
@@ -174,6 +200,7 @@ function ptConstant(e: pt.Constant): CConstant {
             type = CArithmetic.Fp64;
         }
         return new CConstant(e, type, parseFloat(value));
+
     } else if (e.valueType === "char") {
         value = unescapeChar(value, e);
         return new CConstant(e, CArithmetic.U8, BigInt(value.codePointAt(0)));
@@ -182,6 +209,7 @@ function ptConstant(e: pt.Constant): CConstant {
     throw new ParseTreeValidationError(e, "Invalid constant type?");
 }
 
+/** Unescape strings as defined in the C standard */
 function unescapeChar(s: string, node?: ParseNode): string {
     if (s.startsWith("\\")) {
         if (s === "\\n") return "\n";

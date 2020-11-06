@@ -11,6 +11,8 @@ export class ExpressionTypeError extends CError {
     }
 }
 
+// Basic type checking for expressions, throws an exception if the expression's type is not the expected type
+
 export function asArithmetic(node: ParseNode, t: CType): CArithmetic {
     if (t instanceof CArithmetic) return t;
     throw new ExpressionTypeError(node, "arithmetic", t.typeName);

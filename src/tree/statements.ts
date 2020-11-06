@@ -4,6 +4,7 @@ import {CExpression, CConstant, CAssignment} from "./expressions";
 import {Scope} from "./scope";
 import {ExpressionTypeError, asArithmeticOrPointer} from "./type_checking";
 
+// classes to represent the various C statements in the IR
 export type CStatement =
     CCompoundStatement | CExpressionStatement | CNop |
     CIf | CForLoop | CWhileLoop | CDoLoop | CSwitch |
@@ -15,10 +16,6 @@ export class CCompoundStatement {
 
     constructor(readonly node: pt.ParseNode, readonly parent: CStatement | CFuncDefinition) {
         this.scope = new Scope(node, parent.scope);
-    }
-
-    definedVariables(): CVariable[] {
-        return this.scope.definedVariables();
     }
 }
 
@@ -131,10 +128,12 @@ export class CReturn {
 
         if (value === undefined) {
             if (func.type.returnType.bytes > 0) {
+                // function return type is not void but a value was not provided
                 throw new ExpressionTypeError(node, "`return [expression]`", "`return;`");
             }
         } else {
             if (!func.type.returnType.equals(value.type)) {
+                // check provided return value matches the function's return type
                 CAssignment.checkAssignmentValid(node, func.type.returnType, value);
             }
         }

@@ -1,7 +1,9 @@
 export type Location = {
     first_line: number, last_line: number, first_column: number, last_column: number,
-    _source: string, _sourceId: number
+    _source: string, _sourceId: number // hidden attributes for error printing
 };
+
+// Classes used to build up the C parse tree - mostly just simple objects storing the relevant fields.
 
 export abstract class ParseNode {
     abstract readonly type: string;
@@ -17,6 +19,8 @@ export abstract class ParseNode {
 // Expressions
 
 export abstract class Expression extends ParseNode {
+    // typescript does structural equality when type checking, so for this class to be different from
+    // the base ParseNode add a simple private field.
     private readonly _expression: boolean = true;
 }
 

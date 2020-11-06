@@ -8,6 +8,7 @@ import {ParseTreeValidationError, pt} from "../../parsing";
 import {ptExpression, evalConstant} from "./expr_transform";
 import {getDeclaratorName, getDeclaratorType, getType} from "./type_transform";
 
+/** Main function, transform a parse tree translation unit into a root scope */
 export function ptTransform(translationUnit: pt.TranslationUnit): Scope {
     const fileScope = new Scope();
     for (const decl of translationUnit) {
@@ -20,6 +21,8 @@ export function ptTransform(translationUnit: pt.TranslationUnit): Scope {
     return fileScope;
 }
 
+/** Add the pt declarations to the scope, and either store their static initializer on the variables or return a
+ * list of assignments to add to the body of the current function to set their initial values */
 function ptDeclaration(declaration: pt.Declaration, scope: Scope, inFunction: boolean): CAssignment[] {
     const declType = getType(declaration, scope);
     const assignments = [];
@@ -73,6 +76,7 @@ function ptDeclaration(declaration: pt.Declaration, scope: Scope, inFunction: bo
     return assignments;
 }
 
+/** Transform an initializer to either a CInitializer (for arrays, structs & unions) or a CExpression */
 function ptInitializer(node: pt.ParseNode, initializer: pt.Initializer, scope: Scope): CExpression | CInitializer {
     if (Array.isArray(initializer)) {
         return new CInitializer(node, initializer.map(x => ptInitializer(node, x, scope)));
@@ -81,11 +85,12 @@ function ptInitializer(node: pt.ParseNode, initializer: pt.Initializer, scope: S
     }
 }
 
+/** Transform a function */
 function ptFunction(fn: pt.FunctionDefinition, scope: Scope): void {
-    // fn type
+    // get and check the function's type
     const type = getType(fn, scope);
     if (!(type instanceof CFuncType)) throw new ParseTreeValidationError(fn, "Unexpected declarator");
-    // fn name
+    // get the function name
     const name = getDeclaratorName(fn.declarator);
 
     const cfn = new CFuncDefinition(fn, name, type, fn.typeInfo.storageList[0], scope);
@@ -97,7 +102,7 @@ function ptFunction(fn: pt.FunctionDefinition, scope: Scope): void {
         cfn.body.scope.addIdentifier(new CArgument(fn, type.parameterNames[i], type.parameterTypes[i]));
     }
 
-    // parse body
+    // parse function body body
     ptCompound(fn.body, cfn);
 
     // check function always returns
@@ -106,6 +111,7 @@ function ptFunction(fn: pt.FunctionDefinition, scope: Scope): void {
     }
 }
 
+/** Checks every branch through a function will definitely return */
 function checkReturns(statement: CStatement | undefined): boolean {
     if (statement instanceof CReturn) {
         return true;
@@ -113,6 +119,8 @@ function checkReturns(statement: CStatement | undefined): boolean {
         for (let i = 0; i < statement.statements.length; i++) {
             if (checkReturns(statement.statements[i])) {
                 if (i !== statement.statements.length - 1) {
+                    // we've found a return inside the compound statement but it's not at the end, so there are statements
+                    // which will never be executed
                     throw new ParseTreeValidationError(statement.statements[i + 1].node, "Statement after return");
                 }
                 return true;
@@ -130,6 +138,7 @@ function checkReturns(statement: CStatement | undefined): boolean {
     return false;
 }
 
+/** Transform statements from the parse tree */
 function ptStatement(node: pt.Statement, parent: CStatement): CStatement {
     if (node instanceof pt.CompoundStatement) {
         return ptCompound(node, parent);
@@ -167,7 +176,7 @@ function ptStatement(node: pt.Statement, parent: CStatement): CStatement {
         return s;
 
     } else if (node instanceof pt.ContinueStatement) {
-        let p: CStatement = parent;
+        let p: CStatement = parent; // find which statement this node is continuing
         while (!(p instanceof CForLoop || p instanceof CWhileLoop || p instanceof CDoLoop)) {
             if (p.parent instanceof CFuncDefinition) {
                 throw new ParseTreeValidationError(node, "No target for continue statement");
@@ -211,12 +220,14 @@ function ptStatement(node: pt.Statement, parent: CStatement): CStatement {
     throw new ParseTreeValidationError(node, "Unknown statement type");
 }
 
+/** Transform compound statements */
 function ptCompound(node: pt.CompoundStatement, parent: CStatement | CFuncDefinition): CCompoundStatement {
     const c = parent instanceof CFuncDefinition ? parent.body : new CCompoundStatement(node, parent);
     for (const child of node.body) _compoundBody(child, c);
     return c;
 }
 
+/** Transform a declaration or statement inside a compound statement */
 function _compoundBody(child: pt.Declaration | pt.Statement, c: CCompoundStatement) {
     if (child instanceof pt.Declaration) {
         for (const assignment of ptDeclaration(child, c.scope, true)) {
@@ -228,24 +239,31 @@ function _compoundBody(child: pt.Declaration | pt.Statement, c: CCompoundStateme
     }
 }
 
+/** Transform the body of a switch statement.
+ *
+ * This is quite complicated as case & default statements both absorb the following statement.
+ * Furthermore, these statements are limited to being used at the top level inside the switch statement, whereas in C
+ * you can place them inside other statements inside the switch block, creating arbitrary goto which is out of scope.
+ */
 function ptSwitchBody(s: CSwitch, node: pt.SwitchStatement) {
     if (!(node.body instanceof pt.CompoundStatement)) {
         throw new ParseTreeValidationError(node, "Expected switch statement to have a compound statement body");
     }
     const children = node.body.body.slice();
-    while (children.length > 0) {
+    while (children.length > 0) { // iterate over the body of the switch statement
         const child = children.shift();
         if (child instanceof pt.CaseStatement || child instanceof pt.DefaultStatement) {
             let block;
             if (s.children.length > 0 && s.children[s.children.length - 1].body.statements.length === 0) {
-                // multiple cases in a row
+                // multiple cases in a row, use the last defined block
                 block = s.children[s.children.length - 1];
             } else {
+                // last block already has children, make a new block
                 block = {cases: [], default: false, body: new CCompoundStatement(node, s)};
                 s.children.push(block);
             }
 
-            if (child instanceof pt.CaseStatement) {
+            if (child instanceof pt.CaseStatement) { // add the case or mark this block as accepting default
                 block.cases.push(evalConstant(child.value));
             } else {
                 block.default = true;

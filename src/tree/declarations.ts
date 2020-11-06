@@ -5,6 +5,7 @@ import type {Scope} from "./scope";
 import {CCompoundStatement} from "./statements";
 import type {CFuncType, CNotFuncType, CQualifiedType} from "./types";
 
+// classes to represent all the different types of declarations in the IR
 export type CDeclaration = CVariable | CArgument | CFuncDefinition | CFuncDeclaration;
 
 export class CVariable {
