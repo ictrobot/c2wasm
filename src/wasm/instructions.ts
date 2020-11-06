@@ -8,13 +8,13 @@ export const Instructions = {
     // control instructions
     unreachable: zeroArgs(0x00),
     nop: zeroArgs(0x01),
-    block: (type: ValueType | undefined, body: Instruction[]) => () => {
+    block: (type: ValueType | null, body: Instruction[]) => () => {
         return [0x02 as byte, ...encodeBlockType(type), ...body.map(x => x()).flat(), 0x0B as byte];
     },
-    loop: (type: ValueType | undefined, body: Instruction[]) => () => {
+    loop: (type: ValueType | null, body: Instruction[]) => () => {
         return [0x03 as byte, ...encodeBlockType(type), ...body.map(x => x()).flat(), 0x0B as byte];
     },
-    if: (type: ValueType | undefined, body: Instruction[], elseBody?: Instruction[]) => () => {
+    if: (type: ValueType | null, body: Instruction[], elseBody?: Instruction[]) => () => {
         const instr = [0x04 as byte, ...encodeBlockType(type), ...body.map(x => x()).flat()];
         if (elseBody) {
             instr.push(0x05 as byte, ...elseBody.map(x => x()).flat());
@@ -248,8 +248,8 @@ export const Instructions = {
 } as const;
 
 
-function encodeBlockType(t: ValueType | undefined): byte[] {
-    if (t === undefined) return [0x40 as byte];
+function encodeBlockType(t: ValueType | null): byte[] {
+    if (t === null) return [0x40 as byte];
     return [t];
 }
 

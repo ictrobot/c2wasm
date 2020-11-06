@@ -66,7 +66,9 @@ export class WFunctionBuilder {
     }
 
     addLocal(t: ValueType): WLocal {
-        return new WLocal(this._localidx.bind(this), t);
+        const local = new WLocal(this._localidx.bind(this), t);
+        this._locals.push(local);
+        return local;
     }
 
     get args(): ReadonlyArray<WLocal> {
@@ -83,9 +85,11 @@ export class WFunctionBuilder {
     }
 
     private _localidx(l: WLocal) {
-        const idx = this._arguments.indexOf(l);
+        let idx = this._arguments.indexOf(l);
         if (idx >= 0) return BigInt(idx) as localidx;
-        return BigInt(this._locals.indexOf(l)) as localidx;
+        idx = this._locals.indexOf(l);
+        if (idx >= 0) return BigInt(this._arguments.length + idx) as localidx;
+        throw "Local not found?";
     }
 }
 
