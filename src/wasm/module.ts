@@ -8,6 +8,7 @@ export class ModuleBuilder {
     private _importedFunctions: WImportedFunction[] = [];
     private _memory?: MemoryType;
     private _dataSegments: [offset: number, contents: byte[]][] = [];
+    startFunction?: WFunction;
 
     function(params: ResultType, returnValue: ResultType,
              body: (b: WFunctionBuilder) => (() => byte[])[], exportName?: string): WFunction {
@@ -48,6 +49,13 @@ export class ModuleBuilder {
         const imports = this._encodeImports(types);
         const funcTypes = this._functions.map(x => encodeU32(getTypeIndex(x.type, types)));
 
+        const startSection: byte[] = [];
+        if (this.startFunction) {
+            startSection.push(...encodeU32(this.startFunction.getIndex()));
+            // do section encoding manually as this is the only non-vector section
+            startSection.unshift(8 as byte, ...encodeU32(BigInt(startSection.length)));
+        }
+
         return [
             0x00, 0x61, 0x73, 0x6D, // magic
             0x01, 0x00, 0x00, 0x00, // version
@@ -55,10 +63,11 @@ export class ModuleBuilder {
             ...encodeSection(2, imports), // import section
             ...encodeSection(3, funcTypes), // function section,
             ...encodeSection(5, this._memory ? [encodeLimits(this._memory)] : []), // memory section
-            ...encodeSection(7, this._encodeExports()),
+            ...encodeSection(7, this._encodeExports()), // export section
+            ...startSection, // start function section
 
             ...encodeSection(10, this._functions.map(x => x.toBytes())), // code section
-            ...encodeSection(11, this._encodeDataSegments())
+            ...encodeSection(11, this._encodeDataSegments()) // data segments section
         ] as byte[];
     }
 
