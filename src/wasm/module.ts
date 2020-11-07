@@ -90,7 +90,7 @@ function getTypeIndex(x: FunctionType, list: byte[][]): typeidx {
     const encoded = encodeFunctionType(x);
     for (let i = 0; i < list.length; i++) {
         if (list[i].length === encoded.length && list[i].every((v, i) => v === encoded[i])) {
-            return BigInt(encoded.length) as typeidx;
+            return BigInt(i) as typeidx;
         }
     }
     return BigInt(list.push(encoded) - 1) as typeidx;
