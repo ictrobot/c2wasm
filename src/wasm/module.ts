@@ -7,6 +7,7 @@ export class ModuleBuilder {
     private _functions: WFunction[] = [];
     private _importedFunctions: WImportedFunction[] = [];
     private _memory?: MemoryType;
+    private _dataSegments: [offset: number, contents: byte[]][] = [];
 
     function(params: ResultType, returnValue: ResultType,
              body: (b: WFunctionBuilder) => (() => byte[])[], exportName?: string): WFunction {
@@ -38,6 +39,10 @@ export class ModuleBuilder {
         }
     }
 
+    dataSegment(offset: number, contents: byte[] | number[]): void {
+        this._dataSegments.push([offset, contents as byte[]]);
+    }
+
     private byteList(): byte[] {
         const types: byte[][] = [];
         const imports = this._encodeImports(types);
@@ -52,7 +57,8 @@ export class ModuleBuilder {
             ...encodeSection(5, this._memory ? [encodeLimits(this._memory)] : []), // memory section
             ...encodeSection(7, this._encodeExports()),
 
-            ...encodeSection(10, this._functions.map(x => x.toBytes())) // code section
+            ...encodeSection(10, this._functions.map(x => x.toBytes())), // code section
+            ...encodeSection(11, this._encodeDataSegments())
         ] as byte[];
     }
 
@@ -83,6 +89,17 @@ export class ModuleBuilder {
         }
 
         return exports;
+    }
+
+    private _encodeDataSegments(): byte[][] {
+        if (this._dataSegments.length > 0 && this._memory === undefined) {
+            throw new Error("Cannot use data segments with memory disabled");
+        }
+
+        // convert each offset into `expression(i32.const offset)`
+        return this._dataSegments.map(([offset, contents]) => [0x00 as byte,
+            0x41 as byte, ...encodeU32(BigInt(offset)), 0x0B as byte, // i32.const expression
+            ...encodeU32(BigInt(contents.length)), ...contents]); // byte vector
     }
 
     private _funcIndex(fn: WFunction | WImportedFunction): funcidx {
