@@ -259,12 +259,19 @@ function zeroArgs(opcode: number, ...extra: number[]): () => Instruction {
     return () => () => instr;
 }
 
-// either an index or an object with that index
-type index<T extends u32> = T | {getIndex(): T};
+// either an index (instance of T), an object with a getter for the index
+// or a plain number to make the api easier to use
+type index<T extends u32> = number | T | {getIndex(): T};
 
 function encodeIndex<T extends u32>(idx: index<T>): byte[] {
-    // @ts-ignore typescript doesn't understand that u32 is really bigint
-    const value: T = typeof idx === "bigint" ? idx : idx.getIndex();
+    let value: T;
+    if (typeof idx === "number") {
+        value = BigInt(idx) as T;
+    } else if (typeof idx === "bigint") {
+        value = idx as T;
+    } else {
+        value = (idx as {getIndex(): T}).getIndex();
+    }
     return encodeU32(value);
 }
 
@@ -272,6 +279,11 @@ function indexArg<T extends u32>(opcode: number): (x: index<T>) => Instruction {
     return (i) => () => [opcode as byte, ...encodeIndex(i)];
 }
 
-function memArg(opcode: number): (align: u32, offset: u32) => Instruction {
-    return (align, offset) => () => [opcode as byte, ...encodeU32(align), ...encodeU32(offset)];
+function memArg(opcode: number): (align: u32 | number, offset: u32 | number) => Instruction {
+    return (align, offset) => () => {
+        if (typeof align === "number") align = BigInt(align) as u32;
+        if (typeof offset === "number") offset = BigInt(offset) as u32;
+
+        return [opcode as byte, ...encodeU32(align), ...encodeU32(offset)];
+    };
 }
