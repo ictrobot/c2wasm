@@ -1,4 +1,4 @@
-import type {byte, u32} from "./base_types";
+import type {byte} from "./base_types";
 import {encodeU32} from "./encoding";
 
 export type ValueType = byte & { __type_value_type__: void };
@@ -22,7 +22,7 @@ export function encodeFunctionType(f: FunctionType): byte[] {
 }
 
 
-export type Limits = [minimum: u32, maximum?: u32];
+export type Limits = [minimum: bigint, maximum?: bigint];
 export type MemoryType = Limits;
 
 export function encodeLimits(l: Limits): byte[] {
@@ -42,5 +42,5 @@ export function encodeGlobal(g: GlobalType): byte[] {
 
 
 export function encodeVec(values: byte[][]): byte[] {
-    return [...encodeU32(BigInt(values.length) as u32), ...values.flat()];
+    return [...encodeU32(BigInt(values.length)), ...values.flat()];
 }

@@ -1,4 +1,4 @@
-import {byte, u32, typeidx, funcidx} from "./base_types";
+import {byte, typeidx, funcidx} from "./base_types";
 import {encodeU32, encodeUtf8} from "./encoding";
 import {WFunctionBuilder, WFunction, WImportedFunction} from "./functions";
 import {encodeVec, ResultType, encodeFunctionType, FunctionType, MemoryType, encodeLimits} from "./wtypes";
@@ -32,9 +32,9 @@ export class ModuleBuilder {
         }
 
         if (maximum64kPages === undefined) {
-            this._memory = [BigInt(initial64kPages) as u32];
+            this._memory = [BigInt(initial64kPages)];
         } else {
-            this._memory = [BigInt(initial64kPages) as u32, BigInt(maximum64kPages) as u32];
+            this._memory = [BigInt(initial64kPages), BigInt(maximum64kPages)];
         }
     }
 
@@ -112,5 +112,5 @@ function encodeSection(id: number, vec: byte[][]): byte[] {
     if (vec.length === 0) return [];
 
     const contents = encodeVec(vec);
-    return [id as byte, ...encodeU32(BigInt(contents.length) as u32), ...contents];
+    return [id as byte, ...encodeU32(BigInt(contents.length)), ...contents];
 }

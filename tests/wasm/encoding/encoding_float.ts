@@ -1,16 +1,15 @@
 import test from "ava";
-import {f64, f32} from "../../../src/wasm/base_types";
 import {encodeF32, encodeF64} from "../../../src/wasm/encoding";
 
 test('f32 encoding', t => {
     for (const [value, result] of _f32_testcases) {
-        t.deepEqual(encodeF32(value as f32), result);
+        t.deepEqual(encodeF32(value), result);
     }
 });
 
 test('f64 encoding', t => {
     for (const [value, result] of _f64_testcases) {
-        t.deepEqual(encodeF64(value as f64), result);
+        t.deepEqual(encodeF64(value), result);
     }
 });
 

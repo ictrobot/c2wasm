@@ -1,41 +1,44 @@
-import type {f64, f32, i64, i32, u64, u32, byte} from "./base_types";
+import type {byte} from "./base_types";
 
-export function encodeF32(n: f32): byte[] {
+export function encodeF32(n: number): byte[] {
     const buffer = new ArrayBuffer(4);
     new DataView(buffer).setFloat32(0, n, true);
     return [...new Uint8Array(buffer)] as byte[];
 }
 
-export function encodeF64(n: f64): byte[] {
+export function encodeF64(n: number): byte[] {
     const buffer = new ArrayBuffer(8);
     new DataView(buffer).setFloat64(0, n, true);
     return [...new Uint8Array(buffer)] as byte[];
 }
 
-export function encodeU32(n: u32): byte[] {
+// unsigned 32 bit integer, used in wasm module format
+export function encodeU32(n: bigint): byte[] {
     if (n > 2n ** 32n - 1n || n < 0n) {
         throw new Error(`Value ${n} outside of range for u32`);
     }
     return unsignedLeb128(n) as byte[];
 }
 
-export function encodeU64(n: u64): byte[] {
-    if (n > 2n ** 64n - 1n || n < 0n) {
-        throw new Error(`Value ${n} outside of range for u64`);
-    }
-    return unsignedLeb128(n) as byte[];
-}
+// "uninterpreted" values, i.e. could be signed or not signed. Stored as signed. Used for constants
+export function encodeInt32Constant(n: bigint | number): byte[] {
+    if (typeof n === "number") n = BigInt(n);
 
-export function encodeI32(n: i32): byte[] {
-    if (n > 2n ** 31n - 1n || n < -(2n ** 31n)) {
-        throw new Error(`Value ${n} outside of range for s32`);
+    if (n < 2n ** 32n && n > 2n ** 31n - 1n) {
+        // need to reinterpret unsigned number as a signed number
+        n -= 2n ** 32n;
+    } else if (n > 2n ** 31n - 1n || n < -(2n ** 31n)) {
+        throw new Error(`Value ${n} outside of range for 32bit uninterpreted int`);
     }
     return signedLeb128(n) as byte[];
 }
 
-export function encodeI64(n: i64): byte[] {
-    if (n > 2n ** 63n - 1n || n < -(2n ** 63n)) {
-        throw new Error(`Value ${n} outside of range for s64`);
+export function encodeInt64Constant(n: bigint): byte[] {
+    if (n < 2n ** 64n && n > 2n ** 63n - 1n) {
+        // need to reinterpret unsigned number as a signed number
+        n -= 2n ** 64n;
+    } else if (n > 2n ** 63n - 1n || n < -(2n ** 63n)) {
+        throw new Error(`Value ${n} outside of range for 64bit uninterpreted int`);
     }
     return signedLeb128(n) as byte[];
 }
@@ -73,11 +76,11 @@ export function encodeUtf8(str: string): byte[] {
     }
     // WebAssembly stores strings as a vector of bytes, so need to add the length
     // (stored as u32) at the start
-    result.unshift(...encodeU32(BigInt(result.length) as u32));
+    result.unshift(...encodeU32(BigInt(result.length)));
     return result as byte[];
 }
 
-function unsignedLeb128(n: bigint): number[] {
+export function unsignedLeb128(n: bigint): number[] {
     const result: number[] = [];
 
     // eslint-disable-next-line no-constant-condition
@@ -92,7 +95,7 @@ function unsignedLeb128(n: bigint): number[] {
     }
 }
 
-function signedLeb128(n: bigint): number[] {
+export function signedLeb128(n: bigint): number[] {
     const result: number[] = [];
 
     // eslint-disable-next-line no-constant-condition

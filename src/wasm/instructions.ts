@@ -1,5 +1,5 @@
-import {byte, u32, labelidx, funcidx, typeidx, localidx, globalidx, i32, i64, f32, f64} from "./base_types";
-import {encodeU32, encodeI32, encodeI64, encodeF32, encodeF64} from "./encoding";
+import {byte, labelidx, funcidx, typeidx, localidx, globalidx} from "./base_types";
+import {encodeU32, encodeF32, encodeF64, encodeInt64Constant, encodeInt32Constant} from "./encoding";
 import {ValueType} from "./wtypes";
 
 type Instruction = (() => byte[]);
@@ -65,7 +65,7 @@ export const Instructions = {
         store16: memArg(0x3B),
 
 
-        const: (x: bigint | i32) => () => [0x41 as byte, ...encodeI32(x as i32)],
+        const: (x: number | bigint) => () => [0x41 as byte, ...encodeInt32Constant(x)],
 
         eqz: zeroArgs(0x45),
         eq: zeroArgs(0x46),
@@ -123,7 +123,7 @@ export const Instructions = {
         store32: memArg(0x3E),
 
 
-        const: (x: bigint | i64) => () => [0x42 as byte, ...encodeI64(x as i64)],
+        const: (x: bigint) => () => [0x42 as byte, ...encodeInt64Constant(x)],
 
         eqz: zeroArgs(0x50),
         eq: zeroArgs(0x51),
@@ -174,7 +174,7 @@ export const Instructions = {
         store: memArg(0x38),
 
 
-        const: (x: number | f32) => () => [0x43 as byte, ...encodeF32(x as f32)],
+        const: (x: number) => () => [0x43 as byte, ...encodeF32(x)],
 
         eq: zeroArgs(0x5B),
         ne: zeroArgs(0x5C),
@@ -212,7 +212,7 @@ export const Instructions = {
         store: memArg(0x39),
 
 
-        const: (x: number | f64) => () => [0x44 as byte, ...encodeF64(x as f64)],
+        const: (x: number) => () => [0x44 as byte, ...encodeF64(x)],
 
         eq: zeroArgs(0x61),
         ne: zeroArgs(0x62),
@@ -261,28 +261,28 @@ function zeroArgs(opcode: number, ...extra: number[]): () => Instruction {
 
 // either an index (instance of T), an object with a getter for the index
 // or a plain number to make the api easier to use
-type index<T extends u32> = number | T | {getIndex(): T};
+type index<T extends bigint> = number | T | {getIndex(): T};
 
-function encodeIndex<T extends u32>(idx: index<T>): byte[] {
+function encodeIndex<T extends bigint>(idx: index<T>): byte[] {
     let value: T;
     if (typeof idx === "number") {
         value = BigInt(idx) as T;
     } else if (typeof idx === "bigint") {
         value = idx as T;
     } else {
-        value = (idx as {getIndex(): T}).getIndex();
+        value = idx.getIndex();
     }
     return encodeU32(value);
 }
 
-function indexArg<T extends u32>(opcode: number): (x: index<T>) => Instruction {
+function indexArg<T extends bigint>(opcode: number): (x: index<T>) => Instruction {
     return (i) => () => [opcode as byte, ...encodeIndex(i)];
 }
 
-function memArg(opcode: number): (align: u32 | number, offset: u32 | number) => Instruction {
+function memArg(opcode: number): (align: bigint | number, offset: bigint | number) => Instruction {
     return (align, offset) => () => {
-        if (typeof align === "number") align = BigInt(align) as u32;
-        if (typeof offset === "number") offset = BigInt(offset) as u32;
+        if (typeof align === "number") align = BigInt(align);
+        if (typeof offset === "number") offset = BigInt(offset);
 
         return [opcode as byte, ...encodeU32(align), ...encodeU32(offset)];
     };

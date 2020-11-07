@@ -1,4 +1,4 @@
-import {funcidx, localidx, byte, u32} from "./base_types";
+import {funcidx, localidx, byte} from "./base_types";
 import {encodeU32} from "./encoding";
 import {ModuleBuilder} from "./module";
 import {ValueType, ResultType, FunctionType, encodeVec} from "./wtypes";
@@ -45,9 +45,9 @@ export class WFunction {
         if (lastType) locals.push([count, lastType]);
 
         // encode function body
-        const code: byte[] = encodeVec(locals.map(x => [...encodeU32(x[0] as u32), x[1]])); // locals
+        const code: byte[] = encodeVec(locals.map(x => [...encodeU32(x[0]), x[1]])); // locals
         code.push(...this.body.map(x => x()).flat(), 0x0B as byte); // expression
-        code.unshift(...encodeU32(BigInt(code.length) as u32));
+        code.unshift(...encodeU32(BigInt(code.length)));
         return code;
     }
 }
