@@ -1,21 +1,20 @@
 import {byte, u32, typeidx, funcidx} from "./base_types";
 import {encodeU32, encodeUtf8} from "./encoding";
 import {WFunctionBuilder, WFunction, WImportedFunction} from "./functions";
-import {encodeVec, ResultType, encodeFunctionType, FunctionType} from "./wtypes";
+import {encodeVec, ResultType, encodeFunctionType, FunctionType, MemoryType, encodeLimits} from "./wtypes";
 
 export class ModuleBuilder {
     private _functions: WFunction[] = [];
     private _importedFunctions: WImportedFunction[] = [];
+    private _memory?: MemoryType;
 
     function(params: ResultType, returnValue: ResultType,
              body: (b: WFunctionBuilder) => (() => byte[])[], exportName?: string): WFunction {
         const builder = new WFunctionBuilder(this, params);
         const instructions = body(builder);
-        const fn = new WFunction(this._funcIndex.bind(this),
-            [params, returnValue],
-            builder.locals.map(x => x.type),
-            instructions,
-            exportName);
+        const type: FunctionType = [params, returnValue];
+
+        const fn = new WFunction(this._funcIndex.bind(this), type, builder.localTypes, instructions, exportName);
         builder._getIndex = fn.getIndex.bind(fn); // enable recursive calls in builder
         this._functions.push(fn);
         return fn;
@@ -25,6 +24,18 @@ export class ModuleBuilder {
         const fn = new WImportedFunction(this._funcIndex.bind(this), [param, returnValue], module, name);
         this._importedFunctions.push(fn);
         return fn;
+    }
+
+    setupMemory(initial64kPages: number, maximum64kPages?: number): void {
+        if (initial64kPages < 1 || (maximum64kPages !== undefined && maximum64kPages < initial64kPages)) {
+            throw new Error("Invalid memory size");
+        }
+
+        if (maximum64kPages === undefined) {
+            this._memory = [BigInt(initial64kPages) as u32];
+        } else {
+            this._memory = [BigInt(initial64kPages) as u32, BigInt(maximum64kPages) as u32];
+        }
     }
 
     private byteList(): byte[] {
@@ -37,7 +48,8 @@ export class ModuleBuilder {
             0x01, 0x00, 0x00, 0x00, // version
             ...encodeSection(1, types), // type section
             ...encodeSection(2, imports), // import section
-            ...encodeSection(3, funcTypes), // func types,
+            ...encodeSection(3, funcTypes), // function section,
+            ...encodeSection(5, this._memory ? [encodeLimits(this._memory)] : []), // memory section
             ...encodeSection(7, this._encodeExports()),
 
             ...encodeSection(10, this._functions.map(x => x.toBytes())) // code section
@@ -97,6 +109,8 @@ function getTypeIndex(x: FunctionType, list: byte[][]): typeidx {
 }
 
 function encodeSection(id: number, vec: byte[][]): byte[] {
+    if (vec.length === 0) return [];
+
     const contents = encodeVec(vec);
     return [id as byte, ...encodeU32(BigInt(contents.length) as u32), ...contents];
 }

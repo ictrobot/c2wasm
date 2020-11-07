@@ -1,4 +1,4 @@
-import {funcidx, localidx, byte, u32, typeidx} from "./base_types";
+import {funcidx, localidx, byte, u32} from "./base_types";
 import {encodeU32} from "./encoding";
 import {ModuleBuilder} from "./module";
 import {ValueType, ResultType, FunctionType, encodeVec} from "./wtypes";
@@ -63,6 +63,10 @@ export class WFunctionBuilder {
 
     get locals(): ReadonlyArray<WLocal> {
         return this._locals;
+    }
+
+    get localTypes(): ValueType[] {
+        return this._locals.map(x => x.type);
     }
 
     addLocal(t: ValueType): WLocal {
