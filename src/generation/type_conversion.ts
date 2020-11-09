@@ -10,7 +10,7 @@ export function getType(type: CType): wasm.ValueType {
 }
 
 export function valueType(type: CType): wasm.ValueType {
-    if (!(type instanceof CArithmetic)) throw new Error("Expected arthimetic type");
+    if (!(type instanceof CArithmetic)) throw new Error("Expected arithmetic type");
 
     if (type.type === "float") {
         return type.bytes === 4 ? wasm.f32Type : wasm.f64Type;

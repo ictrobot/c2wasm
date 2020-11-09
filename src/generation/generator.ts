@@ -30,6 +30,7 @@ export class WGenerator {
     private function(func: CFuncDefinition) {
         const returnType = getType(func.type.returnType);
         const parameterTypes = func.type.parameterTypes.map(getType);
-        this.module.function(parameterTypes, [returnType], b => this.statement(func.body, b));
+        const exportName = func.storage === undefined ? func.name : undefined;
+        this.module.function(parameterTypes, [returnType], b => this.statement(func.body, b), exportName);
     }
 }

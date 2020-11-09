@@ -61,7 +61,7 @@ export class CStringLiteral {
     readonly lvalue = false;
     readonly type: CArray;
 
-    constructor(readonly node: ParseNode, readonly value: BigInt[]) {
+    constructor(readonly node: ParseNode, readonly value: bigint[]) {
         // currently only supports UTF8
         if (value.length === 0 || value[value.length - 1] !== 0n) {
             throw new checks.ExpressionTypeError(node, "null terminated char[]", "char[]");

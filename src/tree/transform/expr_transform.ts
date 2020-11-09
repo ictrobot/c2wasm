@@ -19,7 +19,7 @@ export function ptExpression(e: pt.Expression, scope: Scope): CExpression {
         return new CIdentifier(e, scope.lookupIdentifier(e.name, e));
 
     } else if (e instanceof pt.StringLiteral) {
-        const arr: BigInt[] = []; // split the literal into characters taking into account escape sequences
+        const arr: bigint[] = []; // split the literal into characters taking into account escape sequences
         const charRegex = /[^\\\n"]|\\(?:[^x0-7\n]|x[0-9a-fA-F]{1,2}|[0-7]{1,3})/y;
         while (charRegex.lastIndex < e.value.length) {
             const match = charRegex.exec(e.value);
