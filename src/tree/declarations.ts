@@ -19,7 +19,7 @@ export class CVariable {
 }
 
 export class CArgument {
-    constructor(readonly node: ParseNode, readonly name: string, readonly type: CQualifiedType<CNotFuncType>) {
+    constructor(readonly node: ParseNode, readonly name: string, readonly type: CQualifiedType<CNotFuncType>, readonly index: number) {
     }
 }
 

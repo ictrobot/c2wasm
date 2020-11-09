@@ -1,8 +1,9 @@
-import {CFuncDefinition} from "../tree/declarations";
+import {CFuncDefinition, CFuncDeclaration} from "../tree/declarations";
 import type {CExpression} from "../tree/expressions";
 import type {Scope} from "../tree/scope";
 import type {CStatement} from "../tree/statements";
-import {ModuleBuilder, WFunctionBuilder} from "../wasm";
+import {ModuleBuilder, WFunctionBuilder, WFunction} from "../wasm";
+import {funcidx} from "../wasm/base_types";
 import type {WExpression} from "../wasm/instructions";
 import {expressionGeneration} from "./expressions";
 import {statementGeneration} from "./statements";
@@ -10,6 +11,7 @@ import {getType} from "./type_conversion";
 
 export class WGenerator {
     readonly module: ModuleBuilder;
+    readonly functions = new Map<string, WFunction>();
 
     constructor(readonly translationUnit: Scope) {
         this.module = new ModuleBuilder();
@@ -28,9 +30,21 @@ export class WGenerator {
     }
 
     private function(func: CFuncDefinition) {
-        const returnType = getType(func.type.returnType);
-        const parameterTypes = func.type.parameterTypes.map(getType);
-        const exportName = func.storage === undefined ? func.name : undefined;
-        this.module.function(parameterTypes, [returnType], b => this.statement(func.body, b), exportName);
+        const wasmFunc = this.module.function(
+            func.type.parameterTypes.map(getType),
+            [getType(func.type.returnType)],
+            b => this.statement(func.body, b),
+            func.storage === undefined ? func.name : undefined);
+        this.functions.set(func.name, wasmFunc);
+    }
+
+    functionIndex(fn: CFuncDeclaration | CFuncDefinition): {getIndex(): funcidx} {
+        return {
+            getIndex: () => {
+                const wasmFunc = this.functions.get(fn.name);
+                if (wasmFunc === undefined) throw new Error(`Function ${fn.name} not found`);
+                return wasmFunc.getIndex();
+            }
+        };
     }
 }

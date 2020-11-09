@@ -2,8 +2,8 @@ import {compile} from "../src/generation";
 import wabt from "wabt";
 
 const testInput = `
-int test(int x) {
-  return x + 3;
+long factorial(unsigned int v) {
+  return v < 2 ? 1 : v * factorial(v - 1);
 }
 `.trimStart();
 

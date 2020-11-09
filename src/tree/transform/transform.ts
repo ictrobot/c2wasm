@@ -99,7 +99,7 @@ function ptFunction(fn: pt.FunctionDefinition, scope: Scope): void {
     // add arguments as parameters to function's scope
     if (!type.parameterNames) throw new ParseTreeValidationError(fn, "Expected parameter names");
     for (let i = 0; i < type.parameterTypes.length; i++) {
-        cfn.body.scope.addIdentifier(new CArgument(fn, type.parameterNames[i], type.parameterTypes[i]));
+        cfn.body.scope.addIdentifier(new CArgument(fn, type.parameterNames[i], type.parameterTypes[i], i));
     }
 
     // parse function body body
