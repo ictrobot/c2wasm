@@ -3,6 +3,7 @@ import {CStatement, CReturn, CCompoundStatement} from "../tree/statements";
 import {WFunctionBuilder, Instructions} from "../wasm";
 import {WExpression} from "../wasm/instructions";
 import {WGenerator} from "./generator";
+import {conversion} from "./type_conversion";
 
 export function statementGeneration(m: WGenerator, s: CStatement, b: WFunctionBuilder): WExpression {
     const instr: WExpression = [];
@@ -10,7 +11,10 @@ export function statementGeneration(m: WGenerator, s: CStatement, b: WFunctionBu
         // TODO deal with locals etc
         return s.statements.flatMap(s2 => statementGeneration(m, s2, b));
     } else if (s instanceof CReturn) {
-        if (s.value) instr.push(...m.expression(s.value, b));
+        if (s.value !== undefined) {
+            instr.push(...m.expression(s.value, b));
+            instr.push(...conversion(s.value.type, s.func.type.returnType));
+        }
         if (isNested(s)) instr.push(Instructions.return());
     }
 

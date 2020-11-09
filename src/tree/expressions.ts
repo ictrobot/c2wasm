@@ -157,7 +157,7 @@ export class CUnaryPlusMinus {
 
     constructor(readonly node: ParseNode, readonly body: CExpression, readonly op: "+" | "-") {
         this.bodyType = checks.asArithmetic(body.node, body.type);
-        this.type = this.bodyType.type === "float" ? this.bodyType : CArithmetic.S32;
+        this.type = integerPromotion(this.bodyType);
     }
 }
 
