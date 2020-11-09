@@ -2,19 +2,20 @@ import {byte, labelidx, funcidx, typeidx, localidx, globalidx} from "./base_type
 import {encodeU32, encodeF32, encodeF64, encodeInt64Constant, encodeInt32Constant} from "./encoding";
 import {ValueType} from "./wtypes";
 
-type Instruction = (() => byte[]);
+export type WInstruction = (() => byte[]);
+export type WExpression = WInstruction[];
 
 export const Instructions = {
     // control instructions
     unreachable: zeroArgs(0x00),
     nop: zeroArgs(0x01),
-    block: (type: ValueType | null, body: Instruction[]) => () => {
+    block: (type: ValueType | null, body: WExpression) => () => {
         return [0x02 as byte, ...encodeBlockType(type), ...body.map(x => x()).flat(), 0x0B as byte];
     },
-    loop: (type: ValueType | null, body: Instruction[]) => () => {
+    loop: (type: ValueType | null, body: WExpression) => () => {
         return [0x03 as byte, ...encodeBlockType(type), ...body.map(x => x()).flat(), 0x0B as byte];
     },
-    if: (type: ValueType | null, body: Instruction[], elseBody?: Instruction[]) => () => {
+    if: (type: ValueType | null, body: WExpression, elseBody?: WExpression) => () => {
         const instr = [0x04 as byte, ...encodeBlockType(type), ...body.map(x => x()).flat()];
         if (elseBody) {
             instr.push(0x05 as byte, ...elseBody.map(x => x()).flat());
@@ -253,7 +254,7 @@ function encodeBlockType(t: ValueType | null): byte[] {
     return [t];
 }
 
-function zeroArgs(opcode: number, ...extra: number[]): () => Instruction {
+function zeroArgs(opcode: number, ...extra: number[]): () => WInstruction {
     // always return the same instance
     const instr = [opcode, ...extra] as byte[];
     return () => () => instr;
@@ -275,11 +276,11 @@ function encodeIndex<T extends bigint>(idx: index<T>): byte[] {
     return encodeU32(value);
 }
 
-function indexArg<T extends bigint>(opcode: number): (x: index<T>) => Instruction {
+function indexArg<T extends bigint>(opcode: number): (x: index<T>) => WInstruction {
     return (i) => () => [opcode as byte, ...encodeIndex(i)];
 }
 
-function memArg(opcode: number): (align: bigint | number, offset: bigint | number) => Instruction {
+function memArg(opcode: number): (align: bigint | number, offset: bigint | number) => WInstruction {
     return (align, offset) => () => {
         if (typeof align === "number") align = BigInt(align);
         if (typeof offset === "number") offset = BigInt(offset);

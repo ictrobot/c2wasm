@@ -1,6 +1,7 @@
 import {byte, typeidx, funcidx} from "./base_types";
 import {encodeU32, encodeUtf8} from "./encoding";
 import {WFunctionBuilder, WFunction, WImportedFunction} from "./functions";
+import {WExpression} from "./instructions";
 import {encodeVec, ResultType, encodeFunctionType, FunctionType, MemoryType, encodeLimits} from "./wtypes";
 
 export class ModuleBuilder {
@@ -10,13 +11,11 @@ export class ModuleBuilder {
     private _dataSegments: [offset: number, contents: byte[]][] = [];
     startFunction?: WFunction;
 
-    function(params: ResultType, returnValue: ResultType,
-             body: (b: WFunctionBuilder) => (() => byte[])[], exportName?: string): WFunction {
-        const builder = new WFunctionBuilder(this, params);
-        const instructions = body(builder);
+    function(params: ResultType, returnValue: ResultType, bodyFn: (b: WFunctionBuilder) => WExpression, exportName?: string): WFunction {
+        const builder = new WFunctionBuilder(this, params, bodyFn);
         const type: FunctionType = [params, returnValue];
 
-        const fn = new WFunction(this._funcIndex.bind(this), type, builder.localTypes, instructions, exportName);
+        const fn = new WFunction(this._funcIndex.bind(this), type, builder, exportName);
         builder._getIndex = fn.getIndex.bind(fn); // enable recursive calls in builder
         this._functions.push(fn);
         return fn;
@@ -56,6 +55,8 @@ export class ModuleBuilder {
             startSection.unshift(8 as byte, ...encodeU32(BigInt(startSection.length)));
         }
 
+        // TODO globals?
+        // TODO name custom section for local names (+ fn names?)
         return [
             0x00, 0x61, 0x73, 0x6D, // magic
             0x01, 0x00, 0x00, 0x00, // version

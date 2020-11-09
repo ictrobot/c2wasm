@@ -16,7 +16,7 @@ export class Scope {
     private tags = new Map<string, CCompound>(); // names of structs, unions & enums
     private identifiers = new Map<string, CDeclaration>(); // names of variables and functions
 
-    constructor(readonly node?: ParseNode, private parent?: Scope) {
+    constructor(readonly node?: ParseNode, readonly parent?: Scope) {
     }
 
     private _getTag(tag: string): CCompound | undefined {
@@ -65,16 +65,12 @@ export class Scope {
         this.identifiers.set(value.name, value);
     }
 
-    definedVariables(): CVariable[] {
-        const vars = [];
-        for (const decl of this.identifiers.values()) {
-            if (decl instanceof CVariable) vars.push(decl);
-        }
-        return vars;
-    }
-
     get isTop(): boolean {
         return this.parent === undefined;
+    }
+
+    get declarations(): ReadonlyArray<CDeclaration> {
+        return [...this.identifiers.values()];
     }
 }
 
