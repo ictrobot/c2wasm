@@ -236,7 +236,7 @@ export class CArithmetic {
     }
 
     static readonly Fp32 = new CArithmetic("float", 4, "float");
-    static readonly Fp64 = new CArithmetic("double", 4, "float");
+    static readonly Fp64 = new CArithmetic("double", 8, "float");
 
     static readonly U8 = new CArithmetic("char", 1, "unsigned");
     static readonly S8 = new CArithmetic("signed char", 1, "signed");
