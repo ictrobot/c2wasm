@@ -27,7 +27,7 @@ export abstract class CEvaluable {
 export class CConstant extends CEvaluable {
     readonly lvalue = false;
 
-    constructor(readonly node: ParseNode, readonly type: CArithmetic | CEnum, readonly value: BigInt | number) {
+    constructor(readonly node: ParseNode, readonly type: CArithmetic | CEnum, readonly value: bigint | number) {
         super();
     }
 

@@ -17,6 +17,11 @@ module.exports = (env, argv) => ({
     },
     resolve: {
         extensions: [".ts", ".js"],
+        fallback: {
+            crypto: false,
+            path: false,
+            fs: false
+        }
     },
     module: {
         rules: [{ test: /\.ts$/, loader: "ts-loader" }]
