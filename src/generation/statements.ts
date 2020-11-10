@@ -13,7 +13,7 @@ function _compoundStatement(m: WGenerator, s: c.CCompoundStatement, b: WFunction
 }
 
 function _expressionStatement(m: WGenerator, s: c.CExpressionStatement, b: WFunctionBuilder): WExpression {
-    return [...m.expression(s.expression, b), Instructions.drop()];
+    return m.expression(s.expression, true);
 }
 
 function _nop(m: WGenerator, s: c.CNop, b: WFunctionBuilder): WExpression {
@@ -24,7 +24,7 @@ function _if(m: WGenerator, s: c.CIf, b: WFunctionBuilder): WExpression {
     const ifBody = s.ifBody === undefined ? [Instructions.nop()] : statementGeneration(m, s.ifBody, b);
     const elseBody = s.elseBody === undefined ? undefined : statementGeneration(m, s.elseBody, b);
 
-    return [...condition(m, s.test, b), Instructions.if(null, ifBody, elseBody)];
+    return [...condition(m, s.test), Instructions.if(null, ifBody, elseBody)];
 }
 
 function _forLoop(m: WGenerator, s: c.CForLoop, b: WFunctionBuilder): WExpression {
@@ -33,18 +33,18 @@ function _forLoop(m: WGenerator, s: c.CForLoop, b: WFunctionBuilder): WExpressio
 
     let init: WExpression = [];
     if (Array.isArray(s.init)) {
-        init = s.init.flatMap(e => [...m.expression(e.expression, b), Instructions.drop()]);
+        init = s.init.flatMap(e => m.expression(e.expression, true));
     } else if (s.init !== undefined && !(s.init instanceof c.CNop)) {
-        init = [...m.expression(s.init.expression, b), Instructions.drop()];
+        init = m.expression(s.init.expression, true);
     }
 
     let test: WExpression = [Instructions.i32.const(1n)];
     if (s.test !== undefined && !(s.test instanceof c.CNop)) {
-        test = condition(m, s.test.expression, b);
+        test = condition(m, s.test.expression);
     }
 
     let update: WExpression = [];
-    if (s.update !== undefined) update = [...m.expression(s.update, b), Instructions.drop()];
+    if (s.update !== undefined) update = m.expression(s.update, true);
 
     return [
         ...init,
@@ -68,7 +68,7 @@ function _whileLoop(m: WGenerator, s: c.CWhileLoop, b: WFunctionBuilder): WExpre
 
     return [Instructions.loop(null, [
         storeContinueDepth(s),
-        ...condition(m, s.test, b),
+        ...condition(m, s.test),
         Instructions.if(null, [
             storeBreakDepth(s),
             ...statementGeneration(m, s.body, b),
@@ -85,7 +85,7 @@ function _doLoop(m: WGenerator, s: c.CDoLoop, b: WFunctionBuilder): WExpression 
         storeContinueDepth(s),
 
         ...statementGeneration(m, s.body, b),
-        ...condition(m, s.test, b),
+        ...condition(m, s.test),
         Instructions.br_if(0)
     ])];
 }
@@ -120,7 +120,7 @@ function _break(m: WGenerator, s: c.CBreak, b: WFunctionBuilder): WExpression {
 
 function _return(m: WGenerator, s: c.CReturn, b: WFunctionBuilder): WExpression {
     if (s.value !== undefined) {
-        return [...subExpr(m, s.value, b, s.func.type.returnType), Instructions.return()];
+        return [...subExpr(m, s.value, s.func.type.returnType), Instructions.return()];
     }
     return [Instructions.return()];
 }

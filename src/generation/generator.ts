@@ -26,8 +26,8 @@ export class WGenerator {
         return statementGeneration(this, s, b);
     }
 
-    expression(e: CExpression, b: WFunctionBuilder): WExpression {
-        return expressionGeneration(this, e, b);
+    expression(e: CExpression, discardResult: boolean): WExpression {
+        return expressionGeneration(this, e, discardResult);
     }
 
     private function(func: CFuncDefinition) {

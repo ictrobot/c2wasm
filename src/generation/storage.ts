@@ -27,7 +27,7 @@ export function storageSetupScope(m: WGenerator, s: Scope, b: WFunctionBuilder):
     }
 }
 
-export function storageLocationFromExpression(m: WGenerator, s: e.CExpression, b: WFunctionBuilder): [WExpression, StorageLocation] {
+export function storageLocationFromExpression(m: WGenerator, s: e.CExpression): [WExpression, StorageLocation] {
     if (!s.lvalue) throw new Error("Only lvalue expressions can have storage locations");
 
     if (s instanceof e.CIdentifier) {
@@ -41,14 +41,16 @@ export function storageLocationFromExpression(m: WGenerator, s: e.CExpression, b
     throw new Error("TODO");
 }
 
-export function storageGet(m: WGenerator, location: StorageLocation, b: WFunctionBuilder): WExpression {
+export function storageGet(m: WGenerator, location: StorageLocation): WExpression {
     return [Instructions.local.get(location.index)];
 }
 
-export function storageSet(m: WGenerator, location: StorageLocation, b: WFunctionBuilder): WExpression {
-    // TODO pass in if we need it returned or can consume the argument
-    //  would require modifying expressions so they know if their result is needed or not
-    return [Instructions.local.tee(location.index)];
+export function storageSet(m: WGenerator, location: StorageLocation, keepValue: boolean): WExpression {
+    if (keepValue) {
+        return [Instructions.local.tee(location.index)];
+    } else {
+        return [Instructions.local.set(location.index)];
+    }
 }
 
 
