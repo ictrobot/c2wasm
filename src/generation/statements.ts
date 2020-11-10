@@ -80,14 +80,15 @@ function _whileLoop(m: WGenerator, s: c.CWhileLoop, b: WFunctionBuilder): WExpre
 function _doLoop(m: WGenerator, s: c.CDoLoop, b: WFunctionBuilder): WExpression {
     if (s.body === undefined) throw new Error("Invalid while loop body");
 
-    return [Instructions.loop(null, [
+    return [Instructions.block(null, [
         storeBreakDepth(s),
-        storeContinueDepth(s),
+        Instructions.loop(null, [
+            storeContinueDepth(s),
 
-        ...statementGeneration(m, s.body, b),
-        ...condition(m, s.test),
-        Instructions.br_if(0)
-    ])];
+            ...statementGeneration(m, s.body, b),
+            ...condition(m, s.test),
+            Instructions.br_if(0)])]
+    )];
 }
 
 function _switch(m: WGenerator, s: c.CSwitch, b: WFunctionBuilder): WExpression {
