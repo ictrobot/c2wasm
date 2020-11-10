@@ -1,10 +1,10 @@
 import {CFuncDefinition, CFuncDeclaration, CArgument} from "../tree/declarations";
 import * as c from "../tree/expressions";
-import {CType, CArithmetic} from "../tree/types";
-import {WFunctionBuilder, i32Type, Instructions, i64Type, f32Type, f64Type, ValueType} from "../wasm";
+import {CType, CArithmetic, CPointer} from "../tree/types";
+import {WFunctionBuilder, i32Type, Instructions, i64Type, f32Type, f64Type} from "../wasm";
 import {WExpression} from "../wasm/instructions";
 import {WGenerator} from "./generator";
-import {getType, conversion, valueType} from "./type_conversion";
+import {ImplementationType, implType, conversion, valueType, realType} from "./type_conversion";
 
 function constant(m: WGenerator, e: c.CConstant, b: WFunctionBuilder): WExpression {
     if (e.type instanceof CArithmetic) {
@@ -56,7 +56,7 @@ function dereference(m: WGenerator, e: c.CDereference, b: WFunctionBuilder): WEx
 function unaryPlusMinus(m: WGenerator, e: c.CUnaryPlusMinus, b: WFunctionBuilder): WExpression {
     const instr = expressionGeneration(m, e.body, b);
     if (e.op === "-") {
-        const type = getType(e.body.type);
+        const type = implType(e.body.type);
         instr.push(gConst(type, -1), gInstr(type, "mul"));
     }
     return instr;
@@ -163,7 +163,7 @@ function bitwiseAndOr(m: WGenerator, e: c.CBitwiseAndOr, b: WFunctionBuilder): W
 
 function logicalAndOr(m: WGenerator, e: c.CLogicalAndOr, b: WFunctionBuilder): WExpression {
     if (e.op === "and") {
-        const wType = valueType(e.rhs.type);
+        const wType = implType(e.rhs.type);
 
         return [...condition(m, e.lhs, b), Instructions.if(i32Type, [
             // don't use condition(...) as that may return any non-zero i32 for true
@@ -172,7 +172,7 @@ function logicalAndOr(m: WGenerator, e: c.CLogicalAndOr, b: WFunctionBuilder): W
             Instructions.i32.const(0n)
         ])];
     } else { // op === "or"
-        const wType = valueType(e.rhs.type);
+        const wType = implType(e.rhs.type);
 
         return [...condition(m, e.lhs, b), Instructions.if(i32Type, [
             Instructions.i32.const(1n)
@@ -187,7 +187,7 @@ function conditional(m: WGenerator, e: c.CConditional, b: WFunctionBuilder): WEx
     const test = condition(m, e.test, b);
     const ifStatement = subExpr(m, e.trueValue, b, e.type);
     const elseStatement = e.falseValue !== undefined ? subExpr(m, e.falseValue, b, e.type) : undefined;
-    return [...test, Instructions.if(valueType(e.type), ifStatement, elseStatement)];
+    return [...test, Instructions.if(realType(e.type), ifStatement, elseStatement)];
 }
 
 function assignment(m: WGenerator, e: c.CAssignment, b: WFunctionBuilder): WExpression {
@@ -231,21 +231,28 @@ export function subExpr(m: WGenerator, e: c.CExpression, b: WFunctionBuilder, de
     return [...expressionGeneration(m, e, b), ...conversion(e.type, desiredType)];
 }
 
-export function condition(m: WGenerator, e: c.CExpression, b: WFunctionBuilder): WExpression {
-    const wType = valueType(e.type);
-    if (wType === i32Type) {
-        // any non zero i32 is true
-        return expressionGeneration(m, e, b);
+export function condition(m: WGenerator, e: c.CExpression, b: WFunctionBuilder, anyNonZeroI32 = true): WExpression {
+    const wType = implType(e.type);
+    if (wType === i32Type || wType instanceof CPointer) {
+        if (anyNonZeroI32) {
+            return expressionGeneration(m, e, b);
+        } else {
+            return [...expressionGeneration(m, e, b), Instructions.i32.const(0n), Instructions.i32.ne()];
+        }
+    } else if (typeof wType !== "number") {
+        throw new Error("Invalid condition");
     }
     return [...expressionGeneration(m, e, b), gConst(wType, 0), gInstr(wType, "ne")];
 }
 
-function isIValueType(w: ValueType) {
+function isIValueType(w: ImplementationType) {
     return w === i32Type || w === i64Type;
 }
 
 /** f32 or f64 instruction */
-function fInstr(t: ValueType, op: (keyof typeof Instructions.f32 & keyof typeof Instructions.f64), ...args: any[]) {
+function fInstr(t: ImplementationType, op: (keyof typeof Instructions.f32 & keyof typeof Instructions.f64), ...args: any[]) {
+    if (typeof t !== "number") throw new Error("Instructions can only operate on value types");
+
     if (t === f32Type) {
         // @ts-ignore
         return Instructions.f32[op](...args);
@@ -257,7 +264,9 @@ function fInstr(t: ValueType, op: (keyof typeof Instructions.f32 & keyof typeof 
 }
 
 /** i32 or i64 instruction */
-function iInstr(t: ValueType, op: (keyof typeof Instructions.i32 & keyof typeof Instructions.i64), ...args: any[]) {
+function iInstr(t: ImplementationType, op: (keyof typeof Instructions.i32 & keyof typeof Instructions.i64), ...args: any[]) {
+    if (typeof t !== "number") throw new Error("Instructions can only operate on value types");
+
     if (t === i32Type) {
         // @ts-ignore
         return Instructions.i32[op](...args);
@@ -269,7 +278,9 @@ function iInstr(t: ValueType, op: (keyof typeof Instructions.i32 & keyof typeof 
 }
 
 /** generic instruction - i32, i64, f32 or f64 */
-function gInstr(t: ValueType, op: (keyof typeof Instructions.i32 & keyof typeof Instructions.i64 & keyof typeof Instructions.f32 & keyof typeof Instructions.f64), ...args: any[]) {
+function gInstr(t: ImplementationType, op: (keyof typeof Instructions.i32 & keyof typeof Instructions.i64 & keyof typeof Instructions.f32 & keyof typeof Instructions.f64), ...args: any[]) {
+    if (typeof t !== "number") throw new Error("Instructions can only operate on value types");
+
     if (t === i32Type) {
         // @ts-ignore
         return Instructions.i32[op](...args);
@@ -287,7 +298,8 @@ function gInstr(t: ValueType, op: (keyof typeof Instructions.i32 & keyof typeof 
 }
 
 /** generic constant */
-function gConst(t: ValueType, n: number) {
+function gConst(t: ImplementationType, n: number) {
+    if (typeof t !== "number") throw new Error("Constants can only take value types");
     if (t !== (t | 0)) throw new Error("Invalid generic constant - not integer");
 
     if (t === i32Type) {

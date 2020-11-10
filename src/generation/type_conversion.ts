@@ -1,14 +1,30 @@
-import {CType, CArithmetic} from "../tree/types";
-import {Instructions} from "../wasm";
-import * as wasm from "../wasm";
+import {CType, CArithmetic, CCompound, CPointer, CArray, CVoid, CFuncType} from "../tree/types";
+import {Instructions, ValueType, f32Type, f64Type, i64Type, i32Type} from "../wasm";
 import {WExpression} from "../wasm/instructions";
+import {ResultType} from "../wasm/wtypes";
 
-export function getType(type: CType): wasm.ValueType {
-    if (type instanceof CArithmetic) {
-        return valueType(type);
-    }
-    // TODO non arithmetic types
-    throw new Error("TODO");
+// CType - CArithmetic + wasm.ValueType
+export type ImplementationType = CCompound | CPointer | CArray | CVoid | CFuncType | ValueType;
+
+/**
+ * Types used when computing the type of WebAssembly expressions.
+ * CArithmetic is mapped to corresponding WebAssembly ValueTypes.
+ * Otherwise the same C types are used.
+ */
+export function implType(type: CType): ImplementationType {
+    if (type instanceof CArithmetic) return valueType(type);
+    return type;
+}
+
+/**
+ * WebAssembly Types used for passing values as a parameter into a function, or storing on the stack.
+ */
+export function realType(type: CType): ValueType {
+    if (type instanceof CArithmetic) return valueType(type);
+    if (type instanceof CVoid) throw new Error("Void cannot be stored");
+    // e.g. pointers will be i32
+
+    throw new Error("Not implemented");
 }
 
 export function conversion(inType: CType, outType: CType): WExpression {
@@ -18,14 +34,14 @@ export function conversion(inType: CType, outType: CType): WExpression {
         return arithmeticConversion(inType, outType);
     }
 
-    throw new Error("TODO");
+    throw new Error("Not implemented");
 }
 
 /**
  * Behaves normally, following either the standard or what MSVC does, apart from:
  * - float -> unsigned integer conversion, uses the saturating truncation instructions to avoid traps
  */
-export function arithmeticConversion(inType: CArithmetic, outType: CArithmetic): WExpression {
+function arithmeticConversion(inType: CArithmetic, outType: CArithmetic): WExpression {
     if (CArithmetic.Fp64.equals(outType)) {
         if (CArithmetic.Fp32.equals(inType)) return [Instructions.f64.promote_f32()];
         if (inType.type === "signed" && inType.bytes === 8) return [Instructions.f64.convert_i64_s()];
@@ -96,16 +112,19 @@ export function arithmeticConversion(inType: CArithmetic, outType: CArithmetic):
     throw new Error("TODO");
 }
 
-export function valueType(type: CType): wasm.ValueType {
-    if (!(type instanceof CArithmetic)) throw new Error("Expected arithmetic type");
-
+export function valueType(type: CArithmetic): ValueType {
     if (type.type === "float") {
-        return type.bytes === 4 ? wasm.f32Type : wasm.f64Type;
+        return type.bytes === 4 ? f32Type : f64Type;
     } else if (type.bytes === 8) {
-        return wasm.i64Type;
+        return i64Type;
     } else if (type.bytes <= 4) {
-        return wasm.i32Type;
+        return i32Type;
     }
 
     throw new Error("Unknown type");
+}
+
+export function returnType(type: CType): ResultType {
+    if (type instanceof CVoid) return [];
+    return [realType(type)];
 }

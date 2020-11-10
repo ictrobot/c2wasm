@@ -7,7 +7,7 @@ import {funcidx} from "../wasm/base_types";
 import type {WExpression} from "../wasm/instructions";
 import {expressionGeneration} from "./expressions";
 import {statementGeneration} from "./statements";
-import {getType} from "./type_conversion";
+import {realType, returnType} from "./type_conversion";
 
 export class WGenerator {
     readonly module: ModuleBuilder;
@@ -32,8 +32,8 @@ export class WGenerator {
 
     private function(func: CFuncDefinition) {
         const wasmFunc = this.module.function(
-            func.type.parameterTypes.map(getType),
-            [getType(func.type.returnType)],
+            func.type.parameterTypes.map(realType),
+            returnType(func.type.returnType),
             b => this.functionBody(func, b),
             func.storage === undefined ? func.name : undefined);
         this.functions.set(func.name, wasmFunc);
@@ -57,8 +57,8 @@ export class WGenerator {
 
     private externFunction(func: CFuncDeclaration) {
         const wasmFunc = this.module.importFunction(
-            func.type.parameterTypes.map(getType),
-            [getType(func.type.returnType)],
+            func.type.parameterTypes.map(realType),
+            returnType(func.type.returnType),
             "extern",
             func.name);
         this.functions.set(func.name, wasmFunc);
