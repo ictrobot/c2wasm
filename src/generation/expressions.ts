@@ -49,7 +49,26 @@ function memberAccess(m: WGenerator, e: c.CMemberAccess, discard: boolean): WExp
 }
 
 function incrDecr(m: WGenerator, e: c.CIncrDecr, discard: boolean): WExpression {
-    throw new Error("TODO: incrDecr");
+    const [locInstr, loc] = storageLocationFromExpression(m, e.body);
+    if (locInstr.length > 0) throw new Error("TODO: incrDecr");
+
+    const type = implType(e.type);
+    if (e.pos === "pre") {
+        return [
+            ...storageGet(m, loc),
+            gConst(type, 1),
+            gInstr(type, e.op === "++" ? "add" : "sub"),
+            ...storageSet(m, loc, !discard)
+        ];
+    } else {
+        return [
+            ...(discard ? [] : storageGet(m, loc)),
+            ...storageGet(m, loc),
+            gConst(type, 1),
+            gInstr(type, e.op === "++" ? "add" : "sub"),
+            ...storageSet(m, loc, false)
+        ];
+    }
 }
 
 function addressOf(m: WGenerator, e: c.CAddressOf, discard: boolean): WExpression {
