@@ -236,7 +236,7 @@ export function expressionGeneration(m: WGenerator, e: c.CExpression, b: WFuncti
 
 // helpers
 /** expressionGeneration + casting */
-function subExpr(m: WGenerator, e: c.CExpression, b: WFunctionBuilder, desiredType: CType): WExpression {
+export function subExpr(m: WGenerator, e: c.CExpression, b: WFunctionBuilder, desiredType: CType): WExpression {
     return [...expressionGeneration(m, e, b), ...conversion(e.type, desiredType)];
 }
 
