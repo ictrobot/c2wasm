@@ -5,9 +5,10 @@ import {labelidx} from "../wasm/base_types";
 import {WExpression, WInstruction} from "../wasm/instructions";
 import {subExpr, condition} from "./expressions";
 import {WGenerator} from "./generator";
+import {storageSetupScope} from "./storage";
 
 function _compoundStatement(m: WGenerator, s: c.CCompoundStatement, b: WFunctionBuilder): WExpression {
-    // TODO deal with locals etc
+    storageSetupScope(m, s.scope, b);
     return s.statements.flatMap(s2 => statementGeneration(m, s2, b));
 }
 
@@ -28,7 +29,7 @@ function _if(m: WGenerator, s: c.CIf, b: WFunctionBuilder): WExpression {
 
 function _forLoop(m: WGenerator, s: c.CForLoop, b: WFunctionBuilder): WExpression {
     if (s.body === undefined) throw new Error("Invalid for loop body");
-    // TODO deal with locals
+    storageSetupScope(m, s.scope, b);
 
     let init: WExpression = [];
     if (Array.isArray(s.init)) {

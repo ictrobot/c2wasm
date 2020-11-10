@@ -1,9 +1,10 @@
-import {CFuncDefinition, CFuncDeclaration, CArgument} from "../tree/declarations";
+import {CFuncDefinition, CFuncDeclaration} from "../tree/declarations";
 import * as c from "../tree/expressions";
 import {CType, CArithmetic, CPointer} from "../tree/types";
 import {WFunctionBuilder, i32Type, Instructions, i64Type, f32Type, f64Type} from "../wasm";
 import {WExpression} from "../wasm/instructions";
 import {WGenerator} from "./generator";
+import {storageGet, storageLocationFromExpression, storageSet} from "./storage";
 import {ImplementationType, implType, conversion, valueType, realType} from "./type_conversion";
 
 function constant(m: WGenerator, e: c.CConstant, b: WFunctionBuilder): WExpression {
@@ -15,11 +16,8 @@ function constant(m: WGenerator, e: c.CConstant, b: WFunctionBuilder): WExpressi
 }
 
 function identifier(m: WGenerator, e: c.CIdentifier, b: WFunctionBuilder): WExpression {
-    if (e.value instanceof CArgument) {
-        return [Instructions.local.get(b.args[e.value.index])];
-    }
-    // TODO fix identifiers
-    throw new Error("TODO: identifier");
+    const [instr, loc] = storageLocationFromExpression(m, e, b);
+    return [...instr, ...storageGet(m, loc, b)];
 }
 
 function stringLiteral(m: WGenerator, e: c.CStringLiteral, b: WFunctionBuilder): WExpression {
@@ -191,7 +189,14 @@ function conditional(m: WGenerator, e: c.CConditional, b: WFunctionBuilder): WEx
 }
 
 function assignment(m: WGenerator, e: c.CAssignment, b: WFunctionBuilder): WExpression {
-    throw new Error("TODO: assignment");
+    if (e.assignmentType !== undefined || e.rhs instanceof c.CInitializer) throw new Error("TODO");
+
+    const [locationInstructions, loc] = storageLocationFromExpression(m, e.lhs, b);
+    return [
+        ...locationInstructions,
+        ...subExpr(m, e.rhs, b, e.type),
+        ...storageSet(m, loc, b)
+    ];
 }
 
 function comma(m: WGenerator, e: c.CComma, b: WFunctionBuilder): WExpression {
