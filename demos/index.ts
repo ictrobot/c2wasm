@@ -55,7 +55,7 @@ wabt().then(wabt => {
         window.document.write(`
         <h1>c2wasm</h1>
         <div>
-            <textarea id="textInput" rows="20" style="width: 100%">${testInput}</textarea>
+            <textarea id="textInput" rows="20" style="width: 100%; resize: vertical">${testInput}</textarea>
             <button id="run" style="position: absolute; right: 2px">Run!</button>
             <pre id="output"></pre>
         </div>

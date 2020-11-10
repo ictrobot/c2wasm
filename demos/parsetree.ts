@@ -28,7 +28,7 @@ if (typeof window !== 'undefined' && window.document) {
     window.document.write(`
         <h1>c2wasm parse tree</h1>
         <div>
-            <textarea id="textInput" rows="20" style="width: 100%">${testInput}</textarea>
+            <textarea id="textInput" rows="20" style="width: 100%; resize: vertical">${testInput}</textarea>
             <div style="position: absolute; right: 20px">
                 <span>Show locations: </span> 
                 <input type="checkbox" id="showLoc">

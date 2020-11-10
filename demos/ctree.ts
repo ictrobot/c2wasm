@@ -113,7 +113,7 @@ if (typeof window !== 'undefined' && window.document) {
     window.document.write(`
         <h1>c2wasm ctree</h1>
         <div>
-            <textarea id="textInput" rows="20" style="width: 100%">${testInput}</textarea>
+            <textarea id="textInput" rows="20" style="width: 100%; resize: vertical">${testInput}</textarea>
 
             <pre id="errors"></pre>
             <div id="objID0"></div>
