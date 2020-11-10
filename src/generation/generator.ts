@@ -2,7 +2,7 @@ import {CFuncDefinition, CFuncDeclaration} from "../tree/declarations";
 import type {CExpression} from "../tree/expressions";
 import type {Scope} from "../tree/scope";
 import type {CStatement} from "../tree/statements";
-import {ModuleBuilder, WFunctionBuilder, WFunction, Instructions} from "../wasm";
+import {ModuleBuilder, WFunctionBuilder, WFunction, Instructions, WImportedFunction} from "../wasm";
 import {funcidx} from "../wasm/base_types";
 import type {WExpression} from "../wasm/instructions";
 import {expressionGeneration} from "./expressions";
@@ -11,12 +11,13 @@ import {getType} from "./type_conversion";
 
 export class WGenerator {
     readonly module: ModuleBuilder;
-    readonly functions = new Map<string, WFunction>();
+    readonly functions = new Map<string, WFunction | WImportedFunction>();
 
     constructor(readonly translationUnit: Scope) {
         this.module = new ModuleBuilder();
         for (const decl of translationUnit.declarations) {
             if (decl instanceof CFuncDefinition) this.function(decl);
+            else if (decl instanceof CFuncDeclaration && decl.storage === "extern") this.externFunction(decl);
             else throw new Error("TODO");
         }
     }
@@ -52,6 +53,15 @@ export class WGenerator {
             }
         }
         return body;
+    }
+
+    private externFunction(func: CFuncDeclaration) {
+        const wasmFunc = this.module.importFunction(
+            func.type.parameterTypes.map(getType),
+            [getType(func.type.returnType)],
+            "extern",
+            func.name);
+        this.functions.set(func.name, wasmFunc);
     }
 
     functionIndex(fn: CFuncDeclaration | CFuncDefinition): {getIndex(): funcidx} {

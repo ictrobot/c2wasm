@@ -8,7 +8,7 @@ export function getType(type: CType): wasm.ValueType {
         return valueType(type);
     }
     // TODO non arithmetic types
-    throw "TODO";
+    throw new Error("TODO");
 }
 
 export function conversion(inType: CType, outType: CType): WExpression {
