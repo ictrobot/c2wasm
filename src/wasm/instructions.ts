@@ -108,6 +108,12 @@ export const Instructions = {
         reinterpret_f32: zeroArgs(0xBC),
         extend8_s: zeroArgs(0xC0),
         extend16_s: zeroArgs(0xC1),
+
+        // Non-trapping Float-to-int Conversions
+        trunc_sat_f32_s: zeroArgs(0xFC, 0),
+        trunc_sat_f32_u: zeroArgs(0xFC, 1),
+        trunc_sat_f64_s: zeroArgs(0xFC, 2),
+        trunc_sat_f64_u: zeroArgs(0xFC, 3),
     } as const,
 
     i64: {
@@ -168,6 +174,12 @@ export const Instructions = {
         extend8_s: zeroArgs(0xC2),
         extend16_s: zeroArgs(0xC3),
         extend32_s: zeroArgs(0xC4),
+
+        // Non-trapping Float-to-int Conversions
+        trunc_sat_f32_s: zeroArgs(0xFC, 4),
+        trunc_sat_f32_u: zeroArgs(0xFC, 5),
+        trunc_sat_f64_s: zeroArgs(0xFC, 6),
+        trunc_sat_f64_u: zeroArgs(0xFC, 7),
     } as const,
 
     f32: {

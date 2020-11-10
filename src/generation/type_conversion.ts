@@ -23,7 +23,7 @@ export function conversion(inType: CType, outType: CType): WExpression {
 
 /**
  * Behaves normally, following either the standard or what MSVC does, apart from:
- * - float -> unsigned integer conversion (which is not specified in spec) takes absolute value to avoid runtime trap
+ * - float -> unsigned integer conversion, uses the saturating truncation instructions to avoid traps
  */
 export function arithmeticConversion(inType: CArithmetic, outType: CArithmetic): WExpression {
     if (CArithmetic.Fp64.equals(outType)) {
@@ -41,8 +41,8 @@ export function arithmeticConversion(inType: CArithmetic, outType: CArithmetic):
         if (inType.type === "unsigned" && inType.bytes <= 4) return [Instructions.f32.convert_i32_u()];
 
     } else if (CArithmetic.U64.equals(outType)) {
-        if (CArithmetic.Fp64.equals(inType)) return [Instructions.f64.abs(), Instructions.i64.trunc_f64_u()];
-        if (CArithmetic.Fp32.equals(inType)) return [Instructions.f32.abs(), Instructions.i64.trunc_f32_u()];
+        if (CArithmetic.Fp64.equals(inType)) return [Instructions.i64.trunc_sat_f64_u()];
+        if (CArithmetic.Fp32.equals(inType)) return [Instructions.i64.trunc_sat_f32_u()];
         if (CArithmetic.S64.equals(inType)) return [];
         if (inType.type === "signed") return [Instructions.i64.extend_i32_u()];
         if (inType.type === "unsigned") return [Instructions.i64.extend_i32_u()];
@@ -55,8 +55,8 @@ export function arithmeticConversion(inType: CArithmetic, outType: CArithmetic):
         if (inType.type === "unsigned") return [Instructions.i64.extend_i32_u()];
 
     } else if (CArithmetic.U32.equals(outType)) {
-        if (CArithmetic.Fp64.equals(inType)) return [Instructions.f64.abs(), Instructions.i32.trunc_f64_u()];
-        if (CArithmetic.Fp32.equals(inType)) return [Instructions.f32.abs(), Instructions.i32.trunc_f32_u()];
+        if (CArithmetic.Fp64.equals(inType)) return [Instructions.i32.trunc_sat_f64_u()];
+        if (CArithmetic.Fp32.equals(inType)) return [Instructions.i32.trunc_sat_f32_u()];
         if (inType.bytes === 8) return [Instructions.i32.wrap_i64()];
         return [];
 
@@ -87,8 +87,8 @@ export function arithmeticConversion(inType: CArithmetic, outType: CArithmetic):
             Instructions.i32.shr_u(),
         ];
 
-        if (CArithmetic.Fp64.equals(inType)) conversion.unshift(Instructions.f64.abs(), Instructions.i32.trunc_f64_u());
-        if (CArithmetic.Fp32.equals(inType)) conversion.unshift(Instructions.f32.abs(), Instructions.i32.trunc_f32_u());
+        if (CArithmetic.Fp64.equals(inType)) conversion.unshift(Instructions.i32.trunc_sat_f64_u());
+        if (CArithmetic.Fp32.equals(inType)) conversion.unshift(Instructions.i32.trunc_sat_f32_u());
         if (inType.type !== "float" && inType.bytes === 8) conversion.unshift(Instructions.i32.wrap_i64());
         return conversion;
     }

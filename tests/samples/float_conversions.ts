@@ -38,13 +38,13 @@ test("from float", async t => {
         [s: string]: () => number | bigint
     };
 
-    t.is(c.a(), 57);
+    t.is(c.a(), 0);
     t.is(c.b(), -57);
-    t.is(c.c(), 12345);
+    t.is(c.c(), 0);
     t.is(c.d(), -12345);
-    t.is(c.e(), 12345);
+    t.is(c.e(), 0);
     t.is(c.f(), -12345);
-    t.is(c.g(), 12345n);
+    t.is(c.g(), 0n);
     t.is(c.h(), -12345n);
 });
 
@@ -85,13 +85,13 @@ test("from double", async t => {
         [s: string]: () => number | bigint
     };
 
-    t.is(c.a(), 57);
+    t.is(c.a(), 0);
     t.is(c.b(), -57);
-    t.is(c.c(), 12345);
+    t.is(c.c(), 0);
     t.is(c.d(), -12345);
-    t.is(c.e(), 12345);
+    t.is(c.e(), 0);
     t.is(c.f(), -12345);
-    t.is(c.g(), 12345n);
+    t.is(c.g(), 0n);
     t.is(c.h(), -12345n);
 });
 
