@@ -123,6 +123,14 @@ export class ModuleBuilder {
         if (fn instanceof WFunction) idx += this._importedFunctions.length;
         return BigInt(idx) as funcidx;
     }
+
+    get functions(): ReadonlyArray<WFunction> {
+        return this._functions;
+    }
+
+    get functionImports(): ReadonlyArray<WImportedFunction> {
+        return this._importedFunctions;
+    }
 }
 
 function getTypeIndex(x: FunctionType, list: byte[][]): typeidx {

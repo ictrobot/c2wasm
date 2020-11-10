@@ -20,7 +20,7 @@ export class WImportedFunction {
 export class WFunction {
     constructor(private readonly idxFn: (x: WFunction) => funcidx,
                 readonly type: FunctionType,
-                readonly builder: WFunctionBuilder,
+                private readonly builder: WFunctionBuilder,
                 readonly exportName?: string) {
     }
 
