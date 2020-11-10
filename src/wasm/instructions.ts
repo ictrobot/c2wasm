@@ -2,23 +2,23 @@ import {byte, labelidx, funcidx, typeidx, localidx, globalidx} from "./base_type
 import {encodeU32, encodeF32, encodeF64, encodeInt64Constant, encodeInt32Constant} from "./encoding";
 import {ValueType} from "./wtypes";
 
-export type WInstruction = (() => byte[]);
+export type WInstruction = ((depth: number) => byte[]);
 export type WExpression = WInstruction[];
 
 export const Instructions = {
     // control instructions
     unreachable: zeroArgs(0x00),
     nop: zeroArgs(0x01),
-    block: (type: ValueType | null, body: WExpression) => () => {
-        return [0x02 as byte, ...encodeBlockType(type), ...body.map(x => x()).flat(), 0x0B as byte];
+    block: (type: ValueType | null, body: WExpression) => (d: number) => {
+        return [0x02 as byte, ...encodeBlockType(type), ...body.map(x => x(d + 1)).flat(), 0x0B as byte];
     },
-    loop: (type: ValueType | null, body: WExpression) => () => {
-        return [0x03 as byte, ...encodeBlockType(type), ...body.map(x => x()).flat(), 0x0B as byte];
+    loop: (type: ValueType | null, body: WExpression) => (d: number) => {
+        return [0x03 as byte, ...encodeBlockType(type), ...body.map(x => x(d + 1)).flat(), 0x0B as byte];
     },
-    if: (type: ValueType | null, body: WExpression, elseBody?: WExpression) => () => {
-        const instr = [0x04 as byte, ...encodeBlockType(type), ...body.map(x => x()).flat()];
+    if: (type: ValueType | null, body: WExpression, elseBody?: WExpression) => (d: number) => {
+        const instr = [0x04 as byte, ...encodeBlockType(type), ...body.map(x => x(d + 1)).flat()];
         if (elseBody) {
-            instr.push(0x05 as byte, ...elseBody.map(x => x()).flat());
+            instr.push(0x05 as byte, ...elseBody.map(x => x(d + 1)).flat());
         }
         instr.push(0x0B as byte);
         return instr;
@@ -275,22 +275,22 @@ function zeroArgs(opcode: number, ...extra: number[]): () => WInstruction {
 
 // either an index (instance of T), an object with a getter for the index
 // or a plain number to make the api easier to use
-type index<T extends bigint> = number | T | {getIndex(): T};
+type index<T extends bigint> = number | T | {getIndex(depth: number): T};
 
-function encodeIndex<T extends bigint>(idx: index<T>): byte[] {
+function encodeIndex<T extends bigint>(idx: index<T>, depth: number): byte[] {
     let value: T;
     if (typeof idx === "number") {
         value = BigInt(idx) as T;
     } else if (typeof idx === "bigint") {
         value = idx as T;
     } else {
-        value = idx.getIndex();
+        value = idx.getIndex(depth);
     }
     return encodeU32(value);
 }
 
 function indexArg<T extends bigint>(opcode: number): (x: index<T>) => WInstruction {
-    return (i) => () => [opcode as byte, ...encodeIndex(i)];
+    return (i) => (depth: number) => [opcode as byte, ...encodeIndex(i, depth)];
 }
 
 function memArg(opcode: number): (align: bigint | number, offset: bigint | number) => WInstruction {

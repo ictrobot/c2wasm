@@ -1,7 +1,8 @@
 import {CFuncDefinition} from "../tree/declarations";
 import * as c from "../tree/statements";
 import {WFunctionBuilder, Instructions} from "../wasm";
-import {WExpression} from "../wasm/instructions";
+import {labelidx} from "../wasm/base_types";
+import {WExpression, WInstruction} from "../wasm/instructions";
 import {subExpr, condition} from "./expressions";
 import {WGenerator} from "./generator";
 
@@ -26,15 +27,35 @@ function _if(m: WGenerator, s: c.CIf, b: WFunctionBuilder): WExpression {
 }
 
 function _forLoop(m: WGenerator, s: c.CForLoop, b: WFunctionBuilder): WExpression {
+
     throw new Error("TODO: _forLoop");
 }
 
 function _whileLoop(m: WGenerator, s: c.CWhileLoop, b: WFunctionBuilder): WExpression {
-    throw new Error("TODO: _whileLoop");
+    if (s.body === undefined) throw new Error("Invalid while loop body");
+
+    return [Instructions.loop(null, [
+        storeContinueDepth(s),
+        ...condition(m, s.test, b),
+        Instructions.if(null, [
+            storeBreakDepth(s),
+            ...statementGeneration(m, s.body, b),
+            Instructions.br(1) // jump back to start of loop
+        ])
+    ])];
 }
 
 function _doLoop(m: WGenerator, s: c.CDoLoop, b: WFunctionBuilder): WExpression {
-    throw new Error("TODO: _doLoop");
+    if (s.body === undefined) throw new Error("Invalid while loop body");
+
+    return [Instructions.loop(null, [
+        storeBreakDepth(s),
+        storeContinueDepth(s),
+
+        ...statementGeneration(m, s.body, b),
+        ...condition(m, s.test, b),
+        Instructions.br_if(0)
+    ])];
 }
 
 function _switch(m: WGenerator, s: c.CSwitch, b: WFunctionBuilder): WExpression {
@@ -42,11 +63,27 @@ function _switch(m: WGenerator, s: c.CSwitch, b: WFunctionBuilder): WExpression 
 }
 
 function _continue(m: WGenerator, s: c.CContinue, b: WFunctionBuilder): WExpression {
-    throw new Error("TODO: _continue");
+    return [Instructions.br({
+        getIndex(depth: number): labelidx {
+            const statement = s.loop as any as Record<typeof continueDepthSymbol, number | undefined>;
+            const targetDepth = statement[continueDepthSymbol];
+            if (targetDepth === undefined) throw new Error("Failed to find continue depth");
+
+            return BigInt(depth - targetDepth) as labelidx;
+        }
+    })];
 }
 
 function _break(m: WGenerator, s: c.CBreak, b: WFunctionBuilder): WExpression {
-    throw new Error("TODO: _break");
+    return [Instructions.br({
+        getIndex(depth: number): labelidx {
+            const statement = s.target as any as Record<typeof breakDepthSymbol, number | undefined>;
+            const targetDepth = statement[breakDepthSymbol];
+            if (targetDepth === undefined) throw new Error("Failed to find break depth");
+
+            return BigInt(depth - targetDepth) as labelidx;
+        }
+    })];
 }
 
 function _return(m: WGenerator, s: c.CReturn, b: WFunctionBuilder): WExpression {
@@ -73,4 +110,24 @@ export function statementGeneration(m: WGenerator, s: c.CStatement, b: WFunction
 // helpers
 function isNested(s: c.CStatement) {
     return !(s.parent instanceof c.CCompoundStatement && s.parent.parent instanceof CFuncDefinition);
+}
+
+// break and continue depth helpers
+const breakDepthSymbol = Symbol("break depth");
+const continueDepthSymbol = Symbol("continue depth");
+
+function storeBreakDepth<T extends c.CForLoop | c.CWhileLoop | c.CDoLoop | c.CSwitch>(s: T): WInstruction {
+    const statement = s as Record<typeof breakDepthSymbol, any>;
+    return (d : number) => {
+        statement[breakDepthSymbol] = d;
+        return [];
+    };
+}
+
+function storeContinueDepth<T extends c.CForLoop | c.CWhileLoop | c.CDoLoop | c.CSwitch>(s: T): WInstruction {
+    const statement = s as Record<typeof continueDepthSymbol, any>;
+    return (d : number) => {
+        statement[continueDepthSymbol] = d;
+        return [];
+    };
 }

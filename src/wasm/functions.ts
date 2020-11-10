@@ -48,7 +48,7 @@ export class WFunction {
 
         // encode function body
         const code: byte[] = encodeVec(locals.map(x => [...encodeU32(x[0]), x[1]])); // locals
-        code.push(...this.builder.instructions.map(x => x()).flat(), 0x0B as byte); // expression
+        code.push(...this.builder.instructions.map(x => x(0)).flat(), 0x0B as byte); // expression
         code.unshift(...encodeU32(BigInt(code.length)));
         return code;
     }
