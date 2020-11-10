@@ -27,8 +27,39 @@ function _if(m: WGenerator, s: c.CIf, b: WFunctionBuilder): WExpression {
 }
 
 function _forLoop(m: WGenerator, s: c.CForLoop, b: WFunctionBuilder): WExpression {
+    if (s.body === undefined) throw new Error("Invalid for loop body");
+    // TODO deal with locals
 
-    throw new Error("TODO: _forLoop");
+    let init: WExpression = [];
+    if (Array.isArray(s.init)) {
+        init = s.init.flatMap(e => [...m.expression(e.expression, b), Instructions.drop()]);
+    } else if (s.init !== undefined && !(s.init instanceof c.CNop)) {
+        init = [...m.expression(s.init.expression, b), Instructions.drop()];
+    }
+
+    let test: WExpression = [Instructions.i32.const(1n)];
+    if (s.test !== undefined && !(s.test instanceof c.CNop)) {
+        test = condition(m, s.test.expression, b);
+    }
+
+    let update: WExpression = [];
+    if (s.update !== undefined) update = [...m.expression(s.update, b), Instructions.drop()];
+
+    return [
+        ...init,
+        Instructions.loop(null, [
+            ...test,
+            Instructions.if(null, [
+                storeBreakDepth(s),
+                Instructions.block(null, [
+                    storeContinueDepth(s),
+                    ...statementGeneration(m, s.body, b),
+                ]),
+                ...update,
+                Instructions.br(1) // jump back to start of loop
+            ])
+        ])
+    ];
 }
 
 function _whileLoop(m: WGenerator, s: c.CWhileLoop, b: WFunctionBuilder): WExpression {
