@@ -13,7 +13,10 @@ wabt().then(wabt => {
             const module = compile(input);
             const compiled = module.toBytes();
             return wabt.readWasm(compiled, {
-
+                mutable_globals: true,
+                sat_float_to_int: true,
+                sign_extension: true,
+                bulk_memory: true
             }).toText({
                 inlineExport: true
             });
