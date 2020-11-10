@@ -109,7 +109,12 @@ function mulDiv(m: WGenerator, e: c.CMulDiv, b: WFunctionBuilder): WExpression {
 }
 
 function mod(m: WGenerator, e: c.CMod, b: WFunctionBuilder): WExpression {
-    throw new Error("TODO: mod");
+    const wType = valueType(e.type);
+    if (e.type.type === "signed") {
+        return [...subExpr(m, e.lhs, b, e.type), ...subExpr(m, e.rhs, b, e.type), iInstr(wType, "rem_s")];
+    } else {
+        return [...subExpr(m, e.lhs, b, e.type), ...subExpr(m, e.rhs, b, e.type), iInstr(wType, "rem_u")];
+    }
 }
 
 function addSub(m: WGenerator, e: c.CAddSub, b: WFunctionBuilder): WExpression {
@@ -124,7 +129,14 @@ function addSub(m: WGenerator, e: c.CAddSub, b: WFunctionBuilder): WExpression {
 }
 
 function shift(m: WGenerator, e: c.CShift, b: WFunctionBuilder): WExpression {
-    throw new Error("TODO: shift");
+    const wType = valueType(e.type);
+    if (e.dir === "left") {
+        return [...subExpr(m, e.lhs, b, e.type), ...subExpr(m, e.rhs, b, e.type), iInstr(wType, "shl")];
+    } else if (e.type.type === "signed") {
+        return [...subExpr(m, e.lhs, b, e.type), ...subExpr(m, e.rhs, b, e.type), iInstr(wType, "shr_s")];
+    } else {
+        return [...subExpr(m, e.lhs, b, e.type), ...subExpr(m, e.rhs, b, e.type), iInstr(wType, "shr_u")];
+    }
 }
 
 function relational(m: WGenerator, e: c.CRelational, b: WFunctionBuilder): WExpression {
@@ -148,15 +160,36 @@ function relational(m: WGenerator, e: c.CRelational, b: WFunctionBuilder): WExpr
 }
 
 function equality(m: WGenerator, e: c.CEquality, b: WFunctionBuilder): WExpression {
-    throw new Error("TODO: equality");
+    return [
+        ...subExpr(m, e.lhs, b, e.commonType),
+        ...subExpr(m, e.rhs, b, e.commonType),
+        gInstr(valueType(e.commonType), e.op === "==" ? "eq" : "ne")];
 }
 
 function bitwiseAndOr(m: WGenerator, e: c.CBitwiseAndOr, b: WFunctionBuilder): WExpression {
-    throw new Error("TODO: bitwiseAndOr");
+    return [...subExpr(m, e.lhs, b, e.type), ...subExpr(m, e.rhs, b, e.type), iInstr(valueType(e.type), e.op)];
 }
 
 function logicalAndOr(m: WGenerator, e: c.CLogicalAndOr, b: WFunctionBuilder): WExpression {
-    throw new Error("TODO: logicalAndOr");
+    if (e.op === "and") {
+        const wType = valueType(e.rhs.type);
+
+        return [...condition(m, e.lhs, b), Instructions.if(i32Type, [
+            // don't use condition(...) as that may return any non-zero i32 for true
+            ...expressionGeneration(m, e.rhs, b), gConst(wType, 0), gInstr(wType, "ne")
+        ], [
+            Instructions.i32.const(0n)
+        ])];
+    } else { // op === "or"
+        const wType = valueType(e.rhs.type);
+
+        return [...condition(m, e.lhs, b), Instructions.if(i32Type, [
+            Instructions.i32.const(1n)
+        ], [
+            // don't use condition(...) as that may return any non-zero i32 for true
+            ...expressionGeneration(m, e.rhs, b), gConst(wType, 0), gInstr(wType, "ne")
+        ])];
+    }
 }
 
 function conditional(m: WGenerator, e: c.CConditional, b: WFunctionBuilder): WExpression {

@@ -265,10 +265,15 @@ export class CRelational {
 export class CEquality {
     readonly lvalue = false;
     readonly type = CArithmetic.S32;
+    readonly commonType: CArithmetic;
 
     constructor(readonly node: ParseNode, readonly lhs: CExpression, readonly rhs: CExpression, readonly op: "==" | "!=") {
         checks.asArithmeticOrPointer(lhs.node, lhs.type);
         checks.asArithmeticOrPointer(rhs.node, rhs.type);
+
+        this.commonType = usualArithmeticConversion(
+            lhs.type instanceof CArithmetic ? lhs.type : CSizeT,
+            rhs.type instanceof CArithmetic ? rhs.type : CSizeT);
     }
 }
 
