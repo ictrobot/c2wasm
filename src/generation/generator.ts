@@ -2,7 +2,7 @@ import {CFuncDefinition, CFuncDeclaration} from "../tree/declarations";
 import type {CExpression} from "../tree/expressions";
 import type {Scope} from "../tree/scope";
 import type {CStatement} from "../tree/statements";
-import {ModuleBuilder, WFunctionBuilder, WFunction} from "../wasm";
+import {ModuleBuilder, WFunctionBuilder, WFunction, Instructions} from "../wasm";
 import {funcidx} from "../wasm/base_types";
 import type {WExpression} from "../wasm/instructions";
 import {expressionGeneration} from "./expressions";
@@ -33,9 +33,25 @@ export class WGenerator {
         const wasmFunc = this.module.function(
             func.type.parameterTypes.map(getType),
             [getType(func.type.returnType)],
-            b => this.statement(func.body, b),
+            b => this.functionBody(func, b),
             func.storage === undefined ? func.name : undefined);
         this.functions.set(func.name, wasmFunc);
+    }
+
+    private functionBody(s: CFuncDefinition, b: WFunctionBuilder): WExpression {
+        const body = this.statement(s.body, b);
+        if (s.type.returnType.bytes > 0) {
+            if (body[body.length - 1] === Instructions.return()) {
+                // Final return can be implicit
+                body.pop();
+            } else {
+                // No return generated at the end of the function, however this fn must have passed c-tree
+                // always returns validation. Therefore add a trapping unreachable instruction to end of function body
+                // to pass wasm validation.
+                body.push(Instructions.unreachable());
+            }
+        }
+        return body;
     }
 
     functionIndex(fn: CFuncDeclaration | CFuncDefinition): {getIndex(): funcidx} {

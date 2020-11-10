@@ -8,18 +8,31 @@ long factorial(unsigned int v) {
 `.trimStart();
 
 wabt().then(wabt => {
-    function cToWat(input: string): string {
+    function cToWat(input: string) {
         try {
             const module = compile(input);
             const compiled = module.toBytes();
-            return wabt.readWasm(compiled, {
+
+            const wabtModule = wabt.readWasm(compiled, {
                 mutable_globals: true,
                 sat_float_to_int: true,
                 sign_extension: true,
                 bulk_memory: true
-            }).toText({
+            });
+
+            const text = wabtModule.toText({
                 inlineExport: true
             });
+
+            let validationError = "";
+            try {
+                wabtModule.validate();
+            } catch (e) {
+                console.debug(e);
+                validationError = e.toString() + "\n\n\n";
+            }
+
+            return validationError + text;
         } catch (e) {
             console.debug(e);
             return e.stack;

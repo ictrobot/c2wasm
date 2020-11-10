@@ -2,7 +2,7 @@ import {CFuncDefinition} from "../tree/declarations";
 import * as c from "../tree/statements";
 import {WFunctionBuilder, Instructions} from "../wasm";
 import {WExpression} from "../wasm/instructions";
-import {subExpr} from "./expressions";
+import {subExpr, condition} from "./expressions";
 import {WGenerator} from "./generator";
 
 function _compoundStatement(m: WGenerator, s: c.CCompoundStatement, b: WFunctionBuilder): WExpression {
@@ -11,15 +11,18 @@ function _compoundStatement(m: WGenerator, s: c.CCompoundStatement, b: WFunction
 }
 
 function _expressionStatement(m: WGenerator, s: c.CExpressionStatement, b: WFunctionBuilder): WExpression {
-    throw new Error("TODO: _expressionStatement");
+    return [...m.expression(s.expression, b), Instructions.drop()];
 }
 
 function _nop(m: WGenerator, s: c.CNop, b: WFunctionBuilder): WExpression {
-    throw new Error("TODO: _nop");
+    return []; // [Instructions.nop()]
 }
 
 function _if(m: WGenerator, s: c.CIf, b: WFunctionBuilder): WExpression {
-    throw new Error("TODO: _if");
+    const ifBody = s.ifBody === undefined ? [Instructions.nop()] : statementGeneration(m, s.ifBody, b);
+    const elseBody = s.elseBody === undefined ? undefined : statementGeneration(m, s.elseBody, b);
+
+    return [...condition(m, s.test, b), Instructions.if(null, ifBody, elseBody)];
 }
 
 function _forLoop(m: WGenerator, s: c.CForLoop, b: WFunctionBuilder): WExpression {
@@ -48,9 +51,9 @@ function _break(m: WGenerator, s: c.CBreak, b: WFunctionBuilder): WExpression {
 
 function _return(m: WGenerator, s: c.CReturn, b: WFunctionBuilder): WExpression {
     if (s.value !== undefined) {
-        return [...subExpr(m, s.value, b, s.func.type.returnType), ...isNested(s) ? [Instructions.return()] : []];
+        return [...subExpr(m, s.value, b, s.func.type.returnType), Instructions.return()];
     }
-    return isNested(s) ? [Instructions.return()] : [];
+    return [Instructions.return()];
 }
 
 export function statementGeneration(m: WGenerator, s: c.CStatement, b: WFunctionBuilder): WExpression {

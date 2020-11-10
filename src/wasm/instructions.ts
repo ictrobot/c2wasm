@@ -269,7 +269,8 @@ function encodeBlockType(t: ValueType | null): byte[] {
 function zeroArgs(opcode: number, ...extra: number[]): () => WInstruction {
     // always return the same instance
     const instr = [opcode, ...extra] as byte[];
-    return () => () => instr;
+    const innerFunction = () => instr;
+    return () => innerFunction;
 }
 
 // either an index (instance of T), an object with a getter for the index

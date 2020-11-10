@@ -78,15 +78,6 @@ function logicalNot(m: WGenerator, e: c.CLogicalNot, b: WFunctionBuilder): WExpr
     }
 }
 
-function condition(m: WGenerator, e: c.CExpression, b: WFunctionBuilder): WExpression {
-    const wType = valueType(e.type);
-    if (wType === i32Type) {
-        // any non zero i32 is true
-        return expressionGeneration(m, e, b);
-    }
-    return [...expressionGeneration(m, e, b), gConst(wType, 0), gInstr(wType, "ne")];
-}
-
 function sizeof(m: WGenerator, e: c.CSizeof, b: WFunctionBuilder): WExpression {
     return [Instructions.i32.const(e.body.bytes)];
 }
@@ -238,6 +229,15 @@ export function expressionGeneration(m: WGenerator, e: c.CExpression, b: WFuncti
 /** expressionGeneration + casting */
 export function subExpr(m: WGenerator, e: c.CExpression, b: WFunctionBuilder, desiredType: CType): WExpression {
     return [...expressionGeneration(m, e, b), ...conversion(e.type, desiredType)];
+}
+
+export function condition(m: WGenerator, e: c.CExpression, b: WFunctionBuilder): WExpression {
+    const wType = valueType(e.type);
+    if (wType === i32Type) {
+        // any non zero i32 is true
+        return expressionGeneration(m, e, b);
+    }
+    return [...expressionGeneration(m, e, b), gConst(wType, 0), gInstr(wType, "ne")];
 }
 
 function isIValueType(w: ValueType) {
