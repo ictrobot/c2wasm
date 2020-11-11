@@ -1,5 +1,5 @@
 import type {ParseNode, pt} from "../parsing";
-import type {CDeclaration, CVariable} from "./declarations";
+import type {CDeclaration, CVariable, CArgument} from "./declarations";
 import * as checks from "./type_checking";
 import {
     CArithmetic, CType, CArray, CPointer, CUnion, CStruct,
@@ -138,6 +138,11 @@ export class CAddressOf { // &
     constructor(readonly node: ParseNode, readonly body: CExpression) {
         checks.checkLvalue(body, true);
         this.type = new CPointer(node, checks.asCType(body));
+
+        if (this.body instanceof CIdentifier) {
+            // when translating to wasm all variables which have their address taken have to be stored on the shadow stack
+            (this.body.value as CVariable | CArgument).addressUsed = true;
+        }
     }
 }
 

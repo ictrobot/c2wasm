@@ -10,6 +10,7 @@ export type CDeclaration = CVariable | CArgument | CFuncDefinition | CFuncDeclar
 
 export class CVariable {
     staticValue?: CConstant | CInitializer;
+    addressUsed: boolean = false;
 
     constructor(readonly node: ParseNode,
                 readonly name: string,
@@ -19,6 +20,8 @@ export class CVariable {
 }
 
 export class CArgument {
+    addressUsed: boolean = false;
+
     constructor(readonly node: ParseNode, readonly name: string, readonly type: CQualifiedType<CNotFuncType>, readonly index: number) {
     }
 }
