@@ -1,4 +1,4 @@
-import {CFuncDefinition, CFuncDeclaration} from "../tree/declarations";
+import {CFuncDefinition, CFuncDeclaration, CVariable} from "../tree/declarations";
 import type {CExpression} from "../tree/expressions";
 import type {Scope} from "../tree/scope";
 import type {CStatement} from "../tree/statements";
@@ -7,19 +7,28 @@ import {funcidx} from "../wasm/base_types";
 import type {WExpression} from "../wasm/instructions";
 import {expressionGeneration} from "./expressions";
 import {statementGeneration} from "./statements";
+import {storageSetupStaticVar} from "./storage";
 import {realType, returnType} from "./type_conversion";
 
 export class WGenerator {
     readonly module: ModuleBuilder;
     readonly functions = new Map<string, WFunction | WImportedFunction>();
 
+    // current memory pointers
+    nextStaticAddr = 32; // reserve first 32 bytes as 0
+
     constructor(readonly translationUnit: Scope) {
         this.module = new ModuleBuilder();
+
         for (const decl of translationUnit.declarations) {
             if (decl instanceof CFuncDefinition) this.function(decl);
             else if (decl instanceof CFuncDeclaration && decl.storage === "extern") this.externFunction(decl);
-            else throw new Error("TODO");
+            else if (decl instanceof CFuncDeclaration) throw new Error("Undefined function " + decl.name);
+            else if (decl instanceof CVariable) storageSetupStaticVar(this, decl);
+            else throw new Error("Unexpected declaration");
         }
+
+        this.module.setupMemory(Math.ceil(this.nextStaticAddr / 65536));
     }
 
     statement(s: CStatement, b: WFunctionBuilder): WExpression {

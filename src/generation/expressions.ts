@@ -1,10 +1,10 @@
 import {CFuncDefinition, CFuncDeclaration} from "../tree/declarations";
 import * as c from "../tree/expressions";
 import {CType, CArithmetic, CPointer} from "../tree/types";
-import {WFunctionBuilder, i32Type, Instructions, i64Type, f32Type, f64Type} from "../wasm";
+import {i32Type, Instructions, i64Type, f32Type, f64Type} from "../wasm";
 import {WExpression} from "../wasm/instructions";
 import {WGenerator} from "./generator";
-import {storageGet, storageLocationFromExpression, storageSet} from "./storage";
+import {storageGet, storageSet, storageUpdate} from "./storage";
 import {ImplementationType, implType, conversion, valueType, realType} from "./type_conversion";
 
 function constant(m: WGenerator, e: c.CConstant, discard: boolean): WExpression {
@@ -20,8 +20,7 @@ function constant(m: WGenerator, e: c.CConstant, discard: boolean): WExpression 
 function identifier(m: WGenerator, e: c.CIdentifier, discard: boolean): WExpression {
     if (discard) return []; // no possible side effects
 
-    const [instr, loc] = storageLocationFromExpression(m, e);
-    return [...instr, ...storageGet(m, loc)];
+    return storageGet(m, e.type, e);
 }
 
 function stringLiteral(m: WGenerator, e: c.CStringLiteral, discard: boolean): WExpression {
@@ -49,25 +48,21 @@ function memberAccess(m: WGenerator, e: c.CMemberAccess, discard: boolean): WExp
 }
 
 function incrDecr(m: WGenerator, e: c.CIncrDecr, discard: boolean): WExpression {
-    const [locInstr, loc] = storageLocationFromExpression(m, e.body);
-    if (locInstr.length > 0) throw new Error("TODO: incrDecr");
-
     const type = implType(e.type);
     if (e.pos === "pre") {
-        return [
-            ...storageGet(m, loc),
+        return storageUpdate(m, e.body.type, e.body, [
             gConst(type, 1),
             gInstr(type, e.op === "++" ? "add" : "sub"),
-            ...storageSet(m, loc, !discard)
-        ];
+        ], !discard);
     } else {
-        return [
-            ...(discard ? [] : storageGet(m, loc)),
-            ...storageGet(m, loc),
-            gConst(type, 1),
-            gInstr(type, e.op === "++" ? "add" : "sub"),
-            ...storageSet(m, loc, false)
-        ];
+        throw new Error("TODO"); // TODO fixme, use temporary local when implemented
+        // return [
+        //     ...(discard ? [] : storageGet(m, e.body.type, loc)),
+        //     ...storageGet(m, e.body.type, loc),
+        //     gConst(type, 1),
+        //     gInstr(type, e.op === "++" ? "add" : "sub"),
+        //     ...storageSet(m, e.body.type, loc, false)
+        // ];
     }
 }
 
@@ -242,13 +237,9 @@ function conditional(m: WGenerator, e: c.CConditional, discard: boolean): WExpre
 
 function assignment(m: WGenerator, e: c.CAssignment, discard: boolean): WExpression {
     if (e.assignmentType !== undefined || e.rhs instanceof c.CInitializer) throw new Error("TODO");
+    // += etc could be implemented as a storageUpdate
 
-    const [locationInstructions, loc] = storageLocationFromExpression(m, e.lhs);
-    return [
-        ...locationInstructions,
-        ...subExpr(m, e.rhs, e.type),
-        ...storageSet(m, loc, !discard)
-    ];
+    return storageSet(m, e.lhs.type, e.lhs, e.rhs, !discard);
 }
 
 function comma(m: WGenerator, e: c.CComma, discard: boolean): WExpression {

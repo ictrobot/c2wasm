@@ -10,7 +10,7 @@ long factorial(unsigned int v) {
 }
 
 void main() {
-  for (int i = 0; i < 21; i++) {
+  for (int i = 0; i < 21; ++i) {
     print(i, factorial(i));
   }
 }
