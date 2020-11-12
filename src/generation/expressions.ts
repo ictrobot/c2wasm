@@ -24,6 +24,12 @@ function identifier(ctx: WFnGenerator, e: c.CIdentifier, discard: boolean): WExp
     return storageGet(ctx, e.type, e);
 }
 
+function arrayPointer(ctx: WFnGenerator, e: c.CArrayPointer, discard: boolean): WExpression {
+    if (discard) return []; // no possible side effects
+
+    return getAddress(ctx, e.arrayIdentifier);
+}
+
 function stringLiteral(ctx: WFnGenerator, e: c.CStringLiteral, discard: boolean): WExpression {
     if (discard) return []; // no possible side effects
 
@@ -180,8 +186,6 @@ function addSub(ctx: WFnGenerator, e: c.CAddSub, discard: boolean): WExpression 
         function toExpr(side: CExpression) {
             if (side.type instanceof CPointer) {
                 return ctx.expression(side, false);
-            } else if (side.type instanceof CArray) {
-                return getAddress(ctx, side);
             } else { // if side.type === integer
                 const instr = subExpr(ctx, side, CArithmetic.U32);
                 const size = (e.type as CPointer).type.bytes;
@@ -287,6 +291,7 @@ function comma(ctx: WFnGenerator, e: c.CComma, discard: boolean): WExpression {
 export function expressionGeneration(ctx: WFnGenerator, e: c.CExpression, discard: boolean): WExpression {
     if (e instanceof c.CConstant) return constant(ctx, e, discard);
     else if (e instanceof c.CIdentifier) return identifier(ctx, e, discard);
+    else if (e instanceof c.CArrayPointer) return arrayPointer(ctx, e, discard);
     else if (e instanceof c.CStringLiteral) return stringLiteral(ctx, e, discard);
     else if (e instanceof c.CFunctionCall) return functionCall(ctx, e, discard);
     else if (e instanceof c.CMemberAccess) return memberAccess(ctx, e, discard);

@@ -1,9 +1,11 @@
 import {ParseNode, ParseTreeValidationError, pt} from "../../parsing";
-import {CExpression, CConstant, CEvaluable, CIdentifier, CFunctionCall, CMemberAccess, CDereference, CConditional,
+import {
+    CExpression, CConstant, CEvaluable, CIdentifier, CFunctionCall, CMemberAccess, CDereference, CConditional,
     CAssignment, CStringLiteral, CIncrDecr, CAddressOf, CUnaryPlusMinus, CBitwiseNot, CLogicalNot, CSizeof, CAddSub,
-    CCast, CComma, CMulDiv, CMod, CShift, CRelational, CEquality, CBitwiseAndOr, CLogicalAndOr} from "../expressions";
+    CCast, CComma, CMulDiv, CMod, CShift, CRelational, CEquality, CBitwiseAndOr, CLogicalAndOr, CArrayPointer
+} from "../expressions";
 import {Scope} from "../scope";
-import {CArithmetic} from "../types";
+import {CArithmetic, CArray} from "../types";
 import {getType} from "./type_transform";
 
 /** Transform expressions from the parse tree */
@@ -16,7 +18,9 @@ export function ptExpression(e: pt.Expression, scope: Scope): CExpression {
         return ptConstant(e);
 
     } else if (e instanceof pt.Identifier) {
-        return new CIdentifier(e, scope.lookupIdentifier(e.name, e));
+        const id = new CIdentifier(e, scope.lookupIdentifier(e.name, e));
+        if (id.type instanceof CArray) return new CArrayPointer(e, id);
+        return id;
 
     } else if (e instanceof pt.StringLiteral) {
         const arr: bigint[] = []; // split the literal into characters taking into account escape sequences
@@ -41,7 +45,9 @@ export function ptExpression(e: pt.Expression, scope: Scope): CExpression {
 
     } else if (e instanceof pt.SizeofExpression) {
         if (e.body instanceof pt.Expression) { // sizeof [expression]
-            return new CSizeof(e, ptExpression(e.body, scope).type);
+            let bodyExpr = ptExpression(e.body, scope);
+            if (bodyExpr instanceof CArrayPointer) bodyExpr = bodyExpr.arrayIdentifier;
+            return new CSizeof(e, bodyExpr.type);
         } else { // sizeof [type]
             return new CSizeof(e, getType(e.body, scope));
         }

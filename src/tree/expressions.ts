@@ -9,7 +9,7 @@ import {
 // Classes to represent all the possible expression types in the IR
 
 export type CExpression =
-    CConstant | CIdentifier | CStringLiteral |
+    CConstant | CIdentifier | CArrayPointer | CStringLiteral |
     CFunctionCall | CMemberAccess | CIncrDecr | // postfix
     CAddressOf | CDereference | CUnaryPlusMinus | CBitwiseNot | CLogicalNot | CSizeof | // unary
     CCast |
@@ -69,6 +69,23 @@ export class CIdentifier extends CEvaluable {
             return (this.value as CVariable).staticValue as CConstant;
         }
         throw new checks.ExpressionTypeError(this.node, "constant expression", "non-enum constant identifier");
+    }
+}
+
+/**
+ * Array identifiers are used as pointers to arrays everywhere excluding:
+ * - the unary & operator
+ * - the sizeof operator
+ */
+export class CArrayPointer {
+    readonly lvalue = false;
+    readonly type: CPointer;
+
+    constructor(readonly node: ParseNode, readonly arrayIdentifier: CIdentifier) {
+        if (!(arrayIdentifier.type instanceof CArray)) {
+            throw new checks.ExpressionTypeError(this.node, "array");
+        }
+        this.type = new CPointer(this.node, arrayIdentifier.type.type);
     }
 }
 
@@ -149,15 +166,18 @@ export class CSizeof {
 export class CAddressOf { // &
     readonly lvalue = false;
     readonly type: CPointer;
+    readonly body: CExpression;
 
-    constructor(readonly node: ParseNode, readonly body: CExpression) {
+    constructor(readonly node: ParseNode, body: CExpression) {
+        if (body instanceof CArrayPointer) body = body.arrayIdentifier;
         checks.checkLvalue(body, true);
         this.type = new CPointer(node, checks.asCType(body));
 
-        if (this.body instanceof CIdentifier) {
+        if (body instanceof CIdentifier) {
             // when translating to wasm all variables which have their address taken have to be stored on the shadow stack
-            (this.body.value as CVariable | CArgument).addressUsed = true;
+            (body.value as CVariable | CArgument).addressUsed = true;
         }
+        this.body = body;
     }
 }
 
@@ -241,15 +261,15 @@ export class CAddSub {
             checkTypeComplete(lhs.type.type);
             this.type = lhs.type;
 
-        } else if (lhs.type instanceof CPointer || lhs.type instanceof CArray) { // one pointer, one integral
+        } else if (lhs.type instanceof CPointer) { // one pointer, one integral
             checks.asInteger(rhs.node, rhs.type);
             checkTypeComplete(lhs.type.type);
-            this.type = lhs.type instanceof CPointer ? lhs.type : new CPointer(node, lhs.type.type);
+            this.type = lhs.type;
 
-        } else if (rhs.type instanceof CPointer || rhs.type instanceof CArray) { // one pointer, one integral
+        } else if (rhs.type instanceof CPointer) { // one pointer, one integral
             checks.asInteger(lhs.node, lhs.type);
             checkTypeComplete(rhs.type.type);
-            this.type = rhs.type instanceof CPointer ? rhs.type : new CPointer(node, rhs.type.type);
+            this.type = rhs.type;
 
         } else {
             this.type = usualArithmeticConversion(checks.asArithmetic(lhs.node, lhs.type), checks.asArithmetic(rhs.node, rhs.type));
