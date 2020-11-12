@@ -32,6 +32,12 @@ export function conversion(inType: CType, outType: CType): WExpression {
 
     if (inType instanceof CArithmetic && outType instanceof CArithmetic) {
         return arithmeticConversion(inType, outType);
+    } else if (inType instanceof CArithmetic && inType.type !== "float" && outType instanceof CPointer) {
+        // convert int to pointer
+        return [];
+    } else if (outType instanceof CArithmetic && outType.type !== "float" && inType instanceof CPointer) {
+        // convert pointer to int
+        return [];
     }
 
     throw new Error("Not implemented");
