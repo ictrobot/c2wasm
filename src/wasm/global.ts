@@ -7,7 +7,7 @@ export class WGlobal {
     constructor(private readonly idxFn: (x: WGlobal) => globalidx,
                 readonly type: ValueType,
                 readonly mutable: boolean,
-                readonly initialValue: number | bigint,
+                public initialValue: number | bigint,
                 readonly exportName?: string) {
     }
 

@@ -2,14 +2,17 @@ import {CFuncDefinition, CFuncDeclaration, CVariable} from "../tree/declarations
 import type {CExpression} from "../tree/expressions";
 import type {Scope} from "../tree/scope";
 import type {CStatement} from "../tree/statements";
-import {ModuleBuilder, WFunctionBuilder, WFunction, Instructions, WImportedFunction, ValueType} from "../wasm";
+import {ModuleBuilder, WFunctionBuilder, WFunction, Instructions, WImportedFunction, ValueType, i32Type} from "../wasm";
 import type {funcidx} from "../wasm/base_types";
 import type {WLocal} from "../wasm/functions";
+import type {WGlobal} from "../wasm/global";
 import type {WExpression} from "../wasm/instructions";
 import {expressionGeneration} from "./expressions";
 import {statementGeneration} from "./statements";
 import {storageSetupStaticVar} from "./storage";
 import {realType, returnType} from "./type_conversion";
+
+export const SHADOW_STACK_SIZE = 2 ** 20;
 
 export class WGenerator {
     readonly module: ModuleBuilder;
@@ -17,9 +20,11 @@ export class WGenerator {
 
     // current memory pointers
     nextStaticAddr = 32; // reserve first 32 bytes as 0
+    readonly shadowStackPtr: WGlobal;
 
     constructor(readonly translationUnit: Scope) {
         this.module = new ModuleBuilder();
+        this.shadowStackPtr = this.module.global(i32Type, true, 0n);
 
         for (const decl of translationUnit.declarations) {
             if (decl instanceof CFuncDefinition) this.function(decl);
@@ -29,7 +34,9 @@ export class WGenerator {
             else throw new Error("Unexpected declaration");
         }
 
-        this.module.setupMemory(Math.ceil(this.nextStaticAddr / 65536));
+        const shadowStackStart = Math.ceil(this.nextStaticAddr / 512) * 512;
+        this.shadowStackPtr.initialValue = BigInt(shadowStackStart);
+        this.module.setupMemory(Math.ceil((shadowStackStart + SHADOW_STACK_SIZE) / 65536));
     }
 
     private function(func: CFuncDefinition) {
@@ -79,6 +86,7 @@ export class WGenerator {
 
 export class WFnGenerator {
     private temporaries: WLocal[] = [];
+    shadowStackUsage: number = 0;
 
     constructor(readonly gen: WGenerator, readonly builder: WFunctionBuilder) {
     }

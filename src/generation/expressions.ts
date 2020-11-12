@@ -37,9 +37,26 @@ function functionCall(ctx: WFnGenerator, e: c.CFunctionCall, discard: boolean): 
     }
 
     const fn = e.body.value as CFuncDeclaration | CFuncDefinition;
+    if (ctx.shadowStackUsage > 0) {
+        // increment shadow stack pointer for callee
+        instr.push(Instructions.global.get(ctx.gen.shadowStackPtr),
+            Instructions.i32.const(ctx.shadowStackUsage),
+            Instructions.i32.add(),
+            Instructions.global.set(ctx.gen.shadowStackPtr));
+    }
+
     instr.push(Instructions.call(ctx.gen.functionIndex(fn)));
 
-    if (discard && e.fnType.returnType.bytes > 0) instr.push(Instructions.drop());
+    if (discard && e.fnType.returnType.bytes > 0) {
+        instr.push(Instructions.drop());
+    }
+    if (ctx.shadowStackUsage > 0) {
+        // restore shadow stack pointer
+        instr.push(Instructions.global.get(ctx.gen.shadowStackPtr),
+            Instructions.i32.const(ctx.shadowStackUsage),
+            Instructions.i32.sub(),
+            Instructions.global.set(ctx.gen.shadowStackPtr));
+    }
     return instr;
 }
 

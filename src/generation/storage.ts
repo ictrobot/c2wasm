@@ -2,7 +2,7 @@ import {CArgument, CVariable, CDeclaration} from "../tree/declarations";
 import {CExpression} from "../tree/expressions";
 import * as e from "../tree/expressions";
 import {Scope} from "../tree/scope";
-import {CType, CArithmetic} from "../tree/types";
+import {CType, CArithmetic, CPointer, CEnum} from "../tree/types";
 import {Instructions, i32Type} from "../wasm";
 import {localidx} from "../wasm/base_types";
 import {WExpression, WInstruction} from "../wasm/instructions";
@@ -13,6 +13,7 @@ import {realType} from "./type_conversion";
 export type StorageLocation =
     {type: "local", "index": {getIndex(d: number): localidx}} |
     {type: "static", "address": number} |
+    {type: "shadow", "shadowOffset": number} | // offset from shadow pointer
     {type: "pointer"}; // address on stack
 
 export function storageSetupStaticVar(ctx: WGenerator, d: CVariable): void {
@@ -40,10 +41,19 @@ export function storageSetupScope(ctx: WFnGenerator, s: Scope): void {
 
         if (declaration instanceof CVariable) {
             if (declaration.storage === undefined) {
-                setStorageLocation(declaration, {
-                    type: "local",
-                    index: ctx.builder.addLocal(realType(declaration.type))
-                });
+                if (declaration.addressUsed || !(declaration.type instanceof CArithmetic || declaration.type instanceof CEnum || declaration.type instanceof CPointer)) {
+                    // have to place on shadow stack
+                    setStorageLocation(declaration, {
+                        type: "shadow",
+                        shadowOffset: ctx.shadowStackUsage
+                    });
+                    ctx.shadowStackUsage += Math.ceil(declaration.type.bytes / 4) * 4; // 4 byte align
+                } else {
+                    setStorageLocation(declaration, {
+                        type: "local",
+                        index: ctx.builder.addLocal(realType(declaration.type))
+                    });
+                }
             } else if (declaration.storage === "static") {
                 storageSetupStaticVar(ctx.gen, declaration);
             }
@@ -61,7 +71,9 @@ export function storageGet(ctx: WFnGenerator, ctype: CType, locationExpr: CExpre
         instr.push(Instructions.local.get(location.index));
     } else if (location.type === "static") {
         instr.push(Instructions.i32.const(0), load(ctype, location.address));
-    } else {
+    } else if (location.type === "shadow") {
+        instr.push(Instructions.global.get(ctx.gen.shadowStackPtr), load(ctype, location.shadowOffset));
+    } else if (location.type === "pointer") {
         instr.push(load(ctype, 0));
     }
     return instr;
@@ -85,6 +97,17 @@ export function storageSet(ctx: WFnGenerator, ctype: CType, locationExpr: CExpre
             ]));
         } else {
             instr.push(store(ctype, location.address));
+        }
+    } else if (location.type === "shadow") {
+        instr.push(Instructions.global.get(ctx.gen.shadowStackPtr), ...valueInstr);
+        if (keepValue) {
+            instr.push(...ctx.withTemporaryLocal(realType(ctype), (tmp) => [
+                Instructions.local.tee(tmp), // store copy of value
+                store(ctype, location.shadowOffset),
+                Instructions.local.get(tmp)
+            ]));
+        } else {
+            instr.push(store(ctype, location.shadowOffset));
         }
     } else if (location.type === "pointer") {
         // address should already be on top of the stack
@@ -125,6 +148,19 @@ export function storageUpdate(ctx: WFnGenerator, ctype: CType, locationExpr: CEx
         } else {
             instr.push(store(ctype, location.address));
         }
+    } else if (location.type === "shadow") {
+        instr.push(Instructions.global.get(ctx.gen.shadowStackPtr), Instructions.global.get(ctx.gen.shadowStackPtr));
+        instr.push(load(ctype, location.shadowOffset), ...transform);
+
+        if (keepValue) {
+            instr.push(...ctx.withTemporaryLocal(realType(ctype), (tmp) => [
+                Instructions.local.tee(tmp), // store copy of value
+                store(ctype, location.shadowOffset),
+                Instructions.local.get(tmp)
+            ]));
+        } else {
+            instr.push(store(ctype, location.shadowOffset));
+        }
     } else if (location.type === "pointer") {
         instr.push(...ctx.withTemporaryLocal(i32Type, (addrTmp) => [
             Instructions.local.tee(addrTmp), // duplicate pointer on top of stack
@@ -161,6 +197,16 @@ export function storageGetThenUpdate(ctx: WFnGenerator, ctype: CType, locationEx
             store(ctype, location.address),
             Instructions.local.get(tmp)
         ]));
+    } else if (location.type === "shadow") {
+        instr.push(Instructions.global.get(ctx.gen.shadowStackPtr), Instructions.global.get(ctx.gen.shadowStackPtr));
+        instr.push(load(ctype, location.shadowOffset));
+
+        instr.push(...ctx.withTemporaryLocal(realType(ctype), (tmp) => [
+            Instructions.local.tee(tmp), // store copy of old value
+            ...transform,
+            store(ctype, location.shadowOffset),
+            Instructions.local.get(tmp)
+        ]));
     } else if (location.type === "pointer") {
         instr.push(...ctx.withTemporaryLocal(i32Type, (addrTmp) => [
             Instructions.local.tee(addrTmp), // duplicate pointer on top of stack
@@ -181,9 +227,13 @@ export function storageGetThenUpdate(ctx: WFnGenerator, ctype: CType, locationEx
 export function getAddress(ctx: WFnGenerator, s: e.CExpression): WExpression {
     const [instr, loc] = fromExpression(ctx, s);
     if (loc.type === "local") {
-        throw new Error("Cannot get address of a wasm local");
+        throw new Error("Locals with their address accessed should be on the shadow stack. This shouldn't happen!");
     } else if (loc.type === "static") {
         instr.push(Instructions.i32.const(loc.address));
+    } else if (loc.type === "shadow") {
+        instr.push(Instructions.global.get(ctx.gen.shadowStackPtr),
+            Instructions.i32.const(loc.shadowOffset),
+            Instructions.i32.add());
     }
     return instr;
 }
