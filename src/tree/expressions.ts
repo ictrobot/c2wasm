@@ -21,7 +21,7 @@ export type CExpression =
 /** if the expression can be evaluated to a constant at compile time, extend this class.
  * Used for integer constants for enum values, switch statements, static initializers, etc */
 export abstract class CEvaluable {
-    abstract evaluate(): CConstant;
+    abstract evaluate(): CConstant | undefined;
 }
 
 export class CConstant extends CEvaluable {
@@ -63,12 +63,12 @@ export class CIdentifier extends CEvaluable {
         return this.value.type;
     }
 
-    evaluate(): CConstant {
+    evaluate(): CConstant | undefined {
         // only constant if points to an enum identifier
         if (this.value.type.typeName === "enum" && (this.value as CVariable).staticValue instanceof CConstant) {
             return (this.value as CVariable).staticValue as CConstant;
         }
-        throw new checks.ExpressionTypeError(this.node, "constant expression", "non-enum constant identifier");
+        return undefined;
     }
 }
 
@@ -152,14 +152,19 @@ export class CIncrDecr {
     }
 }
 
-export class CSizeof {
+export class CSizeof extends CEvaluable {
     readonly lvalue = false;
     readonly type = CSizeT;
 
     constructor(readonly node: ParseNode, readonly body: CType) {
+        super();
         if (body.incomplete || body.bytes === 0 || body instanceof CFuncType) {
             throw new checks.ExpressionTypeError(node, "Complete non-function type", body.typeName);
         }
+    }
+
+    evaluate(): CConstant {
+        return new CConstant(this.node, CSizeT, this.body.bytes);
     }
 }
 
@@ -190,14 +195,21 @@ export class CDereference { // * or 'indirection'
     }
 }
 
-export class CUnaryPlusMinus {
+export class CUnaryPlusMinus extends CEvaluable {
     readonly lvalue = false;
     readonly type: CArithmetic;
     readonly bodyType: CArithmetic;
 
     constructor(readonly node: ParseNode, readonly body: CExpression, readonly op: "+" | "-") {
+        super();
         this.bodyType = checks.asArithmetic(body.node, body.type);
         this.type = integerPromotion(this.bodyType);
+    }
+
+    evaluate(): CConstant | undefined {
+        const body = (this.body as CEvaluable)?.evaluate();
+        if (body && this.bodyType.type !== "unsigned") return new CConstant(this.node, this.bodyType, -body.value);
+        return undefined;
     }
 }
 
@@ -437,6 +449,7 @@ export class CComma {
 /** Special type of expression permitted only in declarations */
 export class CInitializer {
     private _type: CType;
+    private _memberTypes: CType[] = [];
 
     constructor(readonly node: ParseNode, readonly body: (CExpression | CInitializer)[], type?: CType) {
         // default to a void* array which isn't the true type but lets the array size be used when declaring arrays
@@ -459,17 +472,20 @@ export class CInitializer {
         const error = () => {
             throw new checks.ExpressionTypeError(this.node, "initializer to match type");
         };
+        this._memberTypes = [];
 
         if (value instanceof CArray) {
             if (this.body.length > (value.length ?? Infinity)) error(); // too many elements in this initializer
             for (let i = 0; i < this.body.length; i++) {
                 this.body[i] = CInitializer.typeCheck(value.type, this.body[i]);
+                this._memberTypes.push(value.type);
             }
 
         } else if (value instanceof CStruct) {
             if (this.body.length > value.members.length) error(); // too many members
             for (let i = 0; i < this.body.length; i++) {
                 this.body[i] = CInitializer.typeCheck(value.members[i].type, this.body[i]);
+                this._memberTypes.push(value.members[i].type);
             }
 
         } else if (value instanceof CUnion) {
@@ -477,6 +493,7 @@ export class CInitializer {
             // unions have to be initialized to the first member in the union
             if (this.body.length === 1) {
                 this.body[0] = CInitializer.typeCheck(value.members[0].type, this.body[0]);
+                this._memberTypes.push(value.members[0].type);
             }
 
         } else {
@@ -492,7 +509,9 @@ export class CInitializer {
             if (child instanceof CInitializer) {
                 child.asStatic();
             } else if (child instanceof CEvaluable) {
-                this.body[i] = child.evaluate();
+                const value = child.evaluate();
+                if (value === undefined) throw new checks.ExpressionTypeError(child.node, "constant expression");
+                this.body[i] = value.changeType(this._memberTypes[i] as CArithmetic);
             } else if (child instanceof CStringLiteral) {
                 this.body[i] = child.toInitializer().asStatic();
             } else {

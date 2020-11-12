@@ -66,13 +66,15 @@ function ptDeclaration(declaration: pt.Declaration, scope: Scope, inFunction: bo
                 } else {
                     // static initialization, must be constant and evaluated at compile time
                     if (initialValue instanceof CEvaluable) {
-                        cvar.staticValue = initialValue.evaluate();
+                        const value = initialValue.evaluate();
+                        if (value === undefined) throw new ExpressionTypeError(initialValue.node, "constant expression");
+                        cvar.staticValue = value;
                     } else if (initialValue instanceof CInitializer) {
                         cvar.staticValue = initialValue.asStatic();
                     } else if (initialValue instanceof CStringLiteral) {
                         cvar.staticValue = initialValue.toInitializer();
                     } else {
-                        throw new ExpressionTypeError(initialValue.node, "constant expression", "non-constant expression");
+                        throw new ExpressionTypeError(initialValue.node, "constant expression");
                     }
                     CAssignment.checkAssignmentValid(entry, type, cvar.staticValue);
                 }

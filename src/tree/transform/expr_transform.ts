@@ -81,7 +81,8 @@ export function evalConstant(c: pt.ConstantExpression): CConstant {
     const expr = ptExpression(c.expr, new Scope());
     if (expr instanceof CEvaluable) {
         // TODO implement CEvaluable on more types of expressions
-        return expr.evaluate();
+        const v = expr.evaluate();
+        if (v !== undefined) return v;
     }
     throw new ParseTreeValidationError(c, "Invalid constant expression");
 }
