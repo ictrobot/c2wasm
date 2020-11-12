@@ -1,7 +1,7 @@
 import test from "ava";
 import {compile} from "../../src/generation";
 
-test("factorial", async t => {
+test("quicksort", async t => {
     const values: number[] = [];
 
     const {main} = await compile(`

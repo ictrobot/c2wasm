@@ -1,9 +1,8 @@
 import {CFuncDefinition, CFuncDeclaration} from "../tree/declarations";
-import {CExpression} from "../tree/expressions";
 import * as c from "../tree/expressions";
-import {CType, CArithmetic, CPointer, CArray} from "../tree/types";
+import {CType, CArithmetic, CPointer, CArray, CSizeT} from "../tree/types";
 import {i32Type, Instructions, i64Type, f32Type, f64Type} from "../wasm";
-import {WExpression} from "../wasm/instructions";
+import {WExpression, WInstruction} from "../wasm/instructions";
 import {WFnGenerator} from "./generator";
 import {storageGet, storageSet, storageUpdate, storageGetThenUpdate, getAddress} from "./storage";
 import {ImplementationType, implType, conversion, valueType, realType} from "./type_conversion";
@@ -183,7 +182,7 @@ function addSub(ctx: WFnGenerator, e: c.CAddSub, discard: boolean): WExpression 
         return [...lhs, ...rhs, e.op === "+" ? gInstr(wType, "add") : gInstr(wType, "sub")];
     } else {
         // eslint-disable-next-line no-inner-declarations
-        function toExpr(side: CExpression) {
+        function toExpr(side: c.CExpression) {
             if (side.type instanceof CPointer) {
                 return ctx.expression(side, false);
             } else { // if side.type === integer
@@ -278,10 +277,62 @@ function conditional(ctx: WFnGenerator, e: c.CConditional, discard: boolean): WE
 }
 
 function assignment(ctx: WFnGenerator, e: c.CAssignment, discard: boolean): WExpression {
-    if (e.assignmentType !== undefined || e.rhs instanceof c.CInitializer) throw new Error("TODO");
-    // += etc could be implemented as a storageUpdate
+    if (e.assignmentType !== undefined && !(e.rhs instanceof c.CInitializer)) {
+        let body: c.CExpression;
+        if (e.assignmentType === "mul") {
+            body = new c.CMulDiv(e.node, e.lhs, e.rhs, "*");
+        } else if (e.assignmentType === "div") {
+            body = new c.CMulDiv(e.node, e.lhs, e.rhs, "/");
+        } else if (e.assignmentType === "mod") {
+            body = new c.CMod(e.node, e.lhs, e.rhs);
+        } else if (e.assignmentType === "add") {
+            body = new c.CAddSub(e.node, e.lhs, e.rhs, "+");
+        } else if (e.assignmentType === "sub") {
+            body = new c.CAddSub(e.node, e.lhs, e.rhs, "-");
+        } else if (e.assignmentType === "leftShift") {
+            body = new c.CShift(e.node, e.lhs, e.rhs, "left");
+        } else if (e.assignmentType === "rightShift") {
+            body = new c.CShift(e.node, e.lhs, e.rhs, "right");
+        } else if (e.assignmentType === "bitwiseAnd") {
+            body = new c.CBitwiseAndOr(e.node, e.lhs, e.rhs, "and");
+        } else if (e.assignmentType === "bitwiseXor") {
+            body = new c.CBitwiseAndOr(e.node, e.lhs, e.rhs, "xor");
+        } else {
+            body = new c.CBitwiseAndOr(e.node, e.lhs, e.rhs, "or");
+        }
 
-    return storageSet(ctx, e.lhs.type, e.lhs, e.rhs, !discard);
+        // try to convert "body" into instructions, then remove the instructions which load the lhs to create transformation
+        const transform = expressionGeneration(ctx, body, false);
+        const lhs = expressionGeneration(ctx, e.lhs, false);
+        while (lhs.length > 0) {
+            const bytesToRemove = (lhs.shift() as WInstruction)(0);
+            const transformBytes = (transform.shift() as WInstruction)(0);
+
+            if (bytesToRemove.length !== transformBytes.length || bytesToRemove.find((v, i) => v !== transformBytes[i])) {
+                throw new Error("Failed to construct op=");
+            }
+        }
+
+        return storageUpdate(ctx, e.lhs.type, e.lhs, transform, !discard);
+    } else if (e.rhs instanceof c.CInitializer) {
+        if (e.rhs.type instanceof CArray) {
+            const instr: WExpression = [];
+            const lhs = e.lhs instanceof c.CIdentifier ? new c.CArrayPointer(e.lhs.node, e.lhs) : e.lhs;
+            for (let i = 0; i < e.rhs.body.length; i++) {
+                const value = e.rhs.body[i];
+
+                const entryPointer = new c.CAddSub(lhs.node, lhs, new c.CConstant(lhs.node, CSizeT, BigInt(i)), "+");
+                const entryDeref = new c.CDereference(lhs.node, entryPointer);
+                const entryAssignment = new c.CAssignment(value.node, entryDeref, value, undefined, e.initialAssignment);
+                instr.push(...expressionGeneration(ctx, entryAssignment, true));
+            }
+            if (!discard) instr.push(...getAddress(ctx, e.lhs));
+            return instr;
+        }
+        throw new Error("TODO");
+    } else {
+        return storageSet(ctx, e.lhs.type, e.lhs, e.rhs, !discard);
+    }
 }
 
 function comma(ctx: WFnGenerator, e: c.CComma, discard: boolean): WExpression {

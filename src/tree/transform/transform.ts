@@ -1,5 +1,5 @@
 import {CVariable, CFuncDefinition, CArgument, CFuncDeclaration} from "../declarations";
-import {CAssignment, CIdentifier, CExpression, CEvaluable, CInitializer, CStringLiteral, CConstant} from "../expressions";
+import {CAssignment, CIdentifier, CExpression, CEvaluable, CInitializer, CStringLiteral, CConstant, CArrayPointer} from "../expressions";
 import {Scope} from "../scope";
 import {CStatement, CCompoundStatement, CExpressionStatement, CNop, CIf, CForLoop, CWhileLoop, CDoLoop, CSwitch, CBreak, CContinue, CReturn} from "../statements";
 import {ExpressionTypeError} from "../type_checking";
@@ -61,7 +61,7 @@ function ptDeclaration(declaration: pt.Declaration, scope: Scope, inFunction: bo
                 }
 
                 if (inFunction && cvar.storage !== "static") {
-                    const id = new CIdentifier(entry, cvar);
+                    const id: CExpression = new CIdentifier(entry, cvar);
                     assignments.push(new CAssignment(entry, id, initialValue, undefined, true));
                 } else {
                     // static initialization, must be constant and evaluated at compile time
