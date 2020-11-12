@@ -2,8 +2,9 @@ import {CFuncDefinition, CFuncDeclaration, CVariable} from "../tree/declarations
 import type {CExpression} from "../tree/expressions";
 import type {Scope} from "../tree/scope";
 import type {CStatement} from "../tree/statements";
-import {ModuleBuilder, WFunctionBuilder, WFunction, Instructions, WImportedFunction} from "../wasm";
-import {funcidx} from "../wasm/base_types";
+import {ModuleBuilder, WFunctionBuilder, WFunction, Instructions, WImportedFunction, ValueType} from "../wasm";
+import type {funcidx} from "../wasm/base_types";
+import type {WLocal} from "../wasm/functions";
 import type {WExpression} from "../wasm/instructions";
 import {expressionGeneration} from "./expressions";
 import {statementGeneration} from "./statements";
@@ -77,6 +78,8 @@ export class WGenerator {
 }
 
 export class WFnGenerator {
+    private temporaries: WLocal[] = [];
+
     constructor(readonly gen: WGenerator, readonly builder: WFunctionBuilder) {
     }
 
@@ -86,5 +89,20 @@ export class WFnGenerator {
 
     expression(e: CExpression, discardResult: boolean): WExpression {
         return expressionGeneration(this, e, discardResult);
+    }
+
+    withTemporaryLocal(type: ValueType, expressionFn: (local: WLocal) => WExpression): WExpression {
+        const localIdx = this.temporaries.findIndex(x => x.type === type);
+        let local: WLocal;
+        if (localIdx < 0) {
+            // no previous temporary local can be used, allocate a new one
+            local = this.builder.addLocal(type);
+        } else {
+            local = this.temporaries.splice(localIdx, 1)[0];
+        }
+
+        const expression = expressionFn(local);
+        this.temporaries.push(local);
+        return expression;
     }
 }

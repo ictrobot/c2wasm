@@ -121,7 +121,7 @@ export class WFunctionBuilder {
 }
 
 
-class WLocal {
+export class WLocal {
     constructor(private readonly lookup: (l: WLocal) => localidx, readonly type: ValueType) {
     }
 

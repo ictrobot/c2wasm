@@ -4,7 +4,7 @@ import {CType, CArithmetic, CPointer} from "../tree/types";
 import {i32Type, Instructions, i64Type, f32Type, f64Type} from "../wasm";
 import {WExpression} from "../wasm/instructions";
 import {WFnGenerator} from "./generator";
-import {storageGet, storageSet, storageUpdate, storageGetThenUpdate} from "./storage";
+import {storageGet, storageSet, storageUpdate, storageGetThenUpdate, getAddress} from "./storage";
 import {ImplementationType, implType, conversion, valueType, realType} from "./type_conversion";
 
 function constant(ctx: WFnGenerator, e: c.CConstant, discard: boolean): WExpression {
@@ -67,11 +67,15 @@ function incrDecr(ctx: WFnGenerator, e: c.CIncrDecr, discard: boolean): WExpress
 }
 
 function addressOf(ctx: WFnGenerator, e: c.CAddressOf, discard: boolean): WExpression {
-    throw new Error("TODO: addressOf");
+    if (discard) return expressionGeneration(ctx, e.body, true); // get any side effects
+
+    return getAddress(ctx, e.body);
 }
 
 function dereference(ctx: WFnGenerator, e: c.CDereference, discard: boolean): WExpression {
-    throw new Error("TODO: dereference");
+    if (discard) return expressionGeneration(ctx, e.body, true); // get any side effects
+
+    return storageGet(ctx, e.type, e);
 }
 
 function unaryPlusMinus(ctx: WFnGenerator, e: c.CUnaryPlusMinus, discard: boolean): WExpression {

@@ -22,7 +22,7 @@ export function implType(type: CType): ImplementationType {
 export function realType(type: CType): ValueType {
     if (type instanceof CArithmetic) return valueType(type);
     if (type instanceof CVoid) throw new Error("Void cannot be stored");
-    // e.g. pointers will be i32
+    if (type instanceof CPointer) return i32Type;
 
     throw new Error("Not implemented");
 }
