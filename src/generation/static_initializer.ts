@@ -1,5 +1,5 @@
 import {CConstant, CInitializer} from "../tree/expressions";
-import {CEnum, CArithmetic} from "../tree/types";
+import {CEnum, CArithmetic, CArray} from "../tree/types";
 import {byte} from "../wasm/base_types";
 
 export function staticInitializer(init: CConstant | CInitializer): byte[] {
@@ -42,5 +42,19 @@ function constant(c: CConstant): byte[] {
 }
 
 function initializer(init: CInitializer): byte[] {
+    if (init.type instanceof CArray) {
+        if (init.type.length === undefined) throw new Error("Array length still unknown?");
+
+        const bytes: byte[] = init.body.flatMap((x) => {
+            if (x instanceof CConstant || x instanceof CInitializer) return staticInitializer(x);
+            throw new Error("Invalid static array initializer");
+        });
+
+        const zeros = Array(init.type.type.bytes).fill(0);
+        for (let i = init.body.length; i < init.type.length; i++) {
+            bytes.push(...zeros);
+        }
+        return bytes;
+    }
     throw new Error("TODO");
 }

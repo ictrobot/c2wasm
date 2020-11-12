@@ -2,7 +2,7 @@ import {byte, typeidx, funcidx, globalidx} from "./base_types";
 import {encodeU32, encodeUtf8} from "./encoding";
 import {WFunctionBuilder, WFunction, WImportedFunction} from "./functions";
 import {WGlobal} from "./global";
-import {WExpression} from "./instructions";
+import {WExpression, Instructions} from "./instructions";
 import {encodeVec, ResultType, encodeFunctionType, FunctionType, MemoryType, encodeLimits, ValueType} from "./wtypes";
 
 export class ModuleBuilder {
@@ -119,7 +119,7 @@ export class ModuleBuilder {
 
         // convert each offset into `expression(i32.const offset)`
         return this._dataSegments.map(([offset, contents]) => [0x00 as byte,
-            0x41 as byte, ...encodeU32(BigInt(offset)), 0x0B as byte, // i32.const expression
+            ...Instructions.i32.const(offset)(), 0x0B as byte, // i32.const expression
             ...encodeU32(BigInt(contents.length)), ...contents]); // byte vector
     }
 
