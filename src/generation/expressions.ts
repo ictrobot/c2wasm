@@ -4,7 +4,7 @@ import {CType, CArithmetic, CPointer} from "../tree/types";
 import {i32Type, Instructions, i64Type, f32Type, f64Type} from "../wasm";
 import {WExpression} from "../wasm/instructions";
 import {WFnGenerator} from "./generator";
-import {storageGet, storageSet, storageUpdate} from "./storage";
+import {storageGet, storageSet, storageUpdate, storageGetThenUpdate} from "./storage";
 import {ImplementationType, implType, conversion, valueType, realType} from "./type_conversion";
 
 function constant(ctx: WFnGenerator, e: c.CConstant, discard: boolean): WExpression {
@@ -48,21 +48,21 @@ function memberAccess(ctx: WFnGenerator, e: c.CMemberAccess, discard: boolean): 
 }
 
 function incrDecr(ctx: WFnGenerator, e: c.CIncrDecr, discard: boolean): WExpression {
-    const type = implType(e.type);
-    if (e.pos === "pre") {
+    if (!(e.type instanceof CArithmetic)) throw new Error("TODO");
+
+    const type = valueType(e.type);
+    if (e.pos === "post" && !discard) {
+        return storageGetThenUpdate(ctx, e.body.type, e.body, [
+            gConst(type, 1),
+            gInstr(type, e.op === "++" ? "add" : "sub"),
+        ]);
+    } else {
+        // can convert post and discard => pre with discard
+
         return storageUpdate(ctx, e.body.type, e.body, [
             gConst(type, 1),
             gInstr(type, e.op === "++" ? "add" : "sub"),
-        ], !discard);
-    } else {
-        throw new Error("TODO"); // TODO fixme, use temporary local when implemented
-        // return [
-        //     ...(discard ? [] : storageGet(ctx, e.body.type, loc)),
-        //     ...storageGet(ctx, e.body.type, loc),
-        //     gConst(type, 1),
-        //     gInstr(type, e.op === "++" ? "add" : "sub"),
-        //     ...storageSet(ctx, e.body.type, loc, false)
-        // ];
+        ], !discard && e.pos === "pre");
     }
 }
 

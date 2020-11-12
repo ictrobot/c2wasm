@@ -97,6 +97,27 @@ export function storageUpdate(ctx: WFnGenerator, ctype: CType, locationExpr: CEx
     return instr;
 }
 
+/** Updates the location 'locationExpr' by running 'instr' which should transform its value on the stack.
+ * Value before transform is left on the stack */
+export function storageGetThenUpdate(ctx: WFnGenerator, ctype: CType, locationExpr: CExpression, transform: WExpression): WExpression {
+    const [instr, location] = fromExpression(ctx, locationExpr, 2);
+
+    if (location.type === "local") {
+        instr.push(Instructions.local.get(location.index));
+        instr.push(Instructions.local.get(location.index), ...transform, Instructions.local.set(location.index));
+    } else {
+        instr.push(
+            ...load(ctype, location.address),
+
+            Instructions.i32.const(0),
+            ...load(ctype, location.address),
+            ...transform,
+            store(ctype, location.address)
+        );
+    }
+    return instr;
+}
+
 // helper to get the storage location from an expression
 
 /**
