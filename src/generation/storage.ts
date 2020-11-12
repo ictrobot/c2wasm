@@ -23,7 +23,6 @@ export function storageSetupStaticVar(ctx: WGenerator, d: CVariable): void {
         address: addr
     });
     if (d.staticValue) {
-        if (d.staticValue.type !== d.type) throw new Error("TODO: static constants with different type from variable");
         ctx.module.dataSegment(addr, staticInitializer(d.staticValue));
     }
 
