@@ -3,10 +3,10 @@ import {CExpression} from "../tree/expressions";
 import * as e from "../tree/expressions";
 import {Scope} from "../tree/scope";
 import {CType, CArithmetic} from "../tree/types";
-import {WFunctionBuilder, Instructions} from "../wasm";
+import {Instructions} from "../wasm";
 import {localidx} from "../wasm/base_types";
 import {WExpression, WInstruction} from "../wasm/instructions";
-import {WGenerator} from "./generator";
+import {WFnGenerator, WGenerator} from "./generator";
 import {staticInitializer} from "./static_initializer";
 import {realType} from "./type_conversion";
 
@@ -14,26 +14,26 @@ export type StorageLocation =
     {type: "local", "index": {getIndex(d: number): localidx}} |
     {type: "static", "address": number};
 
-export function storageSetupStaticVar(m: WGenerator, d: CVariable): void {
-    const addr = m.nextStaticAddr;
+export function storageSetupStaticVar(ctx: WGenerator, d: CVariable): void {
+    const addr = ctx.nextStaticAddr;
     setStorageLocation(d, {
         type: "static",
         address: addr
     });
     if (d.staticValue) {
         if (d.staticValue.type !== d.type) throw new Error("TODO: static constants with different type from variable");
-        m.module.dataSegment(addr, staticInitializer(d.staticValue));
+        ctx.module.dataSegment(addr, staticInitializer(d.staticValue));
     }
 
-    m.nextStaticAddr += Math.ceil(d.type.bytes / 4) * 4; // 4 byte align
+    ctx.nextStaticAddr += Math.ceil(d.type.bytes / 4) * 4; // 4 byte align
 }
 
-export function storageSetupScope(m: WGenerator, s: Scope, b: WFunctionBuilder): void {
+export function storageSetupScope(ctx: WFnGenerator, s: Scope): void {
     for (const declaration of s.declarations) {
         if (declaration instanceof CArgument) {
             setStorageLocation(declaration, {
                 type: "local",
-                index: b.args[declaration.index]
+                index: ctx.builder.args[declaration.index]
             });
         }
 
@@ -41,10 +41,10 @@ export function storageSetupScope(m: WGenerator, s: Scope, b: WFunctionBuilder):
             if (declaration.storage === undefined) {
                 setStorageLocation(declaration, {
                     type: "local",
-                    index: b.addLocal(realType(declaration.type))
+                    index: ctx.builder.addLocal(realType(declaration.type))
                 });
             } else if (declaration.storage === "static") {
-                storageSetupStaticVar(m, declaration);
+                storageSetupStaticVar(ctx.gen, declaration);
             }
         }
     }
@@ -53,8 +53,8 @@ export function storageSetupScope(m: WGenerator, s: Scope, b: WFunctionBuilder):
 // the storage operations
 
 /** Pushes the stored value from location 'e' onto the stack  */
-export function storageGet(m: WGenerator, ctype: CType, locationExpr: CExpression): WExpression {
-    const [instr, location] = fromExpression(m, locationExpr);
+export function storageGet(ctx: WFnGenerator, ctype: CType, locationExpr: CExpression): WExpression {
+    const [instr, location] = fromExpression(ctx, locationExpr);
 
     if (location.type === "local") {
         instr.push(Instructions.local.get(location.index));
@@ -66,9 +66,9 @@ export function storageGet(m: WGenerator, ctype: CType, locationExpr: CExpressio
 
 /** Stores the value on the top of the stack when 'valueExpr' is run into location 'locationExpr'.
  * If keepValue is true then the stored value is kept on the top of the stack after being stored */
-export function storageSet(m: WGenerator, ctype: CType, locationExpr: CExpression, valueExpr: CExpression, keepValue: boolean): WExpression {
-    const [instr, location] = fromExpression(m, locationExpr);
-    const valueInstr = m.expression(valueExpr, false);
+export function storageSet(ctx: WFnGenerator, ctype: CType, locationExpr: CExpression, valueExpr: CExpression, keepValue: boolean): WExpression {
+    const [instr, location] = fromExpression(ctx, locationExpr);
+    const valueInstr = ctx.expression(valueExpr, false);
 
     if (location.type === "local") {
         instr.push(...valueInstr, keepValue ? Instructions.local.tee(location.index) : Instructions.local.set(location.index));
@@ -82,8 +82,8 @@ export function storageSet(m: WGenerator, ctype: CType, locationExpr: CExpressio
 
 /** Updates the location 'locationExpr' by running 'instr' which should transform its value on the stack.
  * If keepValue is true then the stored value is kept on the top of the stack after being stored */
-export function storageUpdate(m: WGenerator, ctype: CType, locationExpr: CExpression, transform: WExpression, keepValue: boolean): WExpression {
-    const [instr, location] = fromExpression(m, locationExpr, 2);
+export function storageUpdate(ctx: WFnGenerator, ctype: CType, locationExpr: CExpression, transform: WExpression, keepValue: boolean): WExpression {
+    const [instr, location] = fromExpression(ctx, locationExpr, 2);
 
     if (location.type === "local") {
         instr.push(Instructions.local.get(location.index), ...transform);
@@ -105,7 +105,7 @@ export function storageUpdate(m: WGenerator, ctype: CType, locationExpr: CExpres
  * The first return value are instructions to be executed before accessing the storage and
  * the second return value is the storage location itself.
  */
-function fromExpression(m: WGenerator, s: e.CExpression, accessTimes: 1 | 2 = 1): [WExpression, StorageLocation] {
+function fromExpression(ctx: WFnGenerator, s: e.CExpression, accessTimes: 1 | 2 = 1): [WExpression, StorageLocation] {
     if (!s.lvalue) throw new Error("Only lvalue expressions can have storage locations");
 
     if (s instanceof e.CIdentifier) {

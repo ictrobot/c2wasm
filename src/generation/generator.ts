@@ -31,14 +31,6 @@ export class WGenerator {
         this.module.setupMemory(Math.ceil(this.nextStaticAddr / 65536));
     }
 
-    statement(s: CStatement, b: WFunctionBuilder): WExpression {
-        return statementGeneration(this, s, b);
-    }
-
-    expression(e: CExpression, discardResult: boolean): WExpression {
-        return expressionGeneration(this, e, discardResult);
-    }
-
     private function(func: CFuncDefinition) {
         const wasmFunc = this.module.function(
             func.type.parameterTypes.map(realType),
@@ -49,7 +41,7 @@ export class WGenerator {
     }
 
     private functionBody(s: CFuncDefinition, b: WFunctionBuilder): WExpression {
-        const body = this.statement(s.body, b);
+        const body = new WFnGenerator(this, b).statement(s.body);
         if (s.type.returnType.bytes > 0) {
             if (body[body.length - 1] === Instructions.return()) {
                 // Final return can be implicit
@@ -81,5 +73,18 @@ export class WGenerator {
                 return wasmFunc.getIndex();
             }
         };
+    }
+}
+
+export class WFnGenerator {
+    constructor(readonly gen: WGenerator, readonly builder: WFunctionBuilder) {
+    }
+
+    statement(s: CStatement): WExpression {
+        return statementGeneration(this, s);
+    }
+
+    expression(e: CExpression, discardResult: boolean): WExpression {
+        return expressionGeneration(this, e, discardResult);
     }
 }

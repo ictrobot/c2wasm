@@ -3,11 +3,11 @@ import * as c from "../tree/expressions";
 import {CType, CArithmetic, CPointer} from "../tree/types";
 import {i32Type, Instructions, i64Type, f32Type, f64Type} from "../wasm";
 import {WExpression} from "../wasm/instructions";
-import {WGenerator} from "./generator";
+import {WFnGenerator} from "./generator";
 import {storageGet, storageSet, storageUpdate} from "./storage";
 import {ImplementationType, implType, conversion, valueType, realType} from "./type_conversion";
 
-function constant(m: WGenerator, e: c.CConstant, discard: boolean): WExpression {
+function constant(ctx: WFnGenerator, e: c.CConstant, discard: boolean): WExpression {
     if (discard) return []; // no possible side effects
 
     if (e.type instanceof CArithmetic) {
@@ -17,67 +17,67 @@ function constant(m: WGenerator, e: c.CConstant, discard: boolean): WExpression 
     throw new Error("TODO: enum constants");
 }
 
-function identifier(m: WGenerator, e: c.CIdentifier, discard: boolean): WExpression {
+function identifier(ctx: WFnGenerator, e: c.CIdentifier, discard: boolean): WExpression {
     if (discard) return []; // no possible side effects
 
-    return storageGet(m, e.type, e);
+    return storageGet(ctx, e.type, e);
 }
 
-function stringLiteral(m: WGenerator, e: c.CStringLiteral, discard: boolean): WExpression {
+function stringLiteral(ctx: WFnGenerator, e: c.CStringLiteral, discard: boolean): WExpression {
     if (discard) return []; // no possible side effects
 
     throw new Error("TODO: stringLiteral");
 }
 
-function functionCall(m: WGenerator, e: c.CFunctionCall, discard: boolean): WExpression {
+function functionCall(ctx: WFnGenerator, e: c.CFunctionCall, discard: boolean): WExpression {
     const instr = e.args.flatMap((arg, i) =>
-        subExpr(m, arg, e.fnType.parameterTypes[i]));
+        subExpr(ctx, arg, e.fnType.parameterTypes[i]));
     if (!(e.body instanceof c.CIdentifier) || !(e.body.value instanceof CFuncDefinition || e.body.value instanceof CFuncDeclaration)) {
         throw new Error("Invalid fn call identifier");
     }
 
     const fn = e.body.value as CFuncDeclaration | CFuncDefinition;
-    instr.push(Instructions.call(m.functionIndex(fn)));
+    instr.push(Instructions.call(ctx.gen.functionIndex(fn)));
 
     if (discard && e.fnType.returnType.bytes > 0) instr.push(Instructions.drop());
     return instr;
 }
 
-function memberAccess(m: WGenerator, e: c.CMemberAccess, discard: boolean): WExpression {
+function memberAccess(ctx: WFnGenerator, e: c.CMemberAccess, discard: boolean): WExpression {
     throw new Error("TODO: memberAccess");
 }
 
-function incrDecr(m: WGenerator, e: c.CIncrDecr, discard: boolean): WExpression {
+function incrDecr(ctx: WFnGenerator, e: c.CIncrDecr, discard: boolean): WExpression {
     const type = implType(e.type);
     if (e.pos === "pre") {
-        return storageUpdate(m, e.body.type, e.body, [
+        return storageUpdate(ctx, e.body.type, e.body, [
             gConst(type, 1),
             gInstr(type, e.op === "++" ? "add" : "sub"),
         ], !discard);
     } else {
         throw new Error("TODO"); // TODO fixme, use temporary local when implemented
         // return [
-        //     ...(discard ? [] : storageGet(m, e.body.type, loc)),
-        //     ...storageGet(m, e.body.type, loc),
+        //     ...(discard ? [] : storageGet(ctx, e.body.type, loc)),
+        //     ...storageGet(ctx, e.body.type, loc),
         //     gConst(type, 1),
         //     gInstr(type, e.op === "++" ? "add" : "sub"),
-        //     ...storageSet(m, e.body.type, loc, false)
+        //     ...storageSet(ctx, e.body.type, loc, false)
         // ];
     }
 }
 
-function addressOf(m: WGenerator, e: c.CAddressOf, discard: boolean): WExpression {
+function addressOf(ctx: WFnGenerator, e: c.CAddressOf, discard: boolean): WExpression {
     throw new Error("TODO: addressOf");
 }
 
-function dereference(m: WGenerator, e: c.CDereference, discard: boolean): WExpression {
+function dereference(ctx: WFnGenerator, e: c.CDereference, discard: boolean): WExpression {
     throw new Error("TODO: dereference");
 }
 
-function unaryPlusMinus(m: WGenerator, e: c.CUnaryPlusMinus, discard: boolean): WExpression {
-    if (discard) return expressionGeneration(m, e.body, true); // get any side effects
+function unaryPlusMinus(ctx: WFnGenerator, e: c.CUnaryPlusMinus, discard: boolean): WExpression {
+    if (discard) return expressionGeneration(ctx, e.body, true); // get any side effects
 
-    const instr = expressionGeneration(m, e.body, false);
+    const instr = expressionGeneration(ctx, e.body, false);
     if (e.op === "-") {
         const type = implType(e.body.type);
         instr.push(gConst(type, -1), gInstr(type, "mul"));
@@ -85,17 +85,17 @@ function unaryPlusMinus(m: WGenerator, e: c.CUnaryPlusMinus, discard: boolean): 
     return instr;
 }
 
-function bitwiseNot(m: WGenerator, e: c.CBitwiseNot, discard: boolean): WExpression {
-    if (discard) return expressionGeneration(m, e.body, true); // get any side effects
+function bitwiseNot(ctx: WFnGenerator, e: c.CBitwiseNot, discard: boolean): WExpression {
+    if (discard) return expressionGeneration(ctx, e.body, true); // get any side effects
 
     const wType = valueType(e.type);
-    return [...subExpr(m, e.body, e.type), iInstr(wType, "const", -1n), iInstr(wType, "xor")];
+    return [...subExpr(ctx, e.body, e.type), iInstr(wType, "const", -1n), iInstr(wType, "xor")];
 }
 
-function logicalNot(m: WGenerator, e: c.CLogicalNot, discard: boolean): WExpression {
-    if (discard) return expressionGeneration(m, e.body, true); // get any side effects
+function logicalNot(ctx: WFnGenerator, e: c.CLogicalNot, discard: boolean): WExpression {
+    if (discard) return expressionGeneration(ctx, e.body, true); // get any side effects
 
-    const instr = expressionGeneration(m, e.body, false);
+    const instr = expressionGeneration(ctx, e.body, false);
     const wType = valueType(e.type);
 
     if (isIValueType(wType)) {
@@ -105,22 +105,22 @@ function logicalNot(m: WGenerator, e: c.CLogicalNot, discard: boolean): WExpress
     }
 }
 
-function sizeof(m: WGenerator, e: c.CSizeof, discard: boolean): WExpression {
+function sizeof(ctx: WFnGenerator, e: c.CSizeof, discard: boolean): WExpression {
     if (discard) return []; // no possible side effects
 
     return [Instructions.i32.const(e.body.bytes)];
 }
 
-function cast(m: WGenerator, e: c.CCast, discard: boolean): WExpression {
-    if (discard) return expressionGeneration(m, e.body, true); // get any side effects
+function cast(ctx: WFnGenerator, e: c.CCast, discard: boolean): WExpression {
+    if (discard) return expressionGeneration(ctx, e.body, true); // get any side effects
 
-    return [...expressionGeneration(m, e.body, false), ...conversion(e.body.type, e.type)];
+    return [...expressionGeneration(ctx, e.body, false), ...conversion(e.body.type, e.type)];
 }
 
-function mulDiv(m: WGenerator, e: c.CMulDiv, discard: boolean): WExpression {
-    if (discard) return [...expressionGeneration(m, e.lhs, true), ...expressionGeneration(m, e.rhs, true)];
+function mulDiv(ctx: WFnGenerator, e: c.CMulDiv, discard: boolean): WExpression {
+    if (discard) return [...expressionGeneration(ctx, e.lhs, true), ...expressionGeneration(ctx, e.rhs, true)];
 
-    const instr = [...subExpr(m, e.lhs, e.type), ...subExpr(m, e.rhs, e.type)];
+    const instr = [...subExpr(ctx, e.lhs, e.type), ...subExpr(ctx, e.rhs, e.type)];
     const wType = valueType(e.type);
     if (isIValueType(wType)){
         if (e.op === "*") instr.push(iInstr(wType, "mul"));
@@ -132,23 +132,23 @@ function mulDiv(m: WGenerator, e: c.CMulDiv, discard: boolean): WExpression {
     return instr;
 }
 
-function mod(m: WGenerator, e: c.CMod, discard: boolean): WExpression {
-    if (discard) return [...expressionGeneration(m, e.lhs, true), ...expressionGeneration(m, e.rhs, true)];
+function mod(ctx: WFnGenerator, e: c.CMod, discard: boolean): WExpression {
+    if (discard) return [...expressionGeneration(ctx, e.lhs, true), ...expressionGeneration(ctx, e.rhs, true)];
 
     const wType = valueType(e.type);
     if (e.type.type === "signed") {
-        return [...subExpr(m, e.lhs, e.type), ...subExpr(m, e.rhs, e.type), iInstr(wType, "rem_s")];
+        return [...subExpr(ctx, e.lhs, e.type), ...subExpr(ctx, e.rhs, e.type), iInstr(wType, "rem_s")];
     } else {
-        return [...subExpr(m, e.lhs, e.type), ...subExpr(m, e.rhs, e.type), iInstr(wType, "rem_u")];
+        return [...subExpr(ctx, e.lhs, e.type), ...subExpr(ctx, e.rhs, e.type), iInstr(wType, "rem_u")];
     }
 }
 
-function addSub(m: WGenerator, e: c.CAddSub, discard: boolean): WExpression {
-    if (discard) return [...expressionGeneration(m, e.lhs, true), ...expressionGeneration(m, e.rhs, true)];
+function addSub(ctx: WFnGenerator, e: c.CAddSub, discard: boolean): WExpression {
+    if (discard) return [...expressionGeneration(ctx, e.lhs, true), ...expressionGeneration(ctx, e.rhs, true)];
 
     if (e.type instanceof CArithmetic) {
-        const lhs = subExpr(m, e.lhs, e.type);
-        const rhs = subExpr(m, e.rhs, e.type);
+        const lhs = subExpr(ctx, e.lhs, e.type);
+        const rhs = subExpr(ctx, e.rhs, e.type);
         const wType = valueType(e.type);
         return [...lhs, ...rhs, e.op === "+" ? gInstr(wType, "add") : gInstr(wType, "sub")];
     }
@@ -156,141 +156,141 @@ function addSub(m: WGenerator, e: c.CAddSub, discard: boolean): WExpression {
     throw new Error("TODO: addSub");
 }
 
-function shift(m: WGenerator, e: c.CShift, discard: boolean): WExpression {
-    if (discard) return [...expressionGeneration(m, e.lhs, true), ...expressionGeneration(m, e.rhs, true)];
+function shift(ctx: WFnGenerator, e: c.CShift, discard: boolean): WExpression {
+    if (discard) return [...expressionGeneration(ctx, e.lhs, true), ...expressionGeneration(ctx, e.rhs, true)];
 
     const wType = valueType(e.type);
     if (e.dir === "left") {
-        return [...subExpr(m, e.lhs, e.type), ...subExpr(m, e.rhs, e.type), iInstr(wType, "shl")];
+        return [...subExpr(ctx, e.lhs, e.type), ...subExpr(ctx, e.rhs, e.type), iInstr(wType, "shl")];
     } else if (e.type.type === "signed") {
-        return [...subExpr(m, e.lhs, e.type), ...subExpr(m, e.rhs, e.type), iInstr(wType, "shr_s")];
+        return [...subExpr(ctx, e.lhs, e.type), ...subExpr(ctx, e.rhs, e.type), iInstr(wType, "shr_s")];
     } else {
-        return [...subExpr(m, e.lhs, e.type), ...subExpr(m, e.rhs, e.type), iInstr(wType, "shr_u")];
+        return [...subExpr(ctx, e.lhs, e.type), ...subExpr(ctx, e.rhs, e.type), iInstr(wType, "shr_u")];
     }
 }
 
-function relational(m: WGenerator, e: c.CRelational, discard: boolean): WExpression {
-    if (discard) return [...expressionGeneration(m, e.lhs, true), ...expressionGeneration(m, e.rhs, true)];
+function relational(ctx: WFnGenerator, e: c.CRelational, discard: boolean): WExpression {
+    if (discard) return [...expressionGeneration(ctx, e.lhs, true), ...expressionGeneration(ctx, e.rhs, true)];
 
     const wType = valueType(e.commonType);
     if (!isIValueType(wType)) {
-        return [...subExpr(m, e.lhs, e.commonType), ...subExpr(m, e.rhs, e.commonType),
+        return [...subExpr(ctx, e.lhs, e.commonType), ...subExpr(ctx, e.rhs, e.commonType),
             e.op === "LT" ? fInstr(wType, "lt") :
                 e.op === "GT" ? fInstr(wType, "gt") :
                     e.op === "LEq" ? fInstr(wType, "le") : fInstr(wType, "ge")];
     } else if (e.commonType.type === "signed") {
-        return [...subExpr(m, e.lhs, e.commonType), ...subExpr(m, e.rhs, e.commonType),
+        return [...subExpr(ctx, e.lhs, e.commonType), ...subExpr(ctx, e.rhs, e.commonType),
             e.op === "LT" ? iInstr(wType, "lt_s") :
                 e.op === "GT" ? iInstr(wType, "gt_s") :
                     e.op === "LEq" ? iInstr(wType, "le_s") : iInstr(wType, "ge_s")];
     } else {
-        return [...subExpr(m, e.lhs, e.commonType), ...subExpr(m, e.rhs, e.commonType),
+        return [...subExpr(ctx, e.lhs, e.commonType), ...subExpr(ctx, e.rhs, e.commonType),
             e.op === "LT" ? iInstr(wType, "lt_u") :
                 e.op === "GT" ? iInstr(wType, "gt_u") :
                     e.op === "LEq" ? iInstr(wType, "le_u") : iInstr(wType, "ge_u")];
     }
 }
 
-function equality(m: WGenerator, e: c.CEquality, discard: boolean): WExpression {
-    if (discard) return [...expressionGeneration(m, e.lhs, true), ...expressionGeneration(m, e.rhs, true)];
+function equality(ctx: WFnGenerator, e: c.CEquality, discard: boolean): WExpression {
+    if (discard) return [...expressionGeneration(ctx, e.lhs, true), ...expressionGeneration(ctx, e.rhs, true)];
 
     return [
-        ...subExpr(m, e.lhs, e.commonType),
-        ...subExpr(m, e.rhs, e.commonType),
+        ...subExpr(ctx, e.lhs, e.commonType),
+        ...subExpr(ctx, e.rhs, e.commonType),
         gInstr(valueType(e.commonType), e.op === "==" ? "eq" : "ne")];
 }
 
-function bitwiseAndOr(m: WGenerator, e: c.CBitwiseAndOr, discard: boolean): WExpression {
-    if (discard) return [...expressionGeneration(m, e.lhs, true), ...expressionGeneration(m, e.rhs, true)];
+function bitwiseAndOr(ctx: WFnGenerator, e: c.CBitwiseAndOr, discard: boolean): WExpression {
+    if (discard) return [...expressionGeneration(ctx, e.lhs, true), ...expressionGeneration(ctx, e.rhs, true)];
 
-    return [...subExpr(m, e.lhs, e.type), ...subExpr(m, e.rhs, e.type), iInstr(valueType(e.type), e.op)];
+    return [...subExpr(ctx, e.lhs, e.type), ...subExpr(ctx, e.rhs, e.type), iInstr(valueType(e.type), e.op)];
 }
 
-function logicalAndOr(m: WGenerator, e: c.CLogicalAndOr, discard: boolean): WExpression {
-    if (discard) return [...expressionGeneration(m, e.lhs, true), ...expressionGeneration(m, e.rhs, true)];
+function logicalAndOr(ctx: WFnGenerator, e: c.CLogicalAndOr, discard: boolean): WExpression {
+    if (discard) return [...expressionGeneration(ctx, e.lhs, true), ...expressionGeneration(ctx, e.rhs, true)];
 
     if (e.op === "and") {
-        return [...condition(m, e.lhs), Instructions.if(i32Type, condition(m, e.rhs, false), [
+        return [...condition(ctx, e.lhs), Instructions.if(i32Type, condition(ctx, e.rhs, false), [
             Instructions.i32.const(0n)
         ])];
     } else { // op === "or"
-        return [...condition(m, e.lhs), Instructions.if(i32Type, [
+        return [...condition(ctx, e.lhs), Instructions.if(i32Type, [
             Instructions.i32.const(1n)
-        ], condition(m, e.rhs, false))];
+        ], condition(ctx, e.rhs, false))];
     }
 }
 
-function conditional(m: WGenerator, e: c.CConditional, discard: boolean): WExpression {
-    const test = condition(m, e.test);
+function conditional(ctx: WFnGenerator, e: c.CConditional, discard: boolean): WExpression {
+    const test = condition(ctx, e.test);
     if (discard) {
-        const trueSideEffects = expressionGeneration(m, e.trueValue, true);
-        const falseSideEffects = expressionGeneration(m, e.falseValue,true);
+        const trueSideEffects = expressionGeneration(ctx, e.trueValue, true);
+        const falseSideEffects = expressionGeneration(ctx, e.falseValue,true);
         if (trueSideEffects.length === 0 && falseSideEffects.length === 0) return [];
 
         return [...test, Instructions.if(null, trueSideEffects, falseSideEffects)];
     } else {
         return [...test, Instructions.if(realType(e.type),
-            subExpr(m, e.trueValue, e.type),
-            subExpr(m, e.falseValue, e.type))];
+            subExpr(ctx, e.trueValue, e.type),
+            subExpr(ctx, e.falseValue, e.type))];
     }
 }
 
-function assignment(m: WGenerator, e: c.CAssignment, discard: boolean): WExpression {
+function assignment(ctx: WFnGenerator, e: c.CAssignment, discard: boolean): WExpression {
     if (e.assignmentType !== undefined || e.rhs instanceof c.CInitializer) throw new Error("TODO");
     // += etc could be implemented as a storageUpdate
 
-    return storageSet(m, e.lhs.type, e.lhs, e.rhs, !discard);
+    return storageSet(ctx, e.lhs.type, e.lhs, e.rhs, !discard);
 }
 
-function comma(m: WGenerator, e: c.CComma, discard: boolean): WExpression {
-    return [...expressionGeneration(m, e.lhs, true), ...expressionGeneration(m, e.rhs, discard)];
+function comma(ctx: WFnGenerator, e: c.CComma, discard: boolean): WExpression {
+    return [...expressionGeneration(ctx, e.lhs, true), ...expressionGeneration(ctx, e.rhs, discard)];
 }
 
-export function expressionGeneration(m: WGenerator, e: c.CExpression, discard: boolean): WExpression {
-    if (e instanceof c.CConstant) return constant(m, e, discard);
-    else if (e instanceof c.CIdentifier) return identifier(m, e, discard);
-    else if (e instanceof c.CStringLiteral) return stringLiteral(m, e, discard);
-    else if (e instanceof c.CFunctionCall) return functionCall(m, e, discard);
-    else if (e instanceof c.CMemberAccess) return memberAccess(m, e, discard);
-    else if (e instanceof c.CIncrDecr) return incrDecr(m, e, discard);
-    else if (e instanceof c.CAddressOf) return addressOf(m, e, discard);
-    else if (e instanceof c.CDereference) return dereference(m, e, discard);
-    else if (e instanceof c.CUnaryPlusMinus) return unaryPlusMinus(m, e, discard);
-    else if (e instanceof c.CBitwiseNot) return bitwiseNot(m, e, discard);
-    else if (e instanceof c.CLogicalNot) return logicalNot(m, e, discard);
-    else if (e instanceof c.CSizeof) return sizeof(m, e, discard);
-    else if (e instanceof c.CCast) return cast(m, e, discard);
-    else if (e instanceof c.CMulDiv) return mulDiv(m, e, discard);
-    else if (e instanceof c.CMod) return mod(m, e, discard);
-    else if (e instanceof c.CAddSub) return addSub(m, e, discard);
-    else if (e instanceof c.CShift) return shift(m, e, discard);
-    else if (e instanceof c.CRelational) return relational(m, e, discard);
-    else if (e instanceof c.CEquality) return equality(m, e, discard);
-    else if (e instanceof c.CBitwiseAndOr) return bitwiseAndOr(m, e, discard);
-    else if (e instanceof c.CLogicalAndOr) return logicalAndOr(m, e, discard);
-    else if (e instanceof c.CConditional) return conditional(m, e, discard);
-    else if (e instanceof c.CAssignment) return assignment(m, e, discard);
-    else return comma(m, e, discard);
+export function expressionGeneration(ctx: WFnGenerator, e: c.CExpression, discard: boolean): WExpression {
+    if (e instanceof c.CConstant) return constant(ctx, e, discard);
+    else if (e instanceof c.CIdentifier) return identifier(ctx, e, discard);
+    else if (e instanceof c.CStringLiteral) return stringLiteral(ctx, e, discard);
+    else if (e instanceof c.CFunctionCall) return functionCall(ctx, e, discard);
+    else if (e instanceof c.CMemberAccess) return memberAccess(ctx, e, discard);
+    else if (e instanceof c.CIncrDecr) return incrDecr(ctx, e, discard);
+    else if (e instanceof c.CAddressOf) return addressOf(ctx, e, discard);
+    else if (e instanceof c.CDereference) return dereference(ctx, e, discard);
+    else if (e instanceof c.CUnaryPlusMinus) return unaryPlusMinus(ctx, e, discard);
+    else if (e instanceof c.CBitwiseNot) return bitwiseNot(ctx, e, discard);
+    else if (e instanceof c.CLogicalNot) return logicalNot(ctx, e, discard);
+    else if (e instanceof c.CSizeof) return sizeof(ctx, e, discard);
+    else if (e instanceof c.CCast) return cast(ctx, e, discard);
+    else if (e instanceof c.CMulDiv) return mulDiv(ctx, e, discard);
+    else if (e instanceof c.CMod) return mod(ctx, e, discard);
+    else if (e instanceof c.CAddSub) return addSub(ctx, e, discard);
+    else if (e instanceof c.CShift) return shift(ctx, e, discard);
+    else if (e instanceof c.CRelational) return relational(ctx, e, discard);
+    else if (e instanceof c.CEquality) return equality(ctx, e, discard);
+    else if (e instanceof c.CBitwiseAndOr) return bitwiseAndOr(ctx, e, discard);
+    else if (e instanceof c.CLogicalAndOr) return logicalAndOr(ctx, e, discard);
+    else if (e instanceof c.CConditional) return conditional(ctx, e, discard);
+    else if (e instanceof c.CAssignment) return assignment(ctx, e, discard);
+    else return comma(ctx, e, discard);
 }
 
 // helpers
 /** expressionGeneration + casting */
-export function subExpr(m: WGenerator, e: c.CExpression, desiredType: CType, discard: boolean = false): WExpression {
-    return [...expressionGeneration(m, e, discard), ...conversion(e.type, desiredType)];
+export function subExpr(ctx: WFnGenerator, e: c.CExpression, desiredType: CType, discard: boolean = false): WExpression {
+    return [...expressionGeneration(ctx, e, discard), ...conversion(e.type, desiredType)];
 }
 
-export function condition(m: WGenerator, e: c.CExpression, anyNonZeroI32 = true): WExpression {
+export function condition(ctx: WFnGenerator, e: c.CExpression, anyNonZeroI32 = true): WExpression {
     const wType = implType(e.type);
     if (wType === i32Type || wType instanceof CPointer) {
         if (anyNonZeroI32) {
-            return expressionGeneration(m, e, false);
+            return expressionGeneration(ctx, e, false);
         } else {
-            return [...expressionGeneration(m, e, false), Instructions.i32.const(0n), Instructions.i32.ne()];
+            return [...expressionGeneration(ctx, e, false), Instructions.i32.const(0n), Instructions.i32.ne()];
         }
     } else if (typeof wType !== "number") {
         throw new Error("Invalid condition");
     }
-    return [...expressionGeneration(m, e, false), gConst(wType, 0), gInstr(wType, "ne")];
+    return [...expressionGeneration(ctx, e, false), gConst(wType, 0), gInstr(wType, "ne")];
 }
 
 function isIValueType(w: ImplementationType) {
