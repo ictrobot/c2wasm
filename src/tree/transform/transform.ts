@@ -1,9 +1,9 @@
 import {CVariable, CFuncDefinition, CArgument, CFuncDeclaration} from "../declarations";
-import {CAssignment, CIdentifier, CExpression, CEvaluable, CInitializer, CStringLiteral} from "../expressions";
+import {CAssignment, CIdentifier, CExpression, CEvaluable, CInitializer, CStringLiteral, CConstant} from "../expressions";
 import {Scope} from "../scope";
 import {CStatement, CCompoundStatement, CExpressionStatement, CNop, CIf, CForLoop, CWhileLoop, CDoLoop, CSwitch, CBreak, CContinue, CReturn} from "../statements";
 import {ExpressionTypeError} from "../type_checking";
-import {CFuncType, CVoid, CArray} from "../types";
+import {CFuncType, CVoid, CArray, CArithmetic} from "../types";
 import {ParseTreeValidationError, pt} from "../../parsing";
 import {ptExpression, evalConstant} from "./expr_transform";
 import {getDeclaratorName, getDeclaratorType, getType} from "./type_transform";
@@ -52,7 +52,13 @@ function ptDeclaration(declaration: pt.Declaration, scope: Scope, inFunction: bo
             scope.addIdentifier(cvar);
 
             if (initialValue) {
-                if (initialValue instanceof CInitializer) initialValue.type = type;
+                if (initialValue instanceof CInitializer) {
+                    initialValue.type = type;
+                }
+                if (initialValue instanceof CConstant && type instanceof CArithmetic && type !== initialValue.type) {
+                    // force constants to take the correct type
+                    initialValue = initialValue.changeType(type);
+                }
 
                 if (inFunction && cvar.storage !== "static") {
                     const id = new CIdentifier(entry, cvar);

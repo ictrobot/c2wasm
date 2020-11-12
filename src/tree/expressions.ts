@@ -31,6 +31,21 @@ export class CConstant extends CEvaluable {
         super();
     }
 
+    changeType(type: CArithmetic): CConstant {
+        if (this.type.equals(type)) return this;
+
+        let newValue: bigint | number;
+        if (type.type === "float") {
+            newValue = Number(this.value);
+        } else {
+            if (this.value > type.maxValue || this.value < type.minValue) {
+                throw new checks.ExpressionTypeError(this.node, `value which fits in ${type.name}`, this.value.toString());
+            }
+            newValue = BigInt(this.value);
+        }
+        return new CConstant(this.node, type, newValue);
+    }
+
     evaluate(): CConstant {
         return this;
     }
@@ -427,16 +442,22 @@ export class CInitializer {
 
         if (value instanceof CArray) {
             if (this.body.length > (value.length ?? Infinity)) error(); // too many elements in this initializer
-            this.body.forEach(x => CInitializer.typeCheck(value.type, x));
+            for (let i = 0; i < this.body.length; i++) {
+                this.body[i] = CInitializer.typeCheck(value.type, this.body[i]);
+            }
 
         } else if (value instanceof CStruct) {
             if (this.body.length > value.members.length) error(); // too many members
-            this.body.forEach((x, i) => CInitializer.typeCheck(value.members[i].type, x));
+            for (let i = 0; i < this.body.length; i++) {
+                this.body[i] = CInitializer.typeCheck(value.members[i].type, this.body[i]);
+            }
 
         } else if (value instanceof CUnion) {
             if (this.body.length > 1) error();
             // unions have to be initialized to the first member in the union
-            if (this.body.length === 1) CInitializer.typeCheck(value.members[0].type, this.body[0]);
+            if (this.body.length === 1) {
+                this.body[0] = CInitializer.typeCheck(value.members[0].type, this.body[0]);
+            }
 
         } else {
             error();
@@ -461,11 +482,16 @@ export class CInitializer {
         return this;
     }
 
-    private static typeCheck(desiredType: CType, expr: CExpression | CInitializer) {
+    private static typeCheck(desiredType: CType, expr: CExpression | CInitializer): CExpression | CInitializer {
         if (expr instanceof CInitializer) {
             expr.type = desiredType;
         } else {
             CAssignment.checkAssignmentValid(expr.node, desiredType, expr);
+
+            if (expr instanceof CConstant && desiredType instanceof CArithmetic && expr.type !== desiredType) {
+                expr = expr.changeType(desiredType);
+            }
         }
+        return expr;
     }
 }
