@@ -1,6 +1,7 @@
 import {CFuncDefinition, CFuncDeclaration} from "../tree/declarations";
+import {CExpression} from "../tree/expressions";
 import * as c from "../tree/expressions";
-import {CType, CArithmetic, CPointer} from "../tree/types";
+import {CType, CArithmetic, CPointer, CArray} from "../tree/types";
 import {i32Type, Instructions, i64Type, f32Type, f64Type} from "../wasm";
 import {WExpression} from "../wasm/instructions";
 import {WFnGenerator} from "./generator";
@@ -26,6 +27,7 @@ function identifier(ctx: WFnGenerator, e: c.CIdentifier, discard: boolean): WExp
 function stringLiteral(ctx: WFnGenerator, e: c.CStringLiteral, discard: boolean): WExpression {
     if (discard) return []; // no possible side effects
 
+    // TODO store string literals as static variables
     throw new Error("TODO: stringLiteral");
 }
 
@@ -65,19 +67,20 @@ function memberAccess(ctx: WFnGenerator, e: c.CMemberAccess, discard: boolean): 
 }
 
 function incrDecr(ctx: WFnGenerator, e: c.CIncrDecr, discard: boolean): WExpression {
-    if (!(e.type instanceof CArithmetic)) throw new Error("TODO");
+    let amount = 1;
+    if (e.type instanceof CPointer) amount = Math.ceil(e.body.type.bytes / 4) * 4;
 
-    const type = valueType(e.type);
+    const type = realType(e.type);
     if (e.pos === "post" && !discard) {
         return storageGetThenUpdate(ctx, e.body.type, e.body, [
-            gConst(type, 1),
+            gConst(type, amount),
             gInstr(type, e.op === "++" ? "add" : "sub"),
         ]);
     } else {
         // can convert post and discard => pre with discard
 
         return storageUpdate(ctx, e.body.type, e.body, [
-            gConst(type, 1),
+            gConst(type, amount),
             gInstr(type, e.op === "++" ? "add" : "sub"),
         ], !discard && e.pos === "pre");
     }
@@ -172,9 +175,23 @@ function addSub(ctx: WFnGenerator, e: c.CAddSub, discard: boolean): WExpression 
         const rhs = subExpr(ctx, e.rhs, e.type);
         const wType = valueType(e.type);
         return [...lhs, ...rhs, e.op === "+" ? gInstr(wType, "add") : gInstr(wType, "sub")];
+    } else {
+        // eslint-disable-next-line no-inner-declarations
+        function toExpr(side: CExpression) {
+            if (side.type instanceof CPointer) {
+                return ctx.expression(side, false);
+            } else if (side.type instanceof CArray) {
+                return getAddress(ctx, side);
+            } else { // if side.type === integer
+                const instr = subExpr(ctx, side, CArithmetic.U32);
+                const size = (e.type as CPointer).type.bytes;
+                if (size > 1) instr.push(Instructions.i32.const(size), Instructions.i32.mul());
+                return instr;
+            }
+        }
+
+        return [...toExpr(e.lhs), ...toExpr(e.rhs), e.op === "+" ? Instructions.i32.add() : Instructions.i32.sub()];
     }
-    // TODO pointer addsub
-    throw new Error("TODO: addSub");
 }
 
 function shift(ctx: WFnGenerator, e: c.CShift, discard: boolean): WExpression {
