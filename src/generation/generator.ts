@@ -49,7 +49,19 @@ export class WGenerator {
     }
 
     private functionBody(s: CFuncDefinition, b: WFunctionBuilder): WExpression {
-        const body = new WFnGenerator(this, b).statement(s.body);
+        const fnGenerator = new WFnGenerator(this, b);
+        const body = fnGenerator.statement(s.body);
+
+        if (fnGenerator.shadowStackUsage > 0) {
+            // use memory.fill to ensure shadow stack space is 0 before fn runs
+            body.unshift(
+                Instructions.global.get(this.shadowStackPtr),
+                Instructions.i32.const(0),
+                Instructions.i32.const(fnGenerator.shadowStackUsage),
+                Instructions.memory.fill()
+            );
+        }
+
         if (s.type.returnType.bytes > 0) {
             if (body[body.length - 1] === Instructions.return()) {
                 // Final return can be implicit
