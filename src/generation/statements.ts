@@ -8,8 +8,10 @@ import {WFnGenerator} from "./generator";
 import {storageSetupScope} from "./storage";
 
 function _compoundStatement(ctx: WFnGenerator, s: c.CCompoundStatement): WExpression {
-    storageSetupScope(ctx, s.scope);
-    return s.statements.flatMap(s2 => statementGeneration(ctx, s2));
+    const instr = storageSetupScope(ctx, s.scope);
+    const body = s.statements.flatMap(s2 => statementGeneration(ctx, s2));
+    body.unshift(...instr);
+    return body;
 }
 
 function _expressionStatement(ctx: WFnGenerator, s: c.CExpressionStatement): WExpression {
@@ -29,7 +31,7 @@ function _if(ctx: WFnGenerator, s: c.CIf): WExpression {
 
 function _forLoop(ctx: WFnGenerator, s: c.CForLoop): WExpression {
     if (s.body === undefined) throw new Error("Invalid for loop body");
-    storageSetupScope(ctx, s.scope);
+    const storageSetup = storageSetupScope(ctx, s.scope);
 
     let init: WExpression = [];
     if (Array.isArray(s.init)) {
@@ -47,6 +49,7 @@ function _forLoop(ctx: WFnGenerator, s: c.CForLoop): WExpression {
     if (s.update !== undefined) update = ctx.expression(s.update, true);
 
     return [
+        ...storageSetup,
         ...init,
         Instructions.loop(null, [
             ...test,

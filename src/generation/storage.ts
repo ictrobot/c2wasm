@@ -9,6 +9,7 @@ import {WExpression, WInstruction} from "../wasm/instructions";
 import {WFnGenerator, WGenerator} from "./generator";
 import {staticInitializer} from "./static_initializer";
 import {realType} from "./type_conversion";
+import Global = WebAssembly.Global;
 
 export type StorageLocation =
     {type: "local", "index": {getIndex(d: number): localidx}} |
@@ -29,13 +30,28 @@ export function storageSetupStaticVar(ctx: WGenerator, d: CVariable): void {
     ctx.nextStaticAddr += Math.ceil(d.type.bytes / 4) * 4; // 4 byte align
 }
 
-export function storageSetupScope(ctx: WFnGenerator, s: Scope): void {
+export function storageSetupScope(ctx: WFnGenerator, s: Scope): WExpression {
+    const instr: WExpression = [];
+
     for (const declaration of s.declarations) {
         if (declaration instanceof CArgument) {
-            setStorageLocation(declaration, {
-                type: "local",
-                index: ctx.builder.args[declaration.index]
-            });
+            if (declaration.addressUsed) {
+                setStorageLocation(declaration, {
+                    type: "shadow",
+                    shadowOffset: ctx.shadowStackUsage
+                });
+                // copy value onto shadow stack
+                instr.push(Instructions.global.get(ctx.gen.shadowStackPtr));
+                instr.push(Instructions.local.get(ctx.builder.args[declaration.index]));
+                instr.push(store(declaration.type, ctx.shadowStackUsage));
+
+                ctx.shadowStackUsage += Math.ceil(declaration.type.bytes / 4) * 4; // 4 byte align
+            } else {
+                setStorageLocation(declaration, {
+                    type: "local",
+                    index: ctx.builder.args[declaration.index]
+                });
+            }
         }
 
         if (declaration instanceof CVariable) {
@@ -58,6 +74,8 @@ export function storageSetupScope(ctx: WFnGenerator, s: Scope): void {
             }
         }
     }
+
+    return instr;
 }
 
 // the storage operations
