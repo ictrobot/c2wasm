@@ -51,7 +51,8 @@ export const Instructions = {
     // memory instructions
     memory: {
         size: zeroArgs(0x3F, 0x00),
-        grow: zeroArgs(0x40, 0x00)
+        grow: zeroArgs(0x40, 0x00),
+        copy: zeroArgs(0xFC, 0x0A, 0x00, 0x00)
     } as const,
 
 

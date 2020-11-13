@@ -40,7 +40,7 @@ export function conversion(inType: CType, outType: CType): WExpression {
         return [];
     }
 
-    throw new Error("Not implemented");
+    return [Instructions.nop()];
 }
 
 /**

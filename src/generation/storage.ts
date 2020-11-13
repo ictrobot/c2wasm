@@ -2,7 +2,7 @@ import {CArgument, CVariable, CDeclaration} from "../tree/declarations";
 import {CExpression} from "../tree/expressions";
 import * as e from "../tree/expressions";
 import {Scope} from "../tree/scope";
-import {CType, CArithmetic, CPointer, CEnum, CStruct} from "../tree/types";
+import {CType, CArithmetic, CPointer, CEnum, CStruct, CUnion, CArray, CVoid, CFuncType} from "../tree/types";
 import {Instructions, i32Type} from "../wasm";
 import {localidx} from "../wasm/base_types";
 import {WExpression, WInstruction} from "../wasm/instructions";
@@ -83,6 +83,11 @@ export function storageSetupScope(ctx: WFnGenerator, s: Scope): WExpression {
 export function storageGet(ctx: WFnGenerator, ctype: CType, locationExpr: CExpression): WExpression {
     const [instr, location] = fromExpression(ctx, locationExpr);
 
+    if (ctype instanceof CStruct || ctype instanceof CUnion) {
+        // loading a structure just returns a pointer
+        return getAddress(ctx, locationExpr);
+    }
+
     if (location.type === "local") {
         instr.push(Instructions.local.get(location.index));
     } else if (location.type === "static") {
@@ -101,6 +106,11 @@ export function storageSet(ctx: WFnGenerator, ctype: CType, locationExpr: CExpre
     const [instr, location] = fromExpression(ctx, locationExpr);
     const valueInstr = ctx.expression(valueExpr, false);
     valueInstr.push(...conversion(valueExpr.type, locationExpr.type));
+
+    if (ctype instanceof CStruct || ctype instanceof CUnion) {
+        // storing a structure copies memory, presumes pointer to the same type is on top of stack
+        return memcpy(valueInstr, getAddress(ctx, locationExpr), ctype.bytes);
+    }
 
     if (location.type === "local") {
         instr.push(...valueInstr, keepValue ? Instructions.local.tee(location.index) : Instructions.local.set(location.index));
@@ -145,6 +155,9 @@ export function storageSet(ctx: WFnGenerator, ctype: CType, locationExpr: CExpre
 /** Updates the location 'locationExpr' by running 'instr' which should transform its value on the stack.
  * If keepValue is true then the stored value is kept on the top of the stack after being stored */
 export function storageUpdate(ctx: WFnGenerator, ctype: CType, locationExpr: CExpression, transform: WExpression, keepValue: boolean): WExpression {
+    if (ctype instanceof CArray || ctype instanceof CStruct || ctype instanceof CUnion) {
+        throw new Error("Cannot storageUpdate " + ctype.typeName);
+    }
     const [instr, location] = fromExpression(ctx, locationExpr);
 
     if (location.type === "local") {
@@ -201,6 +214,9 @@ export function storageUpdate(ctx: WFnGenerator, ctype: CType, locationExpr: CEx
 /** Updates the location 'locationExpr' by running 'instr' which should transform its value on the stack.
  * Value before transform is left on the stack */
 export function storageGetThenUpdate(ctx: WFnGenerator, ctype: CType, locationExpr: CExpression, transform: WExpression): WExpression {
+    if (ctype instanceof CArray || ctype instanceof CStruct || ctype instanceof CUnion) {
+        throw new Error("Cannot storageGetThenUpdate " + ctype.typeName);
+    }
     const [instr, location] = fromExpression(ctx, locationExpr);
 
     if (location.type === "local") {
@@ -301,9 +317,17 @@ function getStorageLocation(s: CDeclaration): StorageLocation | undefined {
 // helpers returning the instructions to read/write a type from memory
 
 function load(type: CType, offset: number): WInstruction {
-    if (type instanceof CPointer) return Instructions.i32.load(2, offset);
-    if (!(type instanceof CArithmetic)) throw new Error("TODO");
+    if (type instanceof CPointer || type instanceof CEnum) {
+        return Instructions.i32.load(2, offset);
+    }
+    if (type instanceof CStruct || type instanceof CUnion || type instanceof CArray) {
+        throw new Error("Invalid " + type.typeName + " load");
+    }
+    if (type instanceof CVoid || type instanceof CFuncType) {
+        throw new Error("Cannot load " + type.typeName);
+    }
 
+    // must be arithmetic
     if (type.type === "float") {
         if (type.bytes === 8) {
             return Instructions.f64.load(2, offset);
@@ -334,8 +358,15 @@ function load(type: CType, offset: number): WInstruction {
 }
 
 function store(type: CType, offset: number): WInstruction {
-    if (type instanceof CPointer) return Instructions.i32.store(2, offset);
-    if (!(type instanceof CArithmetic)) throw new Error("TODO");
+    if (type instanceof CPointer || type instanceof CEnum) {
+        return Instructions.i32.store(2, offset);
+    }
+    if (type instanceof CStruct || type instanceof CUnion || type instanceof CArray) {
+        throw new Error("Invalid " + type.typeName + " store");
+    }
+    if (type instanceof CVoid || type instanceof CFuncType) {
+        throw new Error("Cannot store " + type.typeName);
+    }
 
     if (type.type === "float") {
         if (type.bytes === 8) {
@@ -353,4 +384,13 @@ function store(type: CType, offset: number): WInstruction {
     } else {
         return Instructions.i32.store8(0, offset);
     }
+}
+
+function memcpy(sourceAddr: WExpression, destAddr: WExpression, bytes: number): WExpression {
+    return [
+        ...destAddr,
+        ...sourceAddr,
+        Instructions.i32.const(bytes),
+        Instructions.memory.copy()
+    ];
 }

@@ -2,11 +2,9 @@ import test from "ava";
 import {compile} from "../../src/generation";
 
 test("list sum", async t => {
-    const values: number[] = [];
-
     const {test} = await compile(`
         struct List {
-          const int head;
+          int head;
           struct List *tail;
         };
         
