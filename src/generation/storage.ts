@@ -34,7 +34,20 @@ export function storageSetupScope(ctx: WFnGenerator, s: Scope): WExpression {
 
     for (const declaration of s.declarations) {
         if (declaration instanceof CArgument) {
-            if (declaration.addressUsed) {
+            if (declaration.type instanceof CStruct || declaration.type instanceof CUnion) {
+                // argument is effectively a pointer to a struct/union to copy
+                setStorageLocation(declaration, {
+                    type: "shadow",
+                    shadowOffset: ctx.shadowStackUsage
+                });
+                // copy from given pointer
+                instr.push(...memcpy(
+                    [Instructions.local.get(ctx.builder.args[declaration.index])],
+                    [Instructions.global.get(ctx.gen.shadowStackPtr), Instructions.i32.const(ctx.shadowStackUsage), Instructions.i32.add()],
+                    declaration.type.bytes
+                ));
+
+            } else if (declaration.addressUsed) {
                 setStorageLocation(declaration, {
                     type: "shadow",
                     shadowOffset: ctx.shadowStackUsage

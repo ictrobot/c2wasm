@@ -1,4 +1,4 @@
-import {CType, CArithmetic, CCompound, CPointer, CArray, CVoid, CFuncType} from "../tree/types";
+import {CType, CArithmetic, CCompound, CPointer, CArray, CVoid, CFuncType, CStruct, CUnion, CEnum} from "../tree/types";
 import {Instructions, ValueType, f32Type, f64Type, i64Type, i32Type} from "../wasm";
 import {WExpression} from "../wasm/instructions";
 import {ResultType} from "../wasm/wtypes";
@@ -21,10 +21,13 @@ export function implType(type: CType): ImplementationType {
  */
 export function realType(type: CType): ValueType {
     if (type instanceof CArithmetic) return valueType(type);
+    if (type instanceof CPointer || type instanceof CEnum) return i32Type;
+    if (type instanceof CStruct || type instanceof CUnion) {
+        // passed around as pointer
+        return i32Type;
+    }
     if (type instanceof CVoid) throw new Error("Void cannot be stored");
-    if (type instanceof CPointer) return i32Type;
-
-    throw new Error("Not implemented");
+    throw new Error(type.typeName + " doesn't have a real type");
 }
 
 export function conversion(inType: CType, outType: CType): WExpression {
@@ -40,7 +43,7 @@ export function conversion(inType: CType, outType: CType): WExpression {
         return [];
     }
 
-    return [Instructions.nop()];
+    throw new Error(`Cannot convert ${inType.typeName} to ${outType.typeName}`);
 }
 
 /**
@@ -115,7 +118,7 @@ function arithmeticConversion(inType: CArithmetic, outType: CArithmetic): WExpre
         return conversion;
     }
 
-    throw new Error("TODO");
+    throw new Error("Invalid arithmetic type");
 }
 
 export function valueType(type: CArithmetic): ValueType {
