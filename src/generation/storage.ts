@@ -120,7 +120,7 @@ export function storageSet(ctx: WFnGenerator, ctype: CType, locationExpr: CExpre
     const valueInstr = ctx.expression(valueExpr, false);
     valueInstr.push(...conversion(valueExpr.type, locationExpr.type));
 
-    if (ctype instanceof CStruct || ctype instanceof CUnion) {
+    if (ctype instanceof CStruct || ctype instanceof CUnion || ctype instanceof CArray) {
         // storing a structure copies memory, presumes pointer to the same type is on top of stack
         return memcpy(valueInstr, getAddress(ctx, locationExpr), ctype.bytes);
     }

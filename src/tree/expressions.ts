@@ -81,7 +81,7 @@ export class CArrayPointer {
     readonly lvalue = false;
     readonly type: CPointer;
 
-    constructor(readonly node: ParseNode, readonly arrayIdentifier: CIdentifier) {
+    constructor(readonly node: ParseNode, readonly arrayIdentifier: CIdentifier | CStringLiteral) {
         if (!(arrayIdentifier.type instanceof CArray)) {
             throw new checks.ExpressionTypeError(this.node, "array");
         }
@@ -386,6 +386,9 @@ export class CAssignment {
             throw new checks.ExpressionTypeError(lhs.node, "structure without a const member");
         }
         this.type = lhs.type;
+
+        // fix string constants being wrapped into pointers
+        if (lhs.type instanceof CArray && rhs instanceof CArrayPointer) this.rhs = rhs = rhs.arrayIdentifier;
 
         // check assignment types are valid
         if (assignmentType) {

@@ -36,9 +36,15 @@ function ptDeclaration(declaration: pt.Declaration, scope: Scope, inFunction: bo
         }
 
         const type = getDeclaratorType(declType, entry, scope);
-        if (initialValue?.type instanceof CArray && type instanceof CArray && type.incomplete) {
+        if (type instanceof CArray && type.incomplete) {
             // initialize array length from initializer if incomplete
-            type.length = initialValue.type.length;
+            if (initialValue?.type instanceof CArray) {
+                // when initializer used
+                type.length = initialValue.type.length;
+            } else if (initialValue instanceof CArrayPointer && initialValue.arrayIdentifier instanceof CStringLiteral) {
+                // string literals become wrapped with CArrayPointer
+                type.length = initialValue.arrayIdentifier.value.length;
+            }
         }
 
         if (type.incomplete) {

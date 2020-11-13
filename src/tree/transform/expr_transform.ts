@@ -35,7 +35,7 @@ export function ptExpression(e: pt.Expression, scope: Scope): CExpression {
             }
         }
         arr.push(0n); // null terminator
-        return new CStringLiteral(e, arr);
+        return new CArrayPointer(e, new CStringLiteral(e, arr));
 
     } else if (e instanceof pt.UnaryExpression) {
         return ptUnary(e, scope);

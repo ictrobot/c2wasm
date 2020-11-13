@@ -25,15 +25,18 @@ function identifier(ctx: WFnGenerator, e: c.CIdentifier, discard: boolean): WExp
 
 function arrayPointer(ctx: WFnGenerator, e: c.CArrayPointer, discard: boolean): WExpression {
     if (discard) return []; // no possible side effects
+    if (e.arrayIdentifier instanceof c.CStringLiteral) return stringLiteral(ctx, e.arrayIdentifier, discard);
 
     return getAddress(ctx, e.arrayIdentifier);
 }
 
 function stringLiteral(ctx: WFnGenerator, e: c.CStringLiteral, discard: boolean): WExpression {
     if (discard) return []; // no possible side effects
+    const stringAddress = ctx.gen.nextStaticAddr;
+    ctx.gen.nextStaticAddr += e.value.length;
 
-    // TODO store string literals as static variables
-    throw new Error("TODO: stringLiteral");
+    ctx.gen.module.dataSegment(stringAddress, e.value.map(Number));
+    return [Instructions.i32.const(stringAddress)];
 }
 
 function functionCall(ctx: WFnGenerator, e: c.CFunctionCall, discard: boolean): WExpression {
