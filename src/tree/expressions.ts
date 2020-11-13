@@ -129,13 +129,15 @@ export class CFunctionCall {
 
 export class CMemberAccess {
     readonly lvalue: boolean;
+    readonly structUnion: CStruct | CUnion;
     readonly type: CType;
 
-    /** transform `e->member` to `(*e).member` before calling */
+    /** transform `e.member` to `(&e)->member` before calling */
     constructor(readonly node: ParseNode, readonly body: CExpression, readonly member: string) {
-        const type = checks.asStructOrUnion(body.node, body.type);
-        this.type = type.memberType(member);
-        this.lvalue = body.lvalue && !(this.type instanceof CArray);
+        const pointerType = checks.asPointer(body.node, body.type);
+        this.structUnion = checks.asStructOrUnion(body.node, pointerType.type);
+        this.type = this.structUnion.memberType(member);
+        this.lvalue = !(this.type instanceof CArray);
     }
 }
 

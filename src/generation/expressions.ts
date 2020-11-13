@@ -1,6 +1,6 @@
 import {CFuncDefinition, CFuncDeclaration} from "../tree/declarations";
 import * as c from "../tree/expressions";
-import {CType, CArithmetic, CPointer, CArray, CSizeT} from "../tree/types";
+import {CType, CArithmetic, CPointer, CArray, CSizeT, CUnion, CStruct} from "../tree/types";
 import {i32Type, Instructions, i64Type, f32Type, f64Type} from "../wasm";
 import {WExpression, WInstruction} from "../wasm/instructions";
 import {WFnGenerator} from "./generator";
@@ -68,7 +68,9 @@ function functionCall(ctx: WFnGenerator, e: c.CFunctionCall, discard: boolean): 
 }
 
 function memberAccess(ctx: WFnGenerator, e: c.CMemberAccess, discard: boolean): WExpression {
-    throw new Error("TODO: memberAccess");
+    if (discard) return expressionGeneration(ctx, e.body, true);
+
+    return storageGet(ctx, e.type, e);
 }
 
 function incrDecr(ctx: WFnGenerator, e: c.CIncrDecr, discard: boolean): WExpression {
@@ -315,8 +317,9 @@ function assignment(ctx: WFnGenerator, e: c.CAssignment, discard: boolean): WExp
 
         return storageUpdate(ctx, e.lhs.type, e.lhs, transform, !discard);
     } else if (e.rhs instanceof c.CInitializer) {
+        const instr: WExpression = [];
+
         if (e.rhs.type instanceof CArray) {
-            const instr: WExpression = [];
             const lhs = e.lhs instanceof c.CIdentifier ? new c.CArrayPointer(e.lhs.node, e.lhs) : e.lhs;
             for (let i = 0; i < e.rhs.body.length; i++) {
                 const value = e.rhs.body[i];
@@ -326,10 +329,25 @@ function assignment(ctx: WFnGenerator, e: c.CAssignment, discard: boolean): WExp
                 const entryAssignment = new c.CAssignment(value.node, entryDeref, value, undefined, e.initialAssignment);
                 instr.push(...expressionGeneration(ctx, entryAssignment, true));
             }
-            if (!discard) instr.push(...getAddress(ctx, e.lhs));
-            return instr;
+        } else if (e.rhs.type instanceof CUnion) {
+            const addr = new c.CAddressOf(e.lhs.node, e.lhs);
+            const access = new c.CMemberAccess(e.rhs.node, addr, e.rhs.type.members[0].name);
+            const assignment = new c.CAssignment(e.rhs.body[0].node, access, e.rhs.body[0], undefined, true);
+            instr.push(...expressionGeneration(ctx, assignment, true));
+        } else if (e.rhs.type instanceof CStruct) {
+            const addr = new c.CAddressOf(e.lhs.node, e.lhs);
+
+            for (let i = 0; i < e.rhs.body.length; i++) {
+                const access = new c.CMemberAccess(e.rhs.node, addr, e.rhs.type.members[i].name);
+                const assignment = new c.CAssignment(e.rhs.body[i].node, access, e.rhs.body[i], undefined, true);
+                instr.push(...expressionGeneration(ctx, assignment, true));
+            }
+        } else {
+            throw new Error("Unknown initializer");
         }
-        throw new Error("TODO");
+
+        if (!discard) instr.push(...expressionGeneration(ctx, e.lhs, false));
+        return instr;
     } else {
         return storageSet(ctx, e.lhs.type, e.lhs, e.rhs, !discard);
     }

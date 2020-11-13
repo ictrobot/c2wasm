@@ -2,14 +2,13 @@ import {CArgument, CVariable, CDeclaration} from "../tree/declarations";
 import {CExpression} from "../tree/expressions";
 import * as e from "../tree/expressions";
 import {Scope} from "../tree/scope";
-import {CType, CArithmetic, CPointer, CEnum} from "../tree/types";
+import {CType, CArithmetic, CPointer, CEnum, CStruct} from "../tree/types";
 import {Instructions, i32Type} from "../wasm";
 import {localidx} from "../wasm/base_types";
 import {WExpression, WInstruction} from "../wasm/instructions";
 import {WFnGenerator, WGenerator} from "./generator";
 import {staticInitializer} from "./static_initializer";
-import {realType} from "./type_conversion";
-import Global = WebAssembly.Global;
+import {realType, conversion} from "./type_conversion";
 
 export type StorageLocation =
     {type: "local", "index": {getIndex(d: number): localidx}} |
@@ -101,6 +100,7 @@ export function storageGet(ctx: WFnGenerator, ctype: CType, locationExpr: CExpre
 export function storageSet(ctx: WFnGenerator, ctype: CType, locationExpr: CExpression, valueExpr: CExpression, keepValue: boolean): WExpression {
     const [instr, location] = fromExpression(ctx, locationExpr);
     const valueInstr = ctx.expression(valueExpr, false);
+    valueInstr.push(...conversion(valueExpr.type, locationExpr.type));
 
     if (location.type === "local") {
         instr.push(...valueInstr, keepValue ? Instructions.local.tee(location.index) : Instructions.local.set(location.index));
@@ -271,7 +271,16 @@ function fromExpression(ctx: WFnGenerator, s: e.CExpression): [WExpression, Stor
         if (location) return [[], location];
 
     } else if (s instanceof e.CMemberAccess) {
-        // TODO
+        const address = ctx.expression(s.body, false);
+        if (s.structUnion instanceof CStruct) {
+            let offset = 0;
+            for (const member of s.structUnion.members) {
+                if (member.name === s.member) break;
+                offset += member.type.bytes;
+            }
+            return [[...address, Instructions.i32.const(offset), Instructions.i32.add()], {type: "pointer"}];
+        }
+        return [address, {type: "pointer"}]; // for unions
     } else if (s instanceof e.CDereference) {
         return [ctx.expression(s.body, false), {type: "pointer"}];
     }
@@ -292,6 +301,7 @@ function getStorageLocation(s: CDeclaration): StorageLocation | undefined {
 // helpers returning the instructions to read/write a type from memory
 
 function load(type: CType, offset: number): WInstruction {
+    if (type instanceof CPointer) return Instructions.i32.load(2, offset);
     if (!(type instanceof CArithmetic)) throw new Error("TODO");
 
     if (type.type === "float") {
@@ -324,6 +334,7 @@ function load(type: CType, offset: number): WInstruction {
 }
 
 function store(type: CType, offset: number): WInstruction {
+    if (type instanceof CPointer) return Instructions.i32.store(2, offset);
     if (!(type instanceof CArithmetic)) throw new Error("TODO");
 
     if (type.type === "float") {

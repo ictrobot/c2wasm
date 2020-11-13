@@ -60,8 +60,8 @@ export function ptExpression(e: pt.Expression, scope: Scope): CExpression {
 
     } else if (e instanceof pt.MemberAccessExpression) {
         let body = ptExpression(e.lhs, scope);
-        if (e.pointer) { // transform pointer access, `e->member` to `(*e).member`
-            body = new CDereference(e, body);
+        if (!e.pointer) { // transform into pointer access
+            body = new CAddressOf(e, body);
         }
         return new CMemberAccess(e, body, e.rhs);
 
