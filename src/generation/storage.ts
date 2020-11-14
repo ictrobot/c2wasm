@@ -18,15 +18,15 @@ export type StorageLocation =
 
 export function storageSetupStaticVar(ctx: WGenerator, d: CVariable): void {
     const addr = ctx.nextStaticAddr;
+    ctx.nextStaticAddr += Math.ceil(d.type.bytes / 4) * 4; // 4 byte align
+
     setStorageLocation(d, {
         type: "static",
         address: addr
     });
     if (d.staticValue) {
-        ctx.module.dataSegment(addr, staticInitializer(d.staticValue));
+        ctx.module.dataSegment(addr, staticInitializer(ctx, d.staticValue));
     }
-
-    ctx.nextStaticAddr += Math.ceil(d.type.bytes / 4) * 4; // 4 byte align
 }
 
 export function storageSetupScope(ctx: WFnGenerator, s: Scope): WExpression {

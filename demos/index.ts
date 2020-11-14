@@ -47,10 +47,6 @@ wabt().then(wabt => {
         }
     }
 
-    function isMainFn(fn: WFunction) {
-        return fn.exportName === "main" && fn.type[1].length === 0;
-    }
-
     if (typeof window !== 'undefined' && window.document) {
         window.document.write(`
         <h1>c2wasm</h1>
@@ -81,7 +77,7 @@ wabt().then(wabt => {
             try {
                 const {main} = await module.execute(imports) as { main: () => any };
                 const returnValue = main();
-                if (returnValue) output.textContent += "\nReturn value: " + returnValue;
+                if (returnValue !== undefined) output.textContent += "\nReturn value: " + returnValue;
             } catch (e) {
                 console.log(e);
                 output.textContent = e.stack;
@@ -99,7 +95,7 @@ wabt().then(wabt => {
 
             output.textContent = toWat(module);
 
-            if (module.functions.find(isMainFn) === undefined) {
+            if (module.functions.find(x => x.exportName === "main") === undefined) {
                 run.disabled = true;
                 module = undefined;
             } else {

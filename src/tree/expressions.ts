@@ -461,9 +461,11 @@ export class CInitializer {
         this._type = type ?? new CArray(undefined, new CPointer(undefined, new CVoid()), body.length);
 
         // convert string literals to list initializers
-        for (let i = 0; i < this.body.length; i++) {
-            const value = this.body[i];
-            if (value instanceof CStringLiteral) this.body[i] = value.toInitializer();
+        for (let i = 0; i < body.length; i++) {
+            const value = body[i];
+            if (value instanceof CArrayPointer && value.arrayIdentifier instanceof CStringLiteral) {
+                this.body[i] = value.arrayIdentifier.toInitializer();
+            }
         }
     }
 
@@ -517,8 +519,6 @@ export class CInitializer {
                 const value = child.evaluate();
                 if (value === undefined) throw new checks.ExpressionTypeError(child.node, "constant expression");
                 this.body[i] = value.changeType(this._memberTypes[i] as CArithmetic);
-            } else if (child instanceof CStringLiteral) {
-                this.body[i] = child.toInitializer().asStatic();
             } else {
                 throw new checks.ExpressionTypeError(child.node, "constant expression");
             }

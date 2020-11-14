@@ -33,7 +33,7 @@ function arrayPointer(ctx: WFnGenerator, e: c.CArrayPointer, discard: boolean): 
 function stringLiteral(ctx: WFnGenerator, e: c.CStringLiteral, discard: boolean): WExpression {
     if (discard) return []; // no possible side effects
     const stringAddress = ctx.gen.nextStaticAddr;
-    ctx.gen.nextStaticAddr += e.value.length;
+    ctx.gen.nextStaticAddr += Math.ceil(e.value.length / 4) * 4;
 
     ctx.gen.module.dataSegment(stringAddress, e.value.map(Number));
     return [Instructions.i32.const(stringAddress)];

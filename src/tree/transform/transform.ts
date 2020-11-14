@@ -3,7 +3,7 @@ import {CAssignment, CIdentifier, CExpression, CEvaluable, CInitializer, CString
 import {Scope} from "../scope";
 import {CStatement, CCompoundStatement, CExpressionStatement, CNop, CIf, CForLoop, CWhileLoop, CDoLoop, CSwitch, CBreak, CContinue, CReturn} from "../statements";
 import {ExpressionTypeError} from "../type_checking";
-import {CFuncType, CVoid, CArray, CArithmetic} from "../types";
+import {CFuncType, CVoid, CArray, CArithmetic, CPointer} from "../types";
 import {ParseTreeValidationError, pt} from "../../parsing";
 import {ptExpression, evalConstant} from "./expr_transform";
 import {getDeclaratorName, getDeclaratorType, getType} from "./type_transform";
@@ -36,15 +36,12 @@ function ptDeclaration(declaration: pt.Declaration, scope: Scope, inFunction: bo
         }
 
         const type = getDeclaratorType(declType, entry, scope);
-        if (type instanceof CArray && type.incomplete) {
+        if (!(type instanceof CPointer) && initialValue instanceof CArrayPointer && initialValue.arrayIdentifier instanceof CStringLiteral) {
+            initialValue = initialValue.arrayIdentifier;
+        }
+        if (initialValue?.type instanceof CArray && type instanceof CArray && type.incomplete) {
             // initialize array length from initializer if incomplete
-            if (initialValue?.type instanceof CArray) {
-                // when initializer used
-                type.length = initialValue.type.length;
-            } else if (initialValue instanceof CArrayPointer && initialValue.arrayIdentifier instanceof CStringLiteral) {
-                // string literals become wrapped with CArrayPointer
-                type.length = initialValue.arrayIdentifier.value.length;
-            }
+            type.length = initialValue.type.length;
         }
 
         if (type.incomplete) {
@@ -78,7 +75,11 @@ function ptDeclaration(declaration: pt.Declaration, scope: Scope, inFunction: bo
                     } else if (initialValue instanceof CInitializer) {
                         cvar.staticValue = initialValue.asStatic();
                     } else if (initialValue instanceof CStringLiteral) {
+                        // string literal being used as array
                         cvar.staticValue = initialValue.toInitializer();
+                    } else if (initialValue instanceof CArrayPointer && initialValue.arrayIdentifier instanceof CStringLiteral) {
+                        // string literal being used as pointer
+                        cvar.staticValue = initialValue;
                     } else {
                         throw new ExpressionTypeError(initialValue.node, "constant expression");
                     }
