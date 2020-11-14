@@ -6,6 +6,7 @@ import {WExpression, WInstruction} from "../wasm/instructions";
 import {WFnGenerator} from "./generator";
 import {storageGet, storageSet, storageUpdate, storageGetThenUpdate, getAddress} from "./storage";
 import {ImplementationType, implType, conversion, valueType, realType} from "./type_conversion";
+import {internalFunctions} from "./wasm_functions";
 
 function constant(ctx: WFnGenerator, e: c.CConstant, discard: boolean): WExpression {
     if (discard) return []; // no possible side effects
@@ -40,11 +41,14 @@ function stringLiteral(ctx: WFnGenerator, e: c.CStringLiteral, discard: boolean)
 }
 
 function functionCall(ctx: WFnGenerator, e: c.CFunctionCall, discard: boolean): WExpression {
-    const instr = e.args.flatMap((arg, i) =>
-        subExpr(ctx, arg, e.fnType.parameterTypes[i]));
     if (!(e.body instanceof c.CIdentifier) || !(e.body.value instanceof CFuncDefinition || e.body.value instanceof CFuncDeclaration)) {
         throw new Error("Invalid fn call identifier");
     }
+
+    const internalExpression = internalFunctions(ctx, e, discard); // __wasm__ etc
+    if (internalExpression !== undefined) return internalExpression;
+
+    const instr = e.args.flatMap((arg, i) => subExpr(ctx, arg, e.fnType.parameterTypes[i]));
 
     const fn = e.body.value as CFuncDeclaration | CFuncDefinition;
     if (ctx.shadowStackUsage > 0) {

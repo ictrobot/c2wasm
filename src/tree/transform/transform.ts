@@ -1,5 +1,6 @@
 import {CVariable, CFuncDefinition, CArgument, CFuncDeclaration} from "../declarations";
 import {CAssignment, CIdentifier, CExpression, CEvaluable, CInitializer, CStringLiteral, CConstant, CArrayPointer} from "../expressions";
+import {INTERNAL_SCOPE} from "../internal_scope";
 import {Scope} from "../scope";
 import {CStatement, CCompoundStatement, CExpressionStatement, CNop, CIf, CForLoop, CWhileLoop, CDoLoop, CSwitch, CBreak, CContinue, CReturn} from "../statements";
 import {ExpressionTypeError} from "../type_checking";
@@ -10,7 +11,7 @@ import {getDeclaratorName, getDeclaratorType, getType} from "./type_transform";
 
 /** Main function, transform a parse tree translation unit into a root scope */
 export function ptTransform(translationUnit: pt.TranslationUnit): Scope {
-    const fileScope = new Scope();
+    const fileScope = new Scope(undefined, INTERNAL_SCOPE);
     for (const decl of translationUnit) {
         if (decl instanceof pt.FunctionDefinition) {
             ptFunction(decl, fileScope);

@@ -137,7 +137,7 @@ function getSpecifierType(d: pt.SpecifierQualifiers | pt.DeclarationSpecifiers, 
         for (const e of singleSpecifier.body) { // populate enum
             if (e.value) nextValue = Number(evalConstant(e.value).value);
 
-            const enumConstant = new CVariable(e, e.id, addQualifier(cEnum, "const"), scope.isTop ? undefined : "static");
+            const enumConstant = new CVariable(e, e.id, addQualifier(cEnum, "const"), "static");
             enumConstant.staticValue = new CConstant(e, cEnum, nextValue);
             scope.addIdentifier(enumConstant); // add the enum member as a constant to the scope
 

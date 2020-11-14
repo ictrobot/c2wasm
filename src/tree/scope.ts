@@ -1,7 +1,7 @@
 import {CError} from "../c_error";
 import type {ParseNode} from "../parsing";
 import type {CDeclaration} from "./declarations";
-import {CFuncDeclaration, CFuncDefinition, CVariable} from "./declarations";
+import {CFuncDeclaration, CFuncDefinition} from "./declarations";
 import type {CCompound} from "./types";
 
 /**
@@ -63,10 +63,6 @@ export class Scope {
             }
         }
         this.identifiers.set(value.name, value);
-    }
-
-    get isTop(): boolean {
-        return this.parent === undefined;
     }
 
     get declarations(): ReadonlyArray<CDeclaration> {

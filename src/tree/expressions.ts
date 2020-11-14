@@ -118,10 +118,12 @@ export class CFunctionCall {
         this.type = this.fnType.returnType;
 
         // check arguments correct for the function type
-        if (this.fnType.parameterTypes.length !== args.length) {
+        if (this.fnType.variadic && this.fnType.parameterTypes.length > args.length) {
+            throw new checks.ExpressionTypeError(node, `at least ${this.fnType.parameterTypes.length} argument(s) to variadic function`);
+        } else if (!this.fnType.variadic && this.fnType.parameterTypes.length !== args.length) {
             throw new checks.ExpressionTypeError(node, `${this.fnType.parameterTypes.length} argument(s)`, `${args.length}`);
         }
-        for (let i = 0; i < args.length; i++) {
+        for (let i = 0; i < this.fnType.parameterTypes.length; i++) {
             CAssignment.checkAssignmentValid(args[i].node, this.fnType.parameterTypes[i], args[i]);
         }
     }

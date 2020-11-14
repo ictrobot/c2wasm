@@ -15,7 +15,8 @@ export class CFuncType {
     constructor(readonly node: ParseNode | undefined,
                 readonly returnType: CQualifiedType<CNotFuncType>,
                 readonly parameterTypes: CQualifiedType<CNotFuncType>[],
-                public parameterNames?: string[]) {
+                public parameterNames?: string[],
+                readonly variadic: boolean = false) {
         // return type and parameter types must be complete
         if (!(returnType instanceof CVoid)) checkTypeComplete(returnType);
         parameterTypes.forEach(x => checkTypeComplete(x));
@@ -25,7 +26,8 @@ export class CFuncType {
         return t instanceof CFuncType
             && t.returnType.equals(this.returnType)
             && t.parameterTypes.length === this.parameterTypes.length
-            && t.parameterTypes.every((other, i) => this.parameterTypes[i].equals(other));
+            && t.parameterTypes.every((other, i) => this.parameterTypes[i].equals(other))
+            && t.variadic === this.variadic;
     }
 }
 
