@@ -41,6 +41,12 @@ export function conversion(inType: CType, outType: CType): WExpression {
     } else if (outType instanceof CArithmetic && outType.type !== "float" && inType instanceof CPointer) {
         // convert pointer to int
         return [];
+    } else if (outType instanceof CEnum && inType instanceof CArithmetic) {
+        // convert arithmetic to enum
+        return arithmeticConversion(inType, CArithmetic.S32);
+    } else if (outType instanceof CArithmetic && inType instanceof CEnum) {
+        // convert enum to arithmetic
+        return arithmeticConversion(CArithmetic.S32, outType);
     }
 
     throw new Error(`Cannot convert ${inType.typeName} to ${outType.typeName}`);

@@ -13,8 +13,8 @@ function constant(ctx: WFnGenerator, e: c.CConstant, discard: boolean): WExpress
     if (e.type instanceof CArithmetic) {
         return [gInstr(valueType(e.type), "const", e.value)];
     }
-    // TODO CConstant enum values
-    throw new Error("TODO: enum constants");
+    // e.type should not be CEnum as they all become static initializers
+    throw new Error("Invalid constant");
 }
 
 function identifier(ctx: WFnGenerator, e: c.CIdentifier, discard: boolean): WExpression {
