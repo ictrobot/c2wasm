@@ -4,6 +4,7 @@ import {Instructions} from "../wasm";
 import {labelidx} from "../wasm/base_types";
 import {WExpression, WInstruction} from "../wasm/instructions";
 import {subExpr, condition} from "./expressions";
+import {GenError} from "./gen_error";
 import {WFnGenerator} from "./generator";
 import {storageSetupScope} from "./storage";
 
@@ -30,7 +31,7 @@ function _if(ctx: WFnGenerator, s: c.CIf): WExpression {
 }
 
 function _forLoop(ctx: WFnGenerator, s: c.CForLoop): WExpression {
-    if (s.body === undefined) throw new Error("Invalid for loop body");
+    if (s.body === undefined) throw new GenError("Invalid for loop body", ctx, s.node);
     const storageSetup = storageSetupScope(ctx, s.scope);
 
     let init: WExpression = [];
@@ -67,7 +68,7 @@ function _forLoop(ctx: WFnGenerator, s: c.CForLoop): WExpression {
 }
 
 function _whileLoop(ctx: WFnGenerator, s: c.CWhileLoop): WExpression {
-    if (s.body === undefined) throw new Error("Invalid while loop body");
+    if (s.body === undefined) throw new GenError("Invalid while loop body", ctx, s.node);
 
     return [Instructions.loop(null, [
         storeContinueDepth(s),
@@ -81,7 +82,7 @@ function _whileLoop(ctx: WFnGenerator, s: c.CWhileLoop): WExpression {
 }
 
 function _doLoop(ctx: WFnGenerator, s: c.CDoLoop): WExpression {
-    if (s.body === undefined) throw new Error("Invalid while loop body");
+    if (s.body === undefined) throw new GenError("Invalid while loop body", ctx, s.node);
 
     return [Instructions.block(null, [
         storeBreakDepth(s),
@@ -95,7 +96,8 @@ function _doLoop(ctx: WFnGenerator, s: c.CDoLoop): WExpression {
 }
 
 function _switch(ctx: WFnGenerator, s: c.CSwitch): WExpression {
-    throw new Error("TODO: _switch");
+    // TODO implement switch
+    throw new GenError("TODO: implement switch", ctx, s.node);
 }
 
 function _continue(ctx: WFnGenerator, s: c.CContinue): WExpression {
@@ -103,7 +105,7 @@ function _continue(ctx: WFnGenerator, s: c.CContinue): WExpression {
         getIndex(depth: number): labelidx {
             const statement = s.loop as any as Record<typeof continueDepthSymbol, number | undefined>;
             const targetDepth = statement[continueDepthSymbol];
-            if (targetDepth === undefined) throw new Error("Failed to find continue depth");
+            if (targetDepth === undefined) throw new GenError("Failed to find continue depth", ctx, s.node);
 
             return BigInt(depth - targetDepth) as labelidx;
         }
@@ -115,7 +117,7 @@ function _break(ctx: WFnGenerator, s: c.CBreak): WExpression {
         getIndex(depth: number): labelidx {
             const statement = s.target as any as Record<typeof breakDepthSymbol, number | undefined>;
             const targetDepth = statement[breakDepthSymbol];
-            if (targetDepth === undefined) throw new Error("Failed to find break depth");
+            if (targetDepth === undefined) throw new GenError("Failed to find break depth", ctx, s.node);
 
             return BigInt(depth - targetDepth) as labelidx;
         }

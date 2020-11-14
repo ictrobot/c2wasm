@@ -1,6 +1,7 @@
 import {CConstant, CInitializer, CArrayPointer, CStringLiteral} from "../tree/expressions";
 import {CEnum, CArithmetic, CArray, CUnion, CStruct, CSizeT} from "../tree/types";
 import {byte} from "../wasm/base_types";
+import {GenError} from "./gen_error";
 import {WGenerator} from "./generator";
 
 export function staticInitializer(ctx: WGenerator, init: CConstant | CInitializer | CArrayPointer, nested = false): byte[] {
@@ -41,12 +42,12 @@ function constant(c: CConstant): byte[] {
     } else if (CArithmetic.Fp32.equals(c.type)) {
         return encode(4, d => d.setFloat32(0, Number(c.value)));
     }
-    throw new Error("Unknown value type?");
+    throw new GenError("Unknown value type?", undefined, c.node);
 }
 
 function stringLiteral(ctx: WGenerator, init: CArrayPointer): byte[] {
     // very similar code to generation/expressions.ts stringLiteral(...)
-    if (!(init.arrayIdentifier instanceof CStringLiteral)) throw new Error("Invalid initializer");
+    if (!(init.arrayIdentifier instanceof CStringLiteral)) throw new GenError("Invalid initializer", undefined, init.node);
 
     const addr = ctx.nextStaticAddr;
     ctx.nextStaticAddr += Math.ceil(init.arrayIdentifier.value.length / 4) * 4;
@@ -59,28 +60,28 @@ function initializer(ctx: WGenerator, init: CInitializer, nested: boolean): byte
     let bytes: byte[];
 
     if (init.type instanceof CArray) {
-        if (init.type.length === undefined) throw new Error("Array length still unknown?");
+        if (init.type.length === undefined) throw new GenError("Array length still unknown?", undefined, init.node);
 
         bytes = init.body.flatMap((x) => {
             if (x instanceof CConstant || x instanceof CInitializer) return staticInitializer(ctx, x, true);
-            throw new Error("Invalid static array initializer");
+            throw new GenError("Invalid static array initializer", undefined, x.node);
         });
 
     } else if (init.type instanceof CUnion) {
         if (init.body[0] instanceof CConstant || init.body[0] instanceof CInitializer) {
             bytes = staticInitializer(ctx, init.body[0], true);
         } else {
-            throw new Error("Invalid static union initializer");
+            throw new GenError("Invalid static union initializer", undefined, init.node);
         }
 
     } else if (init.type instanceof CStruct) {
         bytes = init.body.flatMap((x) => {
             if (x instanceof CConstant || x instanceof CInitializer) return staticInitializer(ctx, x, true);
-            throw new Error("Invalid static struct initializer");
+            throw new GenError("Invalid static struct initializer", undefined, x.node);
         });
 
     } else {
-        throw new Error("Invalid initializer");
+        throw new GenError("Invalid initializer", undefined, init.node);
     }
 
     if (nested) {

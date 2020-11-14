@@ -6,6 +6,7 @@ import {CType, CArithmetic, CPointer, CEnum, CStruct, CUnion, CArray, CVoid, CFu
 import {Instructions, i32Type} from "../wasm";
 import {localidx} from "../wasm/base_types";
 import {WExpression, WInstruction} from "../wasm/instructions";
+import {GenError} from "./gen_error";
 import {WFnGenerator, WGenerator} from "./generator";
 import {staticInitializer} from "./static_initializer";
 import {realType, conversion} from "./type_conversion";
@@ -169,7 +170,7 @@ export function storageSet(ctx: WFnGenerator, ctype: CType, locationExpr: CExpre
  * If keepValue is true then the stored value is kept on the top of the stack after being stored */
 export function storageUpdate(ctx: WFnGenerator, ctype: CType, locationExpr: CExpression, transform: WExpression, keepValue: boolean): WExpression {
     if (ctype instanceof CArray || ctype instanceof CStruct || ctype instanceof CUnion) {
-        throw new Error("Cannot storageUpdate " + ctype.typeName);
+        throw new GenError("Cannot storageUpdate " + ctype.typeName, ctx, locationExpr.node);
     }
     const [instr, location] = fromExpression(ctx, locationExpr);
 
@@ -228,7 +229,7 @@ export function storageUpdate(ctx: WFnGenerator, ctype: CType, locationExpr: CEx
  * Value before transform is left on the stack */
 export function storageGetThenUpdate(ctx: WFnGenerator, ctype: CType, locationExpr: CExpression, transform: WExpression): WExpression {
     if (ctype instanceof CArray || ctype instanceof CStruct || ctype instanceof CUnion) {
-        throw new Error("Cannot storageGetThenUpdate " + ctype.typeName);
+        throw new GenError("Cannot storageGetThenUpdate " + ctype.typeName, ctx, locationExpr.node);
     }
     const [instr, location] = fromExpression(ctx, locationExpr);
 
@@ -273,7 +274,7 @@ export function storageGetThenUpdate(ctx: WFnGenerator, ctype: CType, locationEx
 export function getAddress(ctx: WFnGenerator, s: e.CExpression): WExpression {
     const [instr, loc] = fromExpression(ctx, s);
     if (loc.type === "local") {
-        throw new Error("Locals with their address accessed should be on the shadow stack. This shouldn't happen!");
+        throw new GenError("Local with addressed access stored in local. This shouldn't happen!", ctx, s.node);
     } else if (loc.type === "static") {
         instr.push(Instructions.i32.const(loc.address));
     } else if (loc.type === "shadow") {
@@ -293,7 +294,7 @@ export function getAddress(ctx: WFnGenerator, s: e.CExpression): WExpression {
  * the second return value is the storage location itself.
  */
 function fromExpression(ctx: WFnGenerator, s: e.CExpression): [WExpression, StorageLocation] {
-    if (!s.lvalue) throw new Error("Only lvalue expressions can have storage locations");
+    if (!s.lvalue) throw new GenError("Only lvalue expressions can have storage locations", ctx, s.node);
 
     if (s instanceof e.CIdentifier) {
         const location = getStorageLocation(s.value);
@@ -313,7 +314,8 @@ function fromExpression(ctx: WFnGenerator, s: e.CExpression): [WExpression, Stor
     } else if (s instanceof e.CDereference) {
         return [ctx.expression(s.body, false), {type: "pointer"}];
     }
-    throw new Error("TODO");
+
+    throw new GenError("Invalid location expression", ctx, s.node);
 }
 
 // helpers for storing storage location on variables using a Symbol

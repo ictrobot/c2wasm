@@ -8,6 +8,7 @@ import type {WLocal} from "../wasm/functions";
 import type {WGlobal} from "../wasm/global";
 import type {WExpression} from "../wasm/instructions";
 import {expressionGeneration} from "./expressions";
+import {GenError} from "./gen_error";
 import {statementGeneration} from "./statements";
 import {storageSetupStaticVar} from "./storage";
 import {realType, returnType} from "./type_conversion";
@@ -27,11 +28,17 @@ export class WGenerator {
         this.shadowStackPtr = this.module.global(i32Type, true, 0n);
 
         for (const decl of translationUnit.declarations) {
-            if (decl instanceof CFuncDefinition) this.function(decl);
-            else if (decl instanceof CFuncDeclaration && decl.storage === "extern") this.externFunction(decl);
-            else if (decl instanceof CFuncDeclaration) throw new Error("Undefined function " + decl.name);
-            else if (decl instanceof CVariable) storageSetupStaticVar(this, decl);
-            else throw new Error("Unexpected declaration");
+            if (decl instanceof CFuncDefinition) {
+                this.function(decl);
+            } else if (decl instanceof CFuncDeclaration && decl.storage === "extern") {
+                this.externFunction(decl);
+            } else if (decl instanceof CFuncDeclaration) {
+                throw new GenError("Undefined function " + decl.name, undefined, decl.node);
+            } else if (decl instanceof CVariable) {
+                storageSetupStaticVar(this, decl);
+            } else {
+                throw new GenError("Unexpected declaration", undefined, decl.node);
+            }
         }
 
         const shadowStackStart = Math.ceil(this.nextStaticAddr / 512) * 512;
@@ -49,7 +56,7 @@ export class WGenerator {
     }
 
     private functionBody(s: CFuncDefinition, b: WFunctionBuilder): WExpression {
-        const fnGenerator = new WFnGenerator(this, b);
+        const fnGenerator = new WFnGenerator(this, b, s.name);
         const body = fnGenerator.statement(s.body);
 
         if (fnGenerator.shadowStackUsage > 0) {
@@ -89,7 +96,7 @@ export class WGenerator {
         return {
             getIndex: () => {
                 const wasmFunc = this.functions.get(fn.name);
-                if (wasmFunc === undefined) throw new Error(`Function ${fn.name} not found`);
+                if (wasmFunc === undefined) throw new GenError(`Function ${fn.name} not found`, undefined, fn.node);
                 return wasmFunc.getIndex();
             }
         };
@@ -100,7 +107,7 @@ export class WFnGenerator {
     private temporaries: WLocal[] = [];
     shadowStackUsage: number = 0;
 
-    constructor(readonly gen: WGenerator, readonly builder: WFunctionBuilder) {
+    constructor(readonly gen: WGenerator, readonly builder: WFunctionBuilder, readonly fnName: string) {
     }
 
     statement(s: CStatement): WExpression {

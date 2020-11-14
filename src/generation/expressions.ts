@@ -3,6 +3,7 @@ import * as c from "../tree/expressions";
 import {CType, CArithmetic, CPointer, CArray, CSizeT, CUnion, CStruct} from "../tree/types";
 import {i32Type, Instructions, i64Type, f32Type, f64Type} from "../wasm";
 import {WExpression, WInstruction} from "../wasm/instructions";
+import {GenError} from "./gen_error";
 import {WFnGenerator} from "./generator";
 import {storageGet, storageSet, storageUpdate, storageGetThenUpdate, getAddress} from "./storage";
 import {ImplementationType, implType, conversion, valueType, realType} from "./type_conversion";
@@ -15,7 +16,7 @@ function constant(ctx: WFnGenerator, e: c.CConstant, discard: boolean): WExpress
         return [gInstr(valueType(e.type), "const", e.value)];
     }
     // e.type should not be CEnum as they all become static initializers
-    throw new Error("Invalid constant");
+    throw new GenError("Invalid constant", ctx, e.node);
 }
 
 function identifier(ctx: WFnGenerator, e: c.CIdentifier, discard: boolean): WExpression {
@@ -42,7 +43,7 @@ function stringLiteral(ctx: WFnGenerator, e: c.CStringLiteral, discard: boolean)
 
 function functionCall(ctx: WFnGenerator, e: c.CFunctionCall, discard: boolean): WExpression {
     if (!(e.body instanceof c.CIdentifier) || !(e.body.value instanceof CFuncDefinition || e.body.value instanceof CFuncDeclaration)) {
-        throw new Error("Invalid fn call identifier");
+        throw new GenError("Invalid fn call identifier", ctx, e.body.node);
     }
 
     const internalExpression = internalFunctions(ctx, e, discard); // __wasm__ etc
@@ -318,7 +319,7 @@ function assignment(ctx: WFnGenerator, e: c.CAssignment, discard: boolean): WExp
             const transformBytes = (transform.shift() as WInstruction)(0);
 
             if (bytesToRemove.length !== transformBytes.length || bytesToRemove.find((v, i) => v !== transformBytes[i])) {
-                throw new Error("Failed to construct op=");
+                throw new GenError("Failed to construct op=", ctx, e.node);
             }
         }
 
@@ -350,7 +351,7 @@ function assignment(ctx: WFnGenerator, e: c.CAssignment, discard: boolean): WExp
                 instr.push(...expressionGeneration(ctx, assignment, true));
             }
         } else {
-            throw new Error("Unknown initializer");
+            throw new GenError("Unknown initializer", ctx, e.node);
         }
 
         if (!discard) instr.push(...expressionGeneration(ctx, e.lhs, false));
@@ -407,7 +408,7 @@ export function condition(ctx: WFnGenerator, e: c.CExpression, anyNonZeroI32 = t
             return [...expressionGeneration(ctx, e, false), Instructions.i32.const(0n), Instructions.i32.ne()];
         }
     } else if (typeof wType !== "number") {
-        throw new Error("Invalid condition");
+        throw new GenError("Invalid condition", ctx, e.node);
     }
     return [...expressionGeneration(ctx, e, false), gConst(wType, 0), gInstr(wType, "ne")];
 }
