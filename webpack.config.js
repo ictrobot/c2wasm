@@ -17,11 +17,7 @@ module.exports = (env, argv) => ({
     },
     resolve: {
         extensions: [".ts", ".js"],
-        fallback: {
-            crypto: false,
-            path: false,
-            fs: false
-        }
+        fallback: Object.fromEntries(["crypto", "path", "fs", "stream"].map(x => [x, false]))
     },
     module: {
         rules: [{ test: /\.ts$/, loader: "ts-loader" }]
