@@ -1,6 +1,7 @@
+import {compress, decompress} from "lzutf8";
 import {compile} from "../src/generation";
 import wabt from "wabt";
-import {ModuleBuilder, WFunction} from "../src/wasm";
+import {ModuleBuilder} from "../src/wasm";
 
 const testInput = `
 extern void print(int a, long b);
@@ -52,7 +53,10 @@ wabt().then(wabt => {
         <h1>c2wasm</h1>
         <div>
             <textarea id="textInput" rows="20" style="width: 100%; resize: vertical">${testInput}</textarea>
-            <button id="run" style="position: absolute; right: 2px">Run!</button>
+            <div style="position: absolute; right: 2px">
+                <button id="copy">Copy URL</button>
+                <button id="run">Run!</button>
+            </div>
             <pre id="output"></pre>
         </div>
     `);
@@ -61,6 +65,7 @@ wabt().then(wabt => {
         const textInput = window.document.getElementById("textInput") as HTMLTextAreaElement;
         const output = window.document.getElementById("output") as HTMLPreElement;
         const run = window.document.getElementById("run") as HTMLButtonElement;
+        const copyURL = window.document.getElementById("copy") as HTMLButtonElement;
 
         run.addEventListener("click", async () => {
             if (module === undefined) return;
@@ -84,6 +89,11 @@ wabt().then(wabt => {
             }
         });
 
+        if (window.location.hash.length) {
+            const hash = window.location.hash.substring(1);
+            textInput.value = decompress(hash, {inputEncoding: "Base64", outputEncoding: "String"});
+        }
+
         const handler = () => {
             try {
                 module = compile(textInput.value);
@@ -104,6 +114,12 @@ wabt().then(wabt => {
         };
         textInput.addEventListener("input", handler);
         handler();
+
+        copyURL.addEventListener("click", async () => {
+            const baseURL = window.location.href.split("#")[0];
+            const base64 = compress(textInput.value, {outputEncoding: "Base64"});
+            await navigator.clipboard.writeText(baseURL + "#" + base64);
+        });
     } else {
         console.log(toWat(compile(testInput)));
     }
