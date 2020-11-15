@@ -90,7 +90,7 @@ export class CStruct {
 
     get bytes(): number {
         if (this.incomplete) throw new Error("Tried to get size of incomplete type");
-        return this.members.reduce((total, x) => total + x.type.bytes, 0);
+        return this.members.reduce((total, x) => total + (Math.ceil(x.type.bytes / 4) * 4), 0);
     }
 
     get incomplete(): boolean {

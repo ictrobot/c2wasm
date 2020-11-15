@@ -306,7 +306,7 @@ function fromExpression(ctx: WFnGenerator, s: e.CExpression): [WExpression, Stor
             let offset = 0;
             for (const member of s.structUnion.members) {
                 if (member.name === s.member) break;
-                offset += member.type.bytes;
+                offset += Math.ceil(member.type.bytes / 4) * 4;
             }
             return [[...address, Instructions.i32.const(offset), Instructions.i32.add()], {type: "pointer"}];
         }
