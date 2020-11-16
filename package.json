@@ -16,9 +16,9 @@
   "scripts": {
     "test": "ava",
     "start": "node --experimental-wasm-bigint -r ts-node/register src/main.ts",
-    "prestart": "jison src/parsing/c_grammar.jison -o src/parsing/gen/c_grammar.js --default-action=none,merge",
+    "parser": "jison src/parsing/c_grammar.jison -o src/parsing/gen/c_grammar.js --default-action=none,merge",
     "lint": "eslint .",
-    "build": "webpack"
+    "build": "ts-node src/stdlib/standard_library.ts && webpack"
   },
   "devDependencies": {
     "@types/moo": "^0.5.3",

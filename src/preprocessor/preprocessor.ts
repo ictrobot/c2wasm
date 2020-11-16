@@ -1,10 +1,11 @@
+import {STANDARD_LIBRARY} from "../stdlib/standard_library";
 import {Definition} from "./definition";
 import {consume, mustConsume, consumeAny, PreProRegex} from "./helpers";
 
 export class Preprocessor {
     definitions = new Map<string, Definition>();
 
-    libraryFiles = new Map<string, string>(); // #include <...>
+    libraryFiles = new Map<string, string>(STANDARD_LIBRARY); // #include <...>
     userFiles = new Map<string, string>(); // #include "..."
 
     process(text: string): string {
@@ -73,13 +74,13 @@ export class Preprocessor {
     private _includeLib(path: string) {
         const file = this.libraryFiles.get(path);
         if (file === undefined) throw new Error("Unknown path `" + path + "`");
-        return file;
+        return this.process(file);
     }
 
     private _includeUser(path: string) {
         const file = this.userFiles.get(path);
         if (file === undefined) return this._includeLib(path);
-        return file;
+        return this.process(file);
     }
 
     private _define(line: string) {
