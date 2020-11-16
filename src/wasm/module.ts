@@ -108,6 +108,7 @@ export class ModuleBuilder {
         for (const i of this._globals) {
             if (i.exportName) exports.push([...encodeUtf8(i.exportName), 0x03 as byte, ...encodeU32(i.getIndex())]);
         }
+        if (this._memory) exports.push([...encodeUtf8("__mem"), 0x02 as byte, 0x00 as byte]);
 
         return exports;
     }

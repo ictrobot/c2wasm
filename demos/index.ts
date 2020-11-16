@@ -80,7 +80,8 @@ wabt().then(wabt => {
             });
 
             try {
-                const {main} = await module.execute(imports) as { main: () => any };
+                const {main, __mem} = await module.execute(imports) as { main: () => any, __mem?: WebAssembly.Memory };
+                (window as any).wMem = __mem;
                 const returnValue = main();
                 if (returnValue !== undefined) output.textContent += "\nReturn value: " + returnValue;
             } catch (e) {

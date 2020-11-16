@@ -1,4 +1,4 @@
-import {STANDARD_LIBRARY} from "../stdlib/standard_library";
+import {STANDARD_LIBRARY} from "../c_library/standard_library";
 import {Definition} from "./definition";
 import {consume, mustConsume, consumeAny, PreProRegex} from "./helpers";
 
