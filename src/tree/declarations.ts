@@ -11,6 +11,7 @@ export type CDeclaration = CVariable | CArgument | CFuncDefinition | CFuncDeclar
 export class CVariable {
     staticValue?: CConstant | CInitializer | CArrayPointer;
     addressUsed: boolean = false;
+    definition?: CVariable; // if this is extern
 
     constructor(readonly node: ParseNode,
                 readonly name: string,
@@ -27,6 +28,8 @@ export class CArgument {
 }
 
 export class CFuncDeclaration {
+    definition?: CFuncDefinition;
+
     constructor(readonly node: ParseNode,
                 readonly name: string,
                 readonly type: CQualifiedType<CFuncType>,

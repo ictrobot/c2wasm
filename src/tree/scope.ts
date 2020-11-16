@@ -55,6 +55,7 @@ export class Scope {
         if (existing) {
             if (existing.type.equals(value.type) && existing instanceof CFuncDeclaration && value instanceof CFuncDefinition) {
                 // allow replacement of function declaration with definition
+                existing.definition = value;
             } else if (existing.type.equals(value.type) && (existing instanceof CFuncDeclaration || value instanceof CFuncDeclaration)) {
                 // allow function declarations to be redeclared (but don't override instance in scope)
                 return;

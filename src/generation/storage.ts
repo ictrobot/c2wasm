@@ -297,8 +297,14 @@ function fromExpression(ctx: WFnGenerator, s: e.CExpression): [WExpression, Stor
     if (!s.lvalue) throw new GenError("Only lvalue expressions can have storage locations", ctx, s.node);
 
     if (s instanceof e.CIdentifier) {
-        const location = getStorageLocation(s.value);
+        let location = getStorageLocation(s.value);
         if (location) return [[], location];
+
+        if (s.value instanceof CVariable && s.value.definition) {
+            location = getStorageLocation(s.value.definition);
+            if (location) return [[], location];
+        }
+
 
     } else if (s instanceof e.CMemberAccess) {
         const address = ctx.expression(s.body, false);

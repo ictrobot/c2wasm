@@ -17,7 +17,7 @@ export const SHADOW_STACK_SIZE = 2 ** 20;
 
 export class WGenerator {
     readonly module: ModuleBuilder;
-    readonly functions = new Map<string, WFunction | WImportedFunction>();
+    readonly functions = new Map<CFuncDefinition | CFuncDeclaration, WFunction | WImportedFunction>();
 
     // current memory pointers
     nextStaticAddr = 32; // reserve first 32 bytes as 0
@@ -30,10 +30,8 @@ export class WGenerator {
         for (const decl of translationUnit.declarations) {
             if (decl instanceof CFuncDefinition) {
                 this.function(decl);
-            } else if (decl instanceof CFuncDeclaration && decl.storage === "extern") {
-                this.externFunction(decl);
             } else if (decl instanceof CFuncDeclaration) {
-                throw new GenError("Undefined function " + decl.name, undefined, decl.node);
+                this.importFunction(decl);
             } else if (decl instanceof CVariable) {
                 storageSetupStaticVar(this, decl);
             } else {
@@ -52,7 +50,7 @@ export class WGenerator {
             returnType(func.type.returnType),
             b => this.functionBody(func, b),
             func.storage === undefined ? func.name : undefined);
-        this.functions.set(func.name, wasmFunc);
+        this.functions.set(func, wasmFunc);
     }
 
     private functionBody(s: CFuncDefinition, b: WFunctionBuilder): WExpression {
@@ -83,20 +81,22 @@ export class WGenerator {
         return body;
     }
 
-    private externFunction(func: CFuncDeclaration) {
+    private importFunction(func: CFuncDeclaration) {
         const wasmFunc = this.module.importFunction(
             func.type.parameterTypes.map(realType),
             returnType(func.type.returnType),
             "extern",
             func.name);
-        this.functions.set(func.name, wasmFunc);
+        this.functions.set(func, wasmFunc);
     }
 
     functionIndex(fn: CFuncDeclaration | CFuncDefinition): {getIndex(): funcidx} {
+        while (fn instanceof CFuncDeclaration && fn.definition !== undefined) fn = fn.definition;
+
         return {
             getIndex: () => {
-                const wasmFunc = this.functions.get(fn.name);
-                if (wasmFunc === undefined) throw new GenError(`Function ${fn.name} not found`, undefined, fn.node);
+                const wasmFunc = this.functions.get(fn);
+                if (wasmFunc === undefined) throw new GenError(`Function ${fn.name} not found in scope`, undefined, fn.node);
                 return wasmFunc.getIndex();
             }
         };
