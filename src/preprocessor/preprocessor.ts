@@ -1,8 +1,11 @@
 import {Definition} from "./definition";
-import {consume, mustConsume, tryConsume, consumeAny, PreProRegex} from "./helpers";
+import {consume, mustConsume, consumeAny, PreProRegex} from "./helpers";
 
 export class Preprocessor {
-    definitions: Map<string, Definition> = new Map<string, Definition>();
+    definitions = new Map<string, Definition>();
+
+    libraryFiles = new Map<string, string>(); // #include <...>
+    userFiles = new Map<string, string>(); // #include "..."
 
     process(text: string): string {
         // remove comments
@@ -11,10 +14,13 @@ export class Preprocessor {
         let output = "";
         for (const line of text.split("\n")) {
             if (line.startsWith("#")) {
-                if (tryConsume(line, "#define", m => this._define(m.remainingLine))) {
-                    // define
-                } else if (tryConsume(line, "#undef", m => this._undef(m.remainingLine))) {
-                    // undef
+                let match: ReturnType<typeof consume>;
+                if ((match = consume(line, "#define")).success) {
+                    this._define(match.remainingLine);
+                } else if ((match = consume(line, "#undef")).success) {
+                    this._undef(match.remainingLine);
+                } else if ((match = consume(line, "#include")).success) {
+                    output += this._include(match.remainingLine) + "\n";
                 } else if (line.trim().length > 1) {
                     throw new Error("Unknown preprocessor directive");
                 }
@@ -43,6 +49,37 @@ export class Preprocessor {
             line = token.remainingLine;
         }
         return output;
+    }
+
+    private _include(line: string): string {
+        line = mustConsume(line, PreProRegex.whitespace, "whitespace").remainingLine.trim();
+        if (line.startsWith('"') && line.endsWith('"')) {
+            return this._includeUser(line.substring(1, line.length - 1));
+        } else if (line.startsWith("<") && line.endsWith(">")) {
+            return this._includeLib(line.substring(1, line.length - 1));
+        }
+
+        // if failed try expand macros
+        line = this.expandDefinitions(line);
+        if (line.startsWith('"') && line.endsWith('"')) {
+            return this._includeUser(line.substring(1, line.length - 1));
+        } else if (line.startsWith("<") && line.endsWith(">")) {
+            return this._includeLib(line.substring(1, line.length - 1));
+        }
+
+        throw new Error("Invalid #include");
+    }
+
+    private _includeLib(path: string) {
+        const file = this.libraryFiles.get(path);
+        if (file === undefined) throw new Error("Unknown path `" + path + "`");
+        return file;
+    }
+
+    private _includeUser(path: string) {
+        const file = this.userFiles.get(path);
+        if (file === undefined) return this._includeLib(path);
+        return file;
     }
 
     private _define(line: string) {

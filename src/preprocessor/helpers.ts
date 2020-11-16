@@ -7,7 +7,7 @@ export type Token = {
 // various regexes used
 export const PreProRegex = {
     identifier: /^[a-zA-Z_][a-zA-Z0-9_]*/,
-    token: /^(?:[^ \t\v\f\na-zA-Z_]+|"(?:\\"|[^\n"])*")/,
+    token: /^(?:"(?:\\"|[^\n"])*"|[^ \t\v\f\na-zA-Z_]+)/,
     definitionArgument: /^(?:"(?:\\"|[^\n"])*"|[^\n,")])*/, // allowed empty max(,) for max(a,b)
     whitespace: /^[ \t\v\f]+/,
     // used in first pass so is global and multiline
@@ -30,16 +30,6 @@ export function consumeAny(line: string): ConsumeSucceeded {
         return match;
     }
     throw new Error("Malformed input? Line does not match defined regular expressions.\n`" + line + "`");
-}
-
-/** Try to consume, if success run callback */
-export function tryConsume(line: string, t: RegExp | string, successCallback: (s: ConsumeSucceeded) => void): boolean {
-    const match = consume(line, t);
-    if (match.success) {
-        successCallback(match);
-        return true;
-    }
-    return false;
 }
 
 /** Consume or throw error */

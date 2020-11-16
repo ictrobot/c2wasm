@@ -9,6 +9,11 @@ int factorial(int v) {
 function process(input: string): string {
     try {
         const preprocessor = new Preprocessor();
+        for (let i = 0; i < 5; i++) {
+            preprocessor.libraryFiles.set(`library${i}.h`, `void library${i}() {}`);
+            preprocessor.userFiles.set(`user${i}.h`, `void user${i}() {}`);
+        }
+
         return preprocessor.process(input);
     } catch (e) {
         console.debug(e);
