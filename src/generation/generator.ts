@@ -1,4 +1,4 @@
-import {CFuncDefinition, CFuncDeclaration, CVariable} from "../tree/declarations";
+import {CFuncDefinition, CFuncDeclaration, CVariable, CVarDefinition} from "../tree/declarations";
 import type {CExpression} from "../tree/expressions";
 import type {Scope} from "../tree/scope";
 import type {CStatement} from "../tree/statements";
@@ -32,7 +32,7 @@ export class WGenerator {
                 this.function(decl);
             } else if (decl instanceof CFuncDeclaration) {
                 this.importFunction(decl);
-            } else if (decl instanceof CVariable) {
+            } else if (decl instanceof CVarDefinition) {
                 storageSetupStaticVar(this, decl);
             } else {
                 throw new GenError("Unexpected declaration", undefined, decl.node);
@@ -49,7 +49,7 @@ export class WGenerator {
             func.type.parameterTypes.map(realType),
             returnType(func.type.returnType),
             b => this.functionBody(func, b),
-            func.storage === undefined ? func.name : undefined);
+            func.linkage === "external" ? func.name : undefined);
         this.functions.set(func, wasmFunc);
     }
 

@@ -1,6 +1,5 @@
 import {CError} from "../c_error";
 import type {TypeSpecifier, TypeQualifier, ParseNode} from "../parsing/parsetree";
-import type {CVariable} from "./declarations";
 
 // types for expressions and declarations in the IR
 export type CType = CNotFuncType | CFuncType;
@@ -70,19 +69,23 @@ export class CArray {
 
 export type CCompound = CStruct | CUnion | CEnum;
 
+export class CCompoundMember {
+    constructor(readonly node: ParseNode, readonly name: string, readonly type: CQualifiedType<CNotFuncType>) {}
+}
+
 export class CStruct {
     readonly typeName = "struct";
-    private _members: ReadonlyArray<CVariable> | undefined;
+    private _members: ReadonlyArray<CCompoundMember> | undefined;
 
     constructor(public node: ParseNode | undefined, readonly name: string | undefined) {
     }
 
-    get members(): ReadonlyArray<CVariable> {
+    get members(): ReadonlyArray<CCompoundMember> {
         if (this._members === undefined) throw new Error("Can't get members of an incomplete struct");
         return this._members;
     }
 
-    set members(children: ReadonlyArray<CVariable>) {
+    set members(children: ReadonlyArray<CCompoundMember>) {
         if (this._members !== undefined) throw new Error("Can't redefine a struct's members");
         if (children.length === 0) throw new Error("Struct must have one or more member");
         this._members = children;
@@ -119,17 +122,17 @@ export class CStruct {
 
 export class CUnion {
     readonly typeName = "union";
-    private _members: ReadonlyArray<CVariable> | undefined;
+    private _members: ReadonlyArray<CCompoundMember> | undefined;
 
     constructor(public node: ParseNode | undefined, readonly name: string | undefined) {
     }
 
-    get members(): ReadonlyArray<CVariable> {
+    get members(): ReadonlyArray<CCompoundMember> {
         if (this._members === undefined) throw new Error("Can't get members of an incomplete union");
         return this._members;
     }
 
-    set members(children: ReadonlyArray<CVariable>) {
+    set members(children: ReadonlyArray<CCompoundMember>) {
         if (this._members !== undefined) throw new Error("Can't redefine a union's members");
         if (children.length === 0) throw new Error("Struct must have one or more member");
         this._members = children;

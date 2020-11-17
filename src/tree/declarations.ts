@@ -1,4 +1,4 @@
-import type {FunctionDefinition, ParseNode, StorageClass} from "../parsing/parsetree";
+import type {FunctionDefinition, ParseNode} from "../parsing/parsetree";
 import type {CInitializer, CArrayPointer} from "./expressions";
 import type {CConstant} from "./expressions";
 import type {Scope} from "./scope";
@@ -6,44 +6,87 @@ import {CCompoundStatement} from "./statements";
 import type {CFuncType, CNotFuncType, CQualifiedType} from "./types";
 
 // classes to represent all the different types of declarations in the IR
-export type CDeclaration = CVariable | CArgument | CFuncDefinition | CFuncDeclaration;
+export type CDeclaration = CVariable | CFunction;
+export type CVariable = CVarDeclaration | CVarDefinition | CArgument;
+export type CFunction = CFuncDefinition | CFuncDeclaration;
 
-export class CVariable {
-    staticValue?: CConstant | CInitializer | CArrayPointer;
-    addressUsed: boolean = false;
-    definition?: CVariable; // if this is extern
+export class CVarDeclaration {
+    readonly declType = "variable";
+    _addressUsed: boolean = false;
+    _definition?: CVarDefinition;
 
     constructor(readonly node: ParseNode,
                 readonly name: string,
                 readonly type: CQualifiedType<CNotFuncType>,
-                readonly storage?: StorageClass) {
+                readonly storage: "static" | "local",
+                readonly linkage: "none" | "internal" | "external") {
+    }
+
+    set addressUsed(b: boolean) {
+        if (this._definition) this._definition.addressUsed ||= b;
+        else this._addressUsed ||= b;
+    }
+
+    get addressUsed(): boolean {
+        return this._definition ? this._definition.addressUsed : this._addressUsed;
+    }
+
+    set definition(v: CVarDefinition | undefined) {
+        if (v === undefined) throw new Error("Cannot set definition to undefined");
+        v.addressUsed ||= this._addressUsed;
+        this._definition = v;
+    }
+
+    get definition(): CVarDefinition | undefined {
+        return this._definition;
+    }
+}
+
+export class CVarDefinition {
+    readonly declType = "variable";
+    staticValue?: CConstant | CInitializer | CArrayPointer;
+    addressUsed: boolean = false;
+
+    constructor(readonly node: ParseNode,
+                readonly name: string,
+                readonly type: CQualifiedType<CNotFuncType>,
+                readonly storage: "static" | "local",
+                public linkage: "none" | "internal" | "external") {
     }
 }
 
 export class CArgument {
+    readonly declType = "variable";
+    readonly storage = "argument";
+    readonly linkage = "none";
     addressUsed: boolean = false;
 
-    constructor(readonly node: ParseNode, readonly name: string, readonly type: CQualifiedType<CNotFuncType>, readonly index: number) {
+    constructor(readonly node: ParseNode,
+                readonly name: string,
+                readonly type: CQualifiedType<CNotFuncType>,
+                readonly index: number) {
     }
 }
 
 export class CFuncDeclaration {
+    readonly declType = "function";
     definition?: CFuncDefinition;
 
     constructor(readonly node: ParseNode,
                 readonly name: string,
                 readonly type: CQualifiedType<CFuncType>,
-                readonly storage: StorageClass | undefined) {
+                readonly linkage: "none" | "internal" | "external") {
     }
 }
 
 export class CFuncDefinition {
+    readonly declType = "function";
     readonly body: CCompoundStatement;
 
     constructor(readonly node: FunctionDefinition,
                 readonly name: string,
                 readonly type: CQualifiedType<CFuncType>,
-                readonly storage: StorageClass | undefined,
+                public linkage: "none" | "internal" | "external",
                 readonly translationUnit: Scope) {
         if (type.variadic) throw new Error("Cannot define variadic functions");
         this.body = new CCompoundStatement(node.body, this);

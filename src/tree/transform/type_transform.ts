@@ -1,7 +1,7 @@
-import {CVariable} from "../declarations";
+import {CVariable, CVarDefinition} from "../declarations";
 import {CConstant} from "../expressions";
 import {Scope} from "../scope";
-import {CType, getArithmeticType, CPointer, addQualifier, CFuncType, CNotFuncType, CArray, CEnum, CStruct, CUnion} from "../types";
+import {CType, getArithmeticType, CPointer, addQualifier, CFuncType, CNotFuncType, CArray, CEnum, CStruct, CUnion, CCompoundMember} from "../types";
 import {ParseTreeValidationError, pt} from "../../parsing/";
 import {evalConstant} from "./expr_transform";
 
@@ -100,18 +100,18 @@ function getSpecifierType(d: pt.SpecifierQualifiers | pt.DeclarationSpecifiers, 
         }
         if (!singleSpecifier.declarations) return structure;
 
-        const values = []; // populate struct/union members if provided
+        const values: CCompoundMember[] = []; // populate struct/union members if provided
         for (const declaration of singleSpecifier.declarations) {
             const baseType = getType(declaration, scope);
 
             for (const declarator of declaration.list) {
                 const type = getDeclaratorType(baseType, declarator, scope);
                 const name = getDeclaratorName(declarator);
-                if (type.incomplete || type.bytes === 0) {
+                if (type.incomplete || type.bytes === 0 || type instanceof CFuncType) {
                     throw new ParseTreeValidationError(declarator, "Type must be complete");
                 }
 
-                values.push(new CVariable(declaration, name, type as CNotFuncType));
+                values.push(new CCompoundMember(declaration, name, type));
             }
         }
         structure.members = values;
@@ -137,7 +137,7 @@ function getSpecifierType(d: pt.SpecifierQualifiers | pt.DeclarationSpecifiers, 
         for (const e of singleSpecifier.body) { // populate enum
             if (e.value) nextValue = Number(evalConstant(e.value).value);
 
-            const enumConstant = new CVariable(e, e.id, addQualifier(cEnum, "const"), "static");
+            const enumConstant = new CVarDefinition(e, e.id, addQualifier(cEnum, "const"), "static", "internal");
             enumConstant.staticValue = new CConstant(e, cEnum, nextValue);
             scope.addIdentifier(enumConstant); // add the enum member as a constant to the scope
 

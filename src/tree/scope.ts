@@ -1,7 +1,7 @@
 import {CError} from "../c_error";
 import type {ParseNode} from "../parsing";
 import type {CDeclaration} from "./declarations";
-import {CFuncDeclaration, CFuncDefinition} from "./declarations";
+import {CFuncDeclaration, CFuncDefinition, CVarDeclaration, CVarDefinition} from "./declarations";
 import type {CCompound} from "./types";
 
 /**
@@ -55,9 +55,27 @@ export class Scope {
         if (existing) {
             if (existing.type.equals(value.type) && existing instanceof CFuncDeclaration && value instanceof CFuncDefinition) {
                 // allow replacement of function declaration with definition
+                if (existing.linkage !== "external" && value.linkage === "external") {
+                    // linkage inherited from first declaration
+                    value.linkage = existing.linkage;
+                }
                 existing.definition = value;
-            } else if (existing.type.equals(value.type) && (existing instanceof CFuncDeclaration || value instanceof CFuncDeclaration)) {
-                // allow function declarations to be redeclared (but don't override instance in scope)
+            } else if (existing.type.equals(value.type) && value instanceof CFuncDeclaration) {
+                // allow functions to be redeclared (but don't override instance in scope)
+                return;
+            } else if (existing.type.equals(value.type) && existing instanceof CVarDeclaration && value instanceof CVarDefinition) {
+                // allow replacement of variable declaration with definition
+                if (existing.linkage !== "external" && existing.linkage !== value.linkage) {
+                    // check linkage is the same
+                    throw new ScopeError("Variable `" + value.name + "` is already defined with " + existing.linkage + " linkage", existing.node, value.node);
+                }
+                existing.definition = value;
+            } else if (existing.type.equals(value.type) && value instanceof CVarDeclaration) {
+                // allow variables to be redeclared (but don't override instance in scope)
+                if (existing.linkage !== "external" && existing.linkage !== value.linkage) {
+                    // check linkage is the same
+                    throw new ScopeError("Variable `" + value.name + "` is already defined with " + existing.linkage + " linkage", existing.node, value.node);
+                }
                 return;
             } else {
                 throw new ScopeError("Identifier `" + value.name + "` is already defined in this scope!", existing.node, value.node);

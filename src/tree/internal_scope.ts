@@ -20,7 +20,7 @@ export const INTERNAL_FNS: {[s: string]: CFuncDeclaration} = {
         fakeParseNode,
         "__wasm__",
         new CFuncType(fakeParseNode, new CVoid(), [CArithmetic.U8], undefined, true),
-        "static"
+        "internal"
     ),
     /** For executing arbitrary Wasm returning i32
      *
@@ -30,7 +30,7 @@ export const INTERNAL_FNS: {[s: string]: CFuncDeclaration} = {
         fakeParseNode,
         "__wasm_i32__",
         new CFuncType(fakeParseNode, CArithmetic.U32, [CArithmetic.U8], undefined, true),
-        "static"
+        "internal"
     ),
     /** For executing arbitrary Wasm returning i64
      *
@@ -40,7 +40,7 @@ export const INTERNAL_FNS: {[s: string]: CFuncDeclaration} = {
         fakeParseNode,
         "__wasm_i64__",
         new CFuncType(fakeParseNode, CArithmetic.U64, [CArithmetic.U8], undefined, true),
-        "static"
+        "internal"
     ),
     /** For executing arbitrary Wasm returning f32
      *
@@ -50,7 +50,7 @@ export const INTERNAL_FNS: {[s: string]: CFuncDeclaration} = {
         fakeParseNode,
         "__wasm_f32__",
         new CFuncType(fakeParseNode, CArithmetic.Fp32, [CArithmetic.U8], undefined, true),
-        "static"
+        "internal"
     ),
     /** For executing arbitrary Wasm returning f64
      *
@@ -60,7 +60,7 @@ export const INTERNAL_FNS: {[s: string]: CFuncDeclaration} = {
         fakeParseNode,
         "__wasm_f64__",
         new CFuncType(fakeParseNode, CArithmetic.Fp64, [CArithmetic.U8], undefined, true),
-        "static"
+        "internal"
     ),
     /** For pushing arbitrary values onto the Wasm stack
      *
@@ -70,7 +70,7 @@ export const INTERNAL_FNS: {[s: string]: CFuncDeclaration} = {
         fakeParseNode,
         "__wasm_push__",
         new CFuncType(fakeParseNode, new CVoid(), [CArithmetic.U32], undefined, true),
-        "static"
+        "internal"
     ),
 };
 

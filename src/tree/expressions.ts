@@ -1,4 +1,5 @@
 import type {ParseNode, pt} from "../parsing";
+import {CVarDefinition} from "./declarations";
 import type {CDeclaration, CVariable, CArgument} from "./declarations";
 import * as checks from "./type_checking";
 import {
@@ -65,8 +66,8 @@ export class CIdentifier extends CEvaluable {
 
     evaluate(): CConstant | undefined {
         // only constant if points to an enum identifier
-        if (this.value.type.typeName === "enum" && (this.value as CVariable).staticValue instanceof CConstant) {
-            return (this.value as CVariable).staticValue as CConstant;
+        if (this.value.type.typeName === "enum" && (this.value as CVarDefinition).staticValue instanceof CConstant) {
+            return (this.value as CVarDefinition).staticValue as CConstant;
         }
         return undefined;
     }

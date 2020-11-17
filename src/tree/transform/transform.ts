@@ -1,4 +1,4 @@
-import {CVariable, CFuncDefinition, CArgument, CFuncDeclaration} from "../declarations";
+import {CFuncDefinition, CArgument, CFuncDeclaration, CVarDefinition, CVarDeclaration} from "../declarations";
 import {CAssignment, CIdentifier, CExpression, CEvaluable, CInitializer, CStringLiteral, CConstant, CArrayPointer} from "../expressions";
 import {INTERNAL_SCOPE} from "../internal_scope";
 import {Scope} from "../scope";
@@ -49,13 +49,34 @@ function ptDeclaration(declaration: pt.Declaration, scope: Scope, inFunction: bo
             throw new ExpressionTypeError(type.node ?? entry, "complete type", "incomplete type");
         } else if (type instanceof CFuncType) {
             // function declarations
-            scope.addIdentifier(new CFuncDeclaration(entry, name, type, declaration.typeInfo.storageList[0]));
+            const linkage = declaration.typeInfo.storageList[0] === "static" ? "internal" : "external";
+            scope.addIdentifier(new CFuncDeclaration(entry, name, type, linkage));
         } else {
-            // variable
-            const cvar = new CVariable(entry, name, type, declaration.typeInfo.storageList[0]);
+            // work out storage, linkage and if definition or declaration
+            let storage: "static" | "local";
+            let linkage: "none" | "internal" | "external";
+            let declType: typeof CVarDefinition | typeof CVarDeclaration;
+            if (declaration.typeInfo.storageList[0] === "static") {
+                storage = "static";
+                linkage = inFunction ? "none" : "internal";
+                declType = inFunction ? CVarDefinition : (initialValue !== undefined ? CVarDefinition : CVarDeclaration);
+            } else if (declaration.typeInfo.storageList[0] === "extern") {
+                storage = "static";
+                linkage = "external";
+                declType = CVarDeclaration;
+            } else {
+                storage = inFunction ? "local" : "static";
+                linkage = inFunction ? "none" : "external";
+                declType = inFunction ? CVarDefinition : (initialValue !== undefined ? CVarDefinition : CVarDeclaration);
+            }
+            const cvar = new declType(entry, name, type, storage, linkage);
             scope.addIdentifier(cvar);
 
+            // if definition with initializer
             if (initialValue) {
+                if (cvar instanceof CVarDeclaration) {
+                    throw new ExpressionTypeError(entry, "declaration", "declaration with initializer");
+                }
                 if (initialValue instanceof CInitializer) {
                     initialValue.type = type;
                 }
@@ -109,7 +130,17 @@ function ptFunction(fn: pt.FunctionDefinition, scope: Scope): void {
     // get the function name
     const name = getDeclaratorName(fn.declarator);
 
-    const cfn = new CFuncDefinition(fn, name, type, fn.typeInfo.storageList[0], scope);
+    // work out linkage
+    let linkage: | "internal" | "external";
+    if (fn.typeInfo.storageList[0] === "static") {
+        linkage = "internal";
+    } else if (fn.typeInfo.storageList[0] === "extern") {
+        throw new ExpressionTypeError(fn, "function definition", "extern");
+    } else {
+        linkage = "external";
+    }
+
+    const cfn = new CFuncDefinition(fn, name, type, linkage, scope);
     scope.addIdentifier(cfn);
 
     // add arguments as parameters to function's scope

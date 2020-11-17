@@ -1,4 +1,4 @@
-import {CArgument, CVariable, CDeclaration} from "../tree/declarations";
+import {CArgument, CVariable, CDeclaration, CVarDefinition, CVarDeclaration} from "../tree/declarations";
 import {CExpression} from "../tree/expressions";
 import * as e from "../tree/expressions";
 import {Scope} from "../tree/scope";
@@ -17,7 +17,7 @@ export type StorageLocation =
     {type: "shadow", "shadowOffset": number} | // offset from shadow pointer
     {type: "pointer"}; // address on stack
 
-export function storageSetupStaticVar(ctx: WGenerator, d: CVariable): void {
+export function storageSetupStaticVar(ctx: WGenerator, d: CVarDefinition): void {
     const addr = ctx.nextStaticAddr;
     ctx.nextStaticAddr += Math.ceil(d.type.bytes / 4) * 4; // 4 byte align
 
@@ -67,8 +67,8 @@ export function storageSetupScope(ctx: WFnGenerator, s: Scope): WExpression {
             }
         }
 
-        if (declaration instanceof CVariable) {
-            if (declaration.storage === undefined) {
+        if (declaration instanceof CVarDefinition) {
+            if (declaration.storage === "local") {
                 if (declaration.addressUsed || !(declaration.type instanceof CArithmetic || declaration.type instanceof CEnum || declaration.type instanceof CPointer)) {
                     // have to place on shadow stack
                     setStorageLocation(declaration, {
@@ -300,11 +300,11 @@ function fromExpression(ctx: WFnGenerator, s: e.CExpression): [WExpression, Stor
         let location = getStorageLocation(s.value);
         if (location) return [[], location];
 
-        if (s.value instanceof CVariable && s.value.definition) {
+        if (s.value instanceof CVarDeclaration) {
+            if (s.value.definition === undefined) throw new GenError("No variable definition found", ctx, s.node);
             location = getStorageLocation(s.value.definition);
             if (location) return [[], location];
         }
-
 
     } else if (s instanceof e.CMemberAccess) {
         const address = ctx.expression(s.body, false);
