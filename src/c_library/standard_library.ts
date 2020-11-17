@@ -61,4 +61,17 @@ if (Object.prototype.hasOwnProperty.call(fs, "readdirSync")) {
     Object.entries(obj).forEach(([path, contents]) => lib.set(path, contents));
 }
 
-export const STANDARD_LIBRARY = lib as ReadonlyMap<string, string>;
+export const LIBRARY_HEADERS = (() => {
+    const map = new Map<string, string>();
+    for (const [path, data] of lib.entries()) {
+        if (path.endsWith(".h")) map.set(path, data);
+    }
+    return map as ReadonlyMap<string, string>;
+})();
+export const LIBRARY_SOURCE = (() => {
+    const map = new Map<string, string>();
+    for (const [path, data] of lib.entries()) {
+        if (path.endsWith(".c")) map.set(path, data);
+    }
+    return map as ReadonlyMap<string, string>;
+})();

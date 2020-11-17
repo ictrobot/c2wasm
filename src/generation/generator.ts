@@ -1,6 +1,6 @@
-import {CFuncDefinition, CFuncDeclaration, CVariable, CVarDefinition} from "../tree/declarations";
+import type {Linker} from "../linker";
+import {CFuncDefinition, CFuncDeclaration} from "../tree/declarations";
 import type {CExpression} from "../tree/expressions";
-import type {Scope} from "../tree/scope";
 import type {CStatement} from "../tree/statements";
 import {ModuleBuilder, WFunctionBuilder, WFunction, Instructions, WImportedFunction, ValueType, i32Type} from "../wasm";
 import type {funcidx} from "../wasm/base_types";
@@ -23,21 +23,20 @@ export class WGenerator {
     nextStaticAddr = 32; // reserve first 32 bytes as 0
     readonly shadowStackPtr: WGlobal;
 
-    constructor(readonly translationUnit: Scope) {
+    constructor(linker: Linker) {
         this.module = new ModuleBuilder();
         this.shadowStackPtr = this.module.global(i32Type, true, 0n);
 
-        for (const decl of translationUnit.declarations) {
-            if (decl instanceof CFuncDefinition) {
-                this.function(decl);
-            } else if (decl instanceof CFuncDeclaration) {
-                this.importFunction(decl);
-            } else if (decl instanceof CVarDefinition) {
-                storageSetupStaticVar(this, decl);
-            } else {
-                throw new GenError("Unexpected declaration", undefined, decl.node);
-            }
+        for (const variable of linker.emitVariables) {
+            storageSetupStaticVar(this, variable);
         }
+
+        for (const func of linker.emitFunctions) {
+            this.function(func);
+        }
+
+        // todo fix imports
+        // this.importFunction(decl);
 
         const shadowStackStart = Math.ceil(this.nextStaticAddr / 512) * 512;
         this.shadowStackPtr.initialValue = BigInt(shadowStackStart);

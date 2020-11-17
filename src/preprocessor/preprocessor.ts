@@ -1,12 +1,20 @@
-import {STANDARD_LIBRARY} from "../c_library/standard_library";
+import {LIBRARY_HEADERS} from "../c_library/standard_library";
 import {Definition} from "./definition";
 import {consume, mustConsume, consumeAny, PreProRegex} from "./helpers";
 
 export class Preprocessor {
     definitions = new Map<string, Definition>();
 
-    libraryFiles = new Map<string, string>(STANDARD_LIBRARY); // #include <...>
+    libraryFiles: Map<string, string>; // #include <...>
     userFiles = new Map<string, string>(); // #include "..."
+
+    constructor(standardHeaders: boolean = true) {
+        if (standardHeaders) {
+            this.libraryFiles = new Map<string, string>(LIBRARY_HEADERS);
+        } else {
+            this.libraryFiles = new Map<string, string>();
+        }
+    }
 
     process(text: string): string {
         // remove comments
