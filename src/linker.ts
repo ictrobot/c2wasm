@@ -15,8 +15,8 @@ export class Linker {
     private _linked = false;
 
     constructor(readonly files: ReadonlyMap<string, string>, standardHeaders: boolean = true) {
-        for (const code of files.values()) {
-            const preprocessor = new Preprocessor(standardHeaders);
+        for (const [path, code] of files.entries()) {
+            const preprocessor = new Preprocessor(path, standardHeaders);
             for (const [p2, c2] of files.entries()) preprocessor.userFiles.set(p2, c2);
             const processed = preprocessor.process(code);
             this.process_scope(toIR(processed));

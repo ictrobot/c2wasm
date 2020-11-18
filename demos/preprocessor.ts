@@ -8,7 +8,7 @@ int factorial(int v) {
 
 function process(input: string): string {
     try {
-        const preprocessor = new Preprocessor();
+        const preprocessor = new Preprocessor("main.c");
         for (let i = 0; i < 5; i++) {
             preprocessor.libraryFiles.set(`library${i}.h`, `void library${i}() {}`);
             preprocessor.userFiles.set(`user${i}.h`, `void user${i}() {}`);

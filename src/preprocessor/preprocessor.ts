@@ -8,12 +8,14 @@ export class Preprocessor {
     libraryFiles: Map<string, string>; // #include <...>
     userFiles = new Map<string, string>(); // #include "..."
 
-    constructor(standardHeaders: boolean = true) {
+    constructor(readonly filename: string, standardHeaders: boolean = true) {
         if (standardHeaders) {
             this.libraryFiles = new Map<string, string>(LIBRARY_HEADERS);
         } else {
             this.libraryFiles = new Map<string, string>();
         }
+
+        this.definitions.set("__FILE__", new Definition(this, "__FILE__", [{value: `"${filename}"`}], []));
     }
 
     process(text: string): string {
@@ -21,7 +23,10 @@ export class Preprocessor {
         text = text.replace(PreProRegex.comments, " ");
 
         let output = "";
-        for (const line of text.split("\n")) {
+        const lines = text.split("\n");
+        while (lines.length > 0) {
+            const line = lines.shift() as string;
+
             if (line.startsWith("#")) {
                 let match: ReturnType<typeof consume>;
                 if ((match = consume(line, "#define")).success) {
@@ -30,8 +35,12 @@ export class Preprocessor {
                     this._undef(match.remainingLine);
                 } else if ((match = consume(line, "#include")).success) {
                     output += this._include(match.remainingLine) + "\n";
+                } else if ((match = consume(line, "#ifdef")).success) {
+                    output += this._ifdef(match.remainingLine, true, lines);
+                } else if ((match = consume(line, "#ifndef")).success) {
+                    output += this._ifdef(match.remainingLine, false, lines);
                 } else if (line.trim().length > 1) {
-                    throw new Error("Unknown preprocessor directive");
+                    throw this.error("Unknown preprocessor directive");
                 }
 
             } else {
@@ -60,6 +69,12 @@ export class Preprocessor {
         return output;
     }
 
+    private error(message: string): Error {
+        return new class extends Error {
+            name = "PreprocessorError";
+        }(`In file '${this.filename}': ${message}`);
+    }
+
     private _include(line: string): string {
         line = mustConsume(line, PreProRegex.whitespace, "whitespace").remainingLine.trim();
         if (line.startsWith('"') && line.endsWith('"')) {
@@ -76,12 +91,12 @@ export class Preprocessor {
             return this._includeLib(line.substring(1, line.length - 1));
         }
 
-        throw new Error("Invalid #include");
+        throw this.error("Invalid #include");
     }
 
     private _includeLib(path: string) {
         const file = this.libraryFiles.get(path);
-        if (file === undefined) throw new Error("Unknown path `" + path + "`");
+        if (file === undefined) throw this.error("Unknown path `" + path + "`");
         return this.process(file);
     }
 
@@ -108,13 +123,13 @@ export class Preprocessor {
                     line = consume(parameter.remainingLine, PreProRegex.whitespace).remainingLine;
 
                     if (line.length === 0) {
-                        throw new Error("Unexpected end of line");
+                        throw this.error("Unexpected end of line");
                     } else if (line[0] === ",") {
                         line = mustConsume(line, ",").remainingLine;
                     } else if (line[0] === ")") {
                         break;
                     } else {
-                        throw new Error("Unexpected");
+                        throw this.error("Unexpected");
                     }
                 }
                 line = mustConsume(line, ")").remainingLine;
@@ -136,7 +151,7 @@ export class Preprocessor {
         const def = new Definition(this, identifier.value, tokens, parameters);
         const existing = this.definitions.get(identifier.value);
         if (existing !== undefined && !def.equals(existing)) {
-            throw new Error("Duplicate defines must be the same");
+            throw this.error("Duplicate defines must be the same");
         }
         this.definitions.set(identifier.value, def);
     }
@@ -144,8 +159,42 @@ export class Preprocessor {
     private _undef(line: string) {
         line = mustConsume(line, PreProRegex.whitespace, "whitespace").remainingLine;
         const identifier = mustConsume(line, PreProRegex.identifier, "identifier");
-        if (identifier.remainingLine.trim().length !== 0) throw new Error("Unexpected extra characters in undef");
+        if (identifier.remainingLine.trim().length !== 0) throw this.error("Unexpected extra characters in undef");
         this.definitions.delete(identifier.value);
     }
 
+    private _ifdef(line: string, ifdef: boolean, lines: string[]): string {
+        line = mustConsume(line, PreProRegex.whitespace, "whitespace").remainingLine;
+        const identifier = mustConsume(line, PreProRegex.identifier, "identifier");
+        if (identifier.remainingLine.trim().length !== 0) throw this.error("Unexpected extra characters in ifdef");
+        const condition = this.definitions.has(identifier.value) === ifdef;
+
+        const ifBody: string[] = [], elseBody: string[] = [];
+        let depth = 1, inElse = false;
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trimEnd();
+
+            if (line.startsWith("#ifdef") || line.startsWith("#ifndef")) {
+                depth++;
+
+            } else if (line === "#endif") {
+                depth--;
+                if (depth === 0) {
+                    // well formed ifdef
+                    const body = condition ? ifBody : elseBody;
+                    lines.splice(0, i + 1);
+                    return this.process(body.join("\n"));
+                }
+
+            } else if (line === "#else" && depth === 1) {
+                if (inElse) throw this.error("more than one #else statement");
+                inElse = true;
+                continue;
+
+            }
+            (inElse ? elseBody : ifBody).push(lines[i]);
+        }
+
+        throw this.error("no matching #endif found");
+    }
 }
