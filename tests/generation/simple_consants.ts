@@ -1,8 +1,8 @@
 import test from "ava";
-import {compile} from "../../src/generation";
+import {compileSnippet} from "../../src/compile";
 
 test("function returning int constant", async t => {
-    const c = await compile(`
+    const c = await compileSnippet(`
         int intTest() {
             return 35;
         }
@@ -14,7 +14,7 @@ test("function returning int constant", async t => {
 });
 
 test("function returning double constant", async t => {
-    const c = await compile(`
+    const c = await compileSnippet(`
         double doubleTest() {
             return 1.34e13;
         }

@@ -1,11 +1,11 @@
 import test from "ava";
-import {compile} from "../../src/generation";
+import {compileSnippet} from "../../src/compile";
 
 test("quicksort", async t => {
     const values: number[] = [];
 
-    const {main} = await compile(`
-        extern void log(int a);
+    const {main} = await compileSnippet(`
+        import void log(int a);
 
         static void swap(int *a, int *b) {
             int t = *a;
@@ -43,7 +43,7 @@ test("quicksort", async t => {
             for (int i = 0; i < length; i++) log(arr[i]);
         }
     `).execute({
-        extern: {
+        c2wasm: {
             log: (n: number) => values.push(n)
         }
     }) as {

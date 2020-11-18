@@ -1,5 +1,5 @@
 import test from "ava";
-import {compile} from "../../src/generation";
+import {compileSnippet} from "../../src/compile";
 
 pointerTest("static pointer access", [34], `
 void test() {
@@ -62,8 +62,8 @@ function pointerTest<T>(name: string, expected: T[], cSource: string) {
     test(name, async t => {
         const values: T[] = [];
 
-        const {test} = await compile("extern void log(int output);\n\n" + cSource).execute({
-            extern: {
+        const {test} = await compileSnippet("import void log(int output);\n\n" + cSource).execute({
+            c2wasm: {
                 log: (n: T) => values.push(n)
             }
         }) as {

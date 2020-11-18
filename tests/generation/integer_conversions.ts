@@ -1,8 +1,8 @@
 import test from "ava";
-import {compile} from "../../src/generation";
+import {compileSnippet} from "../../src/compile";
 
 test("narrowing conversions", async t => {
-    const c = await compile(`
+    const c = await compileSnippet(`
         unsigned char a() {
             return 12345;
         }
@@ -69,7 +69,7 @@ test("narrowing conversions", async t => {
 });
 
 test("widening signed value", async t => {
-    const c = await compile(`
+    const c = await compileSnippet(`
         unsigned char a() {
             return (signed char) 125;
         }
@@ -156,7 +156,7 @@ test("widening signed value", async t => {
 });
 
 test("widening unsigned value", async t => {
-    const c = await compile(`
+    const c = await compileSnippet(`
         unsigned char a() {
             return (unsigned char) 200;
         }

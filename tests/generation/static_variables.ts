@@ -1,8 +1,8 @@
 import test from "ava";
-import {compile} from "../../src/generation";
+import {compileSnippet} from "../../src/compile";
 
 test("static int", async t => {
-    const c = await compile(`
+    const c = await compileSnippet(`
         static int test = 0;
     
         int post() { return test++; }
@@ -20,7 +20,7 @@ test("static int", async t => {
 });
 
 test("static int[]", async t => {
-    const c = await compile(`
+    const c = await compileSnippet(`
         static int arr[] = {1,2,3,4,5,6};
     
         int test(int multiplier) {

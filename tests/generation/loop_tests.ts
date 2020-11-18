@@ -1,5 +1,5 @@
 import test from "ava";
-import {compile} from "../../src/generation";
+import {compileSnippet} from "../../src/compile";
 
 loopTest("simple while loop", [0,1,2,3,4,5], `
 void test() {
@@ -107,8 +107,8 @@ function loopTest<T>(name: string, expected: T[], cSource: string) {
     test(name, async t => {
         const values: T[] = [];
 
-        const {test} = await compile("extern void log(int output);\n\n" + cSource).execute({
-            extern: {
+        const {test} = await compileSnippet("import void log(int output);\n\n" + cSource).execute({
+            c2wasm: {
                 log: (n: T) => values.push(n)
             }
         }) as {

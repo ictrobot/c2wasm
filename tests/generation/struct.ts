@@ -1,8 +1,8 @@
 import test from "ava";
-import {compile} from "../../src/generation";
+import {compileSnippet} from "../../src/compile";
 
 test("struct copy", async t => {
-    const c = await compile(`
+    const c = await compileSnippet(`
         struct test{long padding; long padding2; int value;};
 
         int test() {
@@ -22,8 +22,8 @@ test("struct copy", async t => {
 test("as parameter and return value", async t => {
     const values: number[] = [];
 
-    const c = await compile(`
-        extern void print(int a, int b);
+    const c = await compileSnippet(`
+        import void print(int a, int b);
 
         struct pair{int a; int b;};
         
@@ -38,7 +38,7 @@ test("as parameter and return value", async t => {
           print(myPair.a, myPair.b);
         }
     `).execute({
-        extern: {
+        c2wasm: {
             print: (a: number, b: number) => values.push(a, b)
         }
     }) as {

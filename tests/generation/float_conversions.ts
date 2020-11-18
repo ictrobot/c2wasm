@@ -1,8 +1,8 @@
 import test from "ava";
-import {compile} from "../../src/generation";
+import {compileSnippet} from "../../src/compile";
 
 test("from float", async t => {
-    const c = await compile(`
+    const c = await compileSnippet(`
         unsigned char a() {
             return -12345.67f;
         }
@@ -49,7 +49,7 @@ test("from float", async t => {
 });
 
 test("from double", async t => {
-    const c = await compile(`
+    const c = await compileSnippet(`
         unsigned char a() {
             return -12345.67;
         }
@@ -96,7 +96,7 @@ test("from double", async t => {
 });
 
 test("to float", async t => {
-    const c = await compile(`
+    const c = await compileSnippet(`
         float a() {
             return (unsigned char) -3;
         }
@@ -143,7 +143,7 @@ test("to float", async t => {
 });
 
 test("to double", async t => {
-    const c = await compile(`
+    const c = await compileSnippet(`
         double a() {
             return (unsigned char) -3;
         }

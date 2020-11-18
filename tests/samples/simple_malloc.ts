@@ -1,8 +1,8 @@
 import test from "ava";
-import {compile} from "../../src/generation";
+import {compileSnippet} from "../../src/compile";
 
 test("simple malloc using __wasm__", async t => {
-    const {main} = await compile(`
+    const {main} = await compileSnippet(`
         static int mallocPointer = 1048576; 
         static const int PAGE_SIZE = 65536;
         

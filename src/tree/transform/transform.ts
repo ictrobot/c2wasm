@@ -130,7 +130,7 @@ function ptInitializer(node: pt.ParseNode, initializer: pt.Initializer, scope: S
 /** Transform a function */
 function ptFunction(fn: pt.FunctionDefinition, scope: Scope): void {
     if (fn.typeInfo.fnSpecifierList[0] === "import") {
-        throw new ExpressionTypeError(fn, "Function definitions cannot be marked `import`");
+        throw new ExpressionTypeError(fn, "function definition to not be marked `import`");
     }
 
     // get and check the function's type
@@ -139,16 +139,7 @@ function ptFunction(fn: pt.FunctionDefinition, scope: Scope): void {
     // get the function name
     const name = getDeclaratorName(fn.declarator);
 
-    // work out linkage
-    let linkage: | "internal" | "external";
-    if (fn.typeInfo.storageList[0] === "static") {
-        linkage = "internal";
-    } else if (fn.typeInfo.storageList[0] === "extern") {
-        throw new ExpressionTypeError(fn, "function definition", "extern");
-    } else {
-        linkage = "external";
-    }
-
+    const linkage = fn.typeInfo.storageList[0] === "static" ? "internal" : "external";
     const cfn = new CFuncDefinition(fn, name, type, linkage, scope);
     scope.addIdentifier(cfn);
 

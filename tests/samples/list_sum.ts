@@ -1,8 +1,8 @@
 import test from "ava";
-import {compile} from "../../src/generation";
+import {compileSnippet} from "../../src/compile";
 
 test("list sum", async t => {
-    const {test} = await compile(`
+    const {test} = await compileSnippet(`
         struct List {
           int head;
           struct List *tail;
