@@ -1,6 +1,6 @@
 import {compress, decompress} from "lzutf8";
 import wabt from "wabt";
-import {compileSnippet} from "../src/compile";
+import {compile} from "../src/compile";
 import {ModuleBuilder} from "../src/wasm";
 
 const testInput = `
@@ -96,8 +96,11 @@ wabt().then(wabt => {
         }
 
         const handler = () => {
+            const files = new Map<string, string>();
+            files.set("main.c", textInput.value);
+
             try {
-                module = compileSnippet(textInput.value);
+                module = compile(files);
             } catch (e) {
                 output.textContent = e.stack;
                 module = undefined;
@@ -122,7 +125,9 @@ wabt().then(wabt => {
             await navigator.clipboard.writeText(baseURL + "#" + base64);
         });
     } else {
-        console.log(toWat(compileSnippet(testInput)));
+        const files = new Map<string, string>();
+        files.set("main.c", testInput);
+        console.log(toWat(compile(files)));
     }
 
 });
