@@ -1,15 +1,14 @@
-#define PAGE_SIZE 65536
-#define size_t unsigned int
+#include <stdlib.h>
 
-struct __alloc_node {
+#define PAGE_SIZE 65536
+#define __alloc_offset 12
+
+static struct __alloc_node {
     struct __alloc_node *prev;
     struct __alloc_node *next;
     size_t size;
     char blockStart;
-};
-#define __alloc_offset 12
-
-static struct __alloc_node __alloc_list;
+} __alloc_list;
 
 // inspired by https://github.com/embeddedartistry/embedded-resources/blob/master/examples/c/malloc_freelist.c
 

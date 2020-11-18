@@ -33,7 +33,7 @@ export class Linker {
             if (other !== undefined) {
                 const linkable2 = other._linkables.get(linkable.id);
                 if (linkable2 !== undefined) {
-                    if (linkable.externalType === linkable2.externalType) {
+                    if (linkable.externalType !== linkable2.externalType) {
                         throw new LinkingError(`Tried to link ${linkable.externalType} with ${linkable2.externalType}`, linkable.parseNode, linkable2.parseNode);
                     } else if (!linkable.type.equals(linkable2.type)) {
                         throw new LinkingError("Tried to link incompatible types", linkable.parseNode, linkable2.parseNode);
@@ -53,6 +53,7 @@ export class Linker {
                 // each external variable declaration is also a tentative definition, so initialize to zero
                 const cvar = new CVarDefinition(linkable.parseNode, linkable.id, linkable.type, "static", "external");
                 linkable.setDefinition(cvar);
+                this._emitVariables.push(cvar);
                 continue;
             } else if (linkable.externalType === "function") {
                 // check if any of the declarations marked as "import"
@@ -69,6 +70,7 @@ export class Linker {
         if (usedOther && other) {
             // need to add all its functions and variables to the lists to be emitted
             this._emitVariables.push(...other._emitVariables);
+            this._emitImports.push(...other._emitImports);
             this._emitFunctions.push(...other._emitFunctions);
         }
 
@@ -110,13 +112,16 @@ export class Linker {
                 } else {
                     // tentative definition with internal linkage
                     decl.definition = new CVarDefinition(decl.node, decl.name, decl.type, decl.storage, decl.linkage);
+                    this._emitVariables.push(decl.definition);
                 }
 
             } else if (decl instanceof CVarDefinition) {
                 if (decl.linkage === "external") {
                     this.externalVar(decl).setDefinition(decl);
                 }
-                this._emitVariables.push(decl);
+                if (decl.storage === "static") {
+                    this._emitVariables.push(decl);
+                }
 
             }
         }
