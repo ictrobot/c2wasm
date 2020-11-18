@@ -50,8 +50,13 @@ function ptDeclaration(declaration: pt.Declaration, scope: Scope, inFunction: bo
         } else if (type instanceof CFuncType) {
             // function declarations
             const linkage = declaration.typeInfo.storageList[0] === "static" ? "internal" : "external";
-            scope.addIdentifier(new CFuncDeclaration(entry, name, type, linkage));
+            const fnImport = declaration.typeInfo.fnSpecifierList[0] === "import";
+            scope.addIdentifier(new CFuncDeclaration(entry, name, type, linkage, fnImport));
         } else {
+            if (declaration.typeInfo.fnSpecifierList.length > 0) {
+                throw new ExpressionTypeError(entry, "variable declaration without function specifier");
+            }
+
             // work out storage, linkage and if definition or declaration
             let storage: "static" | "local";
             let linkage: "none" | "internal" | "external";
@@ -124,6 +129,10 @@ function ptInitializer(node: pt.ParseNode, initializer: pt.Initializer, scope: S
 
 /** Transform a function */
 function ptFunction(fn: pt.FunctionDefinition, scope: Scope): void {
+    if (fn.typeInfo.fnSpecifierList[0] === "import") {
+        throw new ExpressionTypeError(fn, "Function definitions cannot be marked `import`");
+    }
+
     // get and check the function's type
     const type = getType(fn, scope);
     if (!(type instanceof CFuncType)) throw new ParseTreeValidationError(fn, "Unexpected declarator");

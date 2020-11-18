@@ -170,14 +170,14 @@ declaration
     ;
 
 declaration_specifiers
-    : storage_class_specifier                                                           -> new t.DeclarationSpecifiers(@$, [], [], [$1])
-    | storage_class_specifier declaration_specifiers                                    -> new t.DeclarationSpecifiers(@$, $2.specifierList, $2.qualifierList, [$1, ...$2.storageList])
-    | type_specifier                                                                    -> new t.DeclarationSpecifiers(@$, [$1], [], [])
-    | type_specifier declaration_specifiers                                             -> new t.DeclarationSpecifiers(@$, [$1, ...$2.specifierList], $2.qualifierList, $2.storageList)
-    | type_qualifier                                                                    -> new t.DeclarationSpecifiers(@$, [], [$1], [])
-    | type_qualifier declaration_specifiers                                             -> new t.DeclarationSpecifiers(@$, $2.specifierList, [$1, ...$2.qualifierList], $2.storageList)
-//  | function_specifier                                                                -> new t.DeclarationSpecifiers(@$, [], [], [], [$1])
-//  | function_specifier declaration_specifiers                                         -> new t.DeclarationSpecifiers(@$, $2.specifierList, $2.qualifierList, $2.storageList, [$1, ...$2.fnSpecifierList])
+    : storage_class_specifier                                                           -> new t.DeclarationSpecifiers(@$, [], [], [$1], [])
+    | storage_class_specifier declaration_specifiers                                    -> new t.DeclarationSpecifiers(@$, $2.specifierList, $2.qualifierList, [$1, ...$2.storageList], $2.fnSpecifierList)
+    | type_specifier                                                                    -> new t.DeclarationSpecifiers(@$, [$1], [], [], [])
+    | type_specifier declaration_specifiers                                             -> new t.DeclarationSpecifiers(@$, [$1, ...$2.specifierList], $2.qualifierList, $2.storageList, $2.fnSpecifierList)
+    | type_qualifier                                                                    -> new t.DeclarationSpecifiers(@$, [], [$1], [], [])
+    | type_qualifier declaration_specifiers                                             -> new t.DeclarationSpecifiers(@$, $2.specifierList, [$1, ...$2.qualifierList], $2.storageList, $2.fnSpecifierList)
+    | function_specifier                                                                -> new t.DeclarationSpecifiers(@$, [], [], [], [$1])
+    | function_specifier declaration_specifiers                                         -> new t.DeclarationSpecifiers(@$, $2.specifierList, $2.qualifierList, $2.storageList, [$1, ...$2.fnSpecifierList])
     ;
 
 init_declarator_list
@@ -273,9 +273,11 @@ type_qualifier
 //  | VOLATILE                                                                          -> "volatile"
     ;
 
-// function_specifier
+function_specifier
 //  : INLINE                                                                            -> "inline"
-//  ;
+// custom for wasm imports
+    : IMPORT                                                                            -> yytext
+    ;
 
 declarator
     : pointer direct_declarator                                                         -> new t.PointerDeclarator(@$, $1, $2)

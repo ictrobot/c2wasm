@@ -53,6 +53,7 @@ validator(pt.SpecifierQualifiers, typeValidation);
 validator(pt.DeclarationSpecifiers, typeValidation);
 validator(pt.DeclarationSpecifiers, d => {
     if (d.storageList.length > 1) throw new ParseTreeValidationError(d, "Invalid storage class list.");
+    if (d.fnSpecifierList.length > 1) throw new ParseTreeValidationError(d, "Invalid fn specifier list.");
 });
 
 // Constant expr validation

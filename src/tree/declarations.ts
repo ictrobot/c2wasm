@@ -75,7 +75,8 @@ export class CFuncDeclaration {
     constructor(readonly node: ParseNode,
                 readonly name: string,
                 readonly type: CQualifiedType<CFuncType>,
-                readonly linkage: "none" | "internal" | "external") {
+                readonly linkage: "none" | "internal" | "external",
+                public fnImport: boolean = false) {
     }
 }
 

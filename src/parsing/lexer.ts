@@ -6,7 +6,10 @@ const keywords = [
     "void", "while",
 
     // currently unsupported (but still lex so parser throws error)
-    "auto", "goto", "inline", "register", "typedef", "volatile"
+    "auto", "goto", "inline", "register", "typedef", "volatile",
+
+    // special for c2wasm, not on spec
+    "import"
 ];
 
 const simpleSymbols = [';','{','}',',',':','=','(',')','[',']','.','&','!','~','-','+','*','/','%','<','>','^','|','?'];

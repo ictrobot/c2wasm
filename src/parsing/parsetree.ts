@@ -188,7 +188,7 @@ export type TypeSpecifier =
     | EnumSpecifier
     | CustomTypeSpecifier;
 export type TypeQualifier = "const"; // | "restrict" | "volatile";
-//type FnSpecifier = "inline";
+export type FnSpecifier = "import"; // "inline";
 
 export class SpecifierQualifiers extends ParseNode {
     readonly type = "specifiersAndQualifiers";
@@ -212,8 +212,8 @@ export class DeclarationSpecifiers extends ParseNode {
     constructor(loc: Location,
                 readonly specifierList: ReadonlyArray<TypeSpecifier>,
                 readonly qualifierList: ReadonlyArray<TypeQualifier>,
-                readonly storageList: ReadonlyArray<StorageClass>) {
-        //      readonly fnSpecifierList: ReadonlyArray<FnSpecifier>) {
+                readonly storageList: ReadonlyArray<StorageClass>,
+                readonly fnSpecifierList: ReadonlyArray<FnSpecifier>) {
         super(loc);
     }
 

@@ -30,13 +30,12 @@ export class WGenerator {
         for (const variable of linker.emitVariables) {
             storageSetupStaticVar(this, variable);
         }
-
+        for (const funcImport of linker.emitImports) {
+            this.importFunction(funcImport);
+        }
         for (const func of linker.emitFunctions) {
             this.function(func);
         }
-
-        // todo fix imports
-        // this.importFunction(decl);
 
         const shadowStackStart = Math.ceil(this.nextStaticAddr / 512) * 512;
         this.shadowStackPtr.initialValue = BigInt(shadowStackStart);
@@ -84,7 +83,7 @@ export class WGenerator {
         const wasmFunc = this.module.importFunction(
             func.type.parameterTypes.map(realType),
             returnType(func.type.returnType),
-            "extern",
+            "c2wasm",
             func.name);
         this.functions.set(func, wasmFunc);
     }

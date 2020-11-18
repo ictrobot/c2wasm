@@ -4,7 +4,7 @@ import {compileSnippet} from "../src/compile";
 import {ModuleBuilder} from "../src/wasm";
 
 const testInput = `
-extern void print(int a, long b);
+import void print(int a, long b);
 
 long factorial(unsigned int v) {
   return v < 2 ? 1 : v * factorial(v - 1);
@@ -71,9 +71,9 @@ wabt().then(wabt => {
             if (module === undefined) return;
             output.textContent = "Output:\n\n";
 
-            const imports: {extern: {[s: string]: typeof console.log}} = {extern: {}};
+            const imports: {c2wasm: {[s: string]: typeof console.log}} = {c2wasm: {}};
             module.functionImports.filter(x => x.type[1].length === 0).forEach(f => {
-                imports.extern[f.name] = (...args: any[]) => {
+                imports.c2wasm[f.name] = (...args: any[]) => {
                     console.log(...args);
                     output.textContent += args.join(" ") + "\n";
                 };

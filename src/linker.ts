@@ -7,10 +7,9 @@ import {Scope} from "./tree/scope";
 import {CStatement, CCompoundStatement, CForLoop, CIf, CWhileLoop, CDoLoop, CSwitch} from "./tree/statements";
 
 export class Linker {
-    // all functions to be emitted
-    private _emitFunctions: CFuncDefinition[] = [];
-    // all static-storage variables to be emitted
-    private _emitVariables: CVarDefinition[] = [];
+    private _emitFunctions: CFuncDefinition[] = []; // all functions to be emitted
+    private _emitImports: CFuncDeclaration[] = []; // all the function imports to be emitted
+    private _emitVariables: CVarDefinition[] = []; // all static-storage variables to be emitted
 
     private _linkables = new Map<string, ExternalFunction | ExternalVariable>();
     private _linked = false;
@@ -46,6 +45,7 @@ export class Linker {
                     for (const element of linkable.declarationArray) {
                         linkable2.addDeclaration(element as any);
                     }
+                    continue;
                 }
             }
 
@@ -53,6 +53,14 @@ export class Linker {
                 // each external variable declaration is also a tentative definition, so initialize to zero
                 const cvar = new CVarDefinition(linkable.parseNode, linkable.id, linkable.type, "static", "external");
                 linkable.setDefinition(cvar);
+                continue;
+            } else if (linkable.externalType === "function") {
+                // check if any of the declarations marked as "import"
+                if (linkable.declarationArray.some(x => x.fnImport)) {
+                    // import this function instead
+                    this._emitImports.push(linkable.declarationArray[0]);
+                    continue;
+                }
             }
 
             throw new LinkingError("Failed to find definition", linkable.parseNode);
@@ -69,6 +77,10 @@ export class Linker {
 
     get emitFunctions(): ReadonlyArray<CFuncDefinition> {
         return this._emitFunctions;
+    }
+
+    get emitImports(): ReadonlyArray<CFuncDeclaration> {
+        return this._emitImports;
     }
 
     get emitVariables(): ReadonlyArray<CVarDefinition> {
