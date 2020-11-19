@@ -183,7 +183,7 @@ export class CustomTypeSpecifier extends ParseNode {
 
 export type StorageClass = "typedef" | "extern" | "static"; // | "auto" | "register";
 export type TypeSpecifier =
-    "void" | "char" | "short" | "int" | "long" | "float" | "double" | "signed" | "unsigned" // | "bool" | "complex" | "imaginary"]
+    "void" | "char" | "short" | "int" | "long" | "float" | "double" | "signed" | "unsigned" | "bool" // | "complex" | "imaginary"]
     | StructUnionSpecifier
     | EnumSpecifier
     | CustomTypeSpecifier;

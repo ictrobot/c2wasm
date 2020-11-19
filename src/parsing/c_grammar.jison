@@ -208,7 +208,7 @@ type_specifier
     | DOUBLE                                                                            -> yytext
     | SIGNED                                                                            -> yytext
     | UNSIGNED                                                                          -> yytext
-//  | BOOL                                                                              -> yytext
+    | _BOOL                                                                             -> "bool"
     | struct_or_union_specifier                                                         -> $1
     | enum_specifier                                                                    -> $1
     | TYPE_NAME                                                                         -> new t.CustomTypeSpecifier(@$, $1)

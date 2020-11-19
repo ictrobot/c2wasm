@@ -36,7 +36,10 @@ export class CConstant extends CEvaluable {
         if (this.type.equals(type)) return this;
 
         let newValue: bigint | number;
-        if (type.type === "float") {
+        if (type.equals(CArithmetic.BOOL)) {
+            // eslint-disable-next-line eqeqeq
+            newValue = this.value == 0 ? 0 : 1;
+        } else if (type.type === "float") {
             newValue = Number(this.value);
         } else {
             if (this.value > type.maxValue || this.value < type.minValue) {

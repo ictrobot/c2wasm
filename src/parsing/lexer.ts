@@ -3,7 +3,7 @@ import moo from "moo";
 const keywords = [
     "if", "break", "case", "char", "const", "continue", "default", "do", "double", "else", "enum", "extern", "float",
     "for", "int", "long", "return", "short", "signed", "sizeof", "static", "struct", "switch", "union", "unsigned",
-    "void", "while",
+    "void", "while", "_Bool",
 
     // currently unsupported (but still lex so parser throws error)
     "auto", "goto", "inline", "register", "typedef", "volatile",
@@ -15,7 +15,7 @@ const keywords = [
 const simpleSymbols = [';','{','}',',',':','=','(',')','[',']','.','&','!','~','-','+','*','/','%','<','>','^','|','?'];
 
 export const lexer = moo.compile({
-    _comment: {match: /(?:\/\*[^]*?\*\/)|(?:\/\/.*?$)/, multiline: true},
+    $comment: {match: /(?:\/\*[^]*?\*\/)|(?:\/\/.*?$)/, multiline: true},
     IDENTIFIER: {
         match: /[a-zA-Z_][a-zA-Z0-9_]*/,
         type: moo.keywords(Object.fromEntries(keywords.map(x => [x.toUpperCase(), x])))
@@ -49,15 +49,15 @@ export const lexer = moo.compile({
     EQ_OP: "==",
     NE_OP: "!=",
     ...Object.fromEntries(simpleSymbols.map(x => [x,x])),
-    _whitespace: [
+    $whitespace: [
         {match: /[ \t\v\f]+/},
         {match: /\n/, lineBreaks: true},
     ],
 });
 
-// automatically skip tokens starting with "_", i.e. whitespace, line breaks and comments
+// automatically skip tokens starting with "$", i.e. whitespace, line breaks and comments
 lexer.next = (next => () => {
     let tok = next.call(lexer);
-    while (tok?.type?.charAt(0) === '_') tok = next.call(lexer);
+    while (tok?.type?.charAt(0) === '$') tok = next.call(lexer);
     return tok;
 })(lexer.next);

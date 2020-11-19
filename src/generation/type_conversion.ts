@@ -60,7 +60,13 @@ export function conversion(inType: CType, outType: CType): WExpression {
  * - float -> unsigned integer conversion, uses the saturating truncation instructions to avoid traps
  */
 function arithmeticConversion(inType: CArithmetic, outType: CArithmetic): WExpression {
-    if (CArithmetic.Fp64.equals(outType)) {
+    if (CArithmetic.BOOL.equals(outType)) {
+        if (CArithmetic.Fp64.equals(inType)) return [Instructions.f64.const(0), Instructions.f64.ne()];
+        if (CArithmetic.Fp32.equals(inType)) return [Instructions.f32.const(0), Instructions.f32.ne()];
+        if (inType.bytes === 8) return [Instructions.i64.const(0n), Instructions.i64.ne()];
+        return [Instructions.i32.const(0), Instructions.i32.ne()];
+
+    } else if (CArithmetic.Fp64.equals(outType)) {
         if (CArithmetic.Fp32.equals(inType)) return [Instructions.f64.promote_f32()];
         if (inType.type === "signed" && inType.bytes === 8) return [Instructions.f64.convert_i64_s()];
         if (inType.type === "unsigned" && inType.bytes === 8) return [Instructions.f64.convert_i64_u()];

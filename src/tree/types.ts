@@ -215,10 +215,12 @@ export class CArithmetic {
     }
 
     equals(t: object): boolean {
-        return t instanceof CArithmetic && t.type === this.type && t.bytes === this.bytes;
+        return t instanceof CArithmetic && t.name === this.name && t.type === this.type && t.bytes === this.bytes;
     }
 
     get minValue(): bigint | number {
+        if (CArithmetic.BOOL.equals(this)) return 0;
+
         switch (this.type) {
         case "float":
             return -Infinity;
@@ -230,6 +232,8 @@ export class CArithmetic {
     }
 
     get maxValue(): bigint | number {
+        if (CArithmetic.BOOL.equals(this)) return 1;
+
         switch (this.type) {
         case "float":
             return Infinity;
@@ -251,6 +255,8 @@ export class CArithmetic {
     static readonly S32 = new CArithmetic("int", 4, "signed");
     static readonly U64 = new CArithmetic("unsigned long", 8, "unsigned");
     static readonly S64 = new CArithmetic("long", 8, "signed");
+
+    static readonly BOOL = new CArithmetic("bool", 4, "unsigned");
 }
 
 export const CSizeT = CArithmetic.U32;
@@ -289,7 +295,7 @@ export function getQualifier(t: CQualifiedType<CType>): TypeQualifier | undefine
 /** integer promotion from the C standard */
 export function integerPromotion(t: CArithmetic): CArithmetic {
     if (t.type === "float") return t;
-    if (t.bytes < CArithmetic.S32.bytes) return CArithmetic.S32;
+    if (t.bytes < CArithmetic.S32.bytes || t === CArithmetic.BOOL) return CArithmetic.S32;
     return t;
 }
 
@@ -352,6 +358,8 @@ export function getArithmeticType(specifierList: ReadonlyArray<TypeSpecifier & s
         if (remove("unsigned")) return check(CArithmetic.U32);
         remove("signed");
         return check(CArithmetic.S32);
+    } else if (remove("bool")) {
+        return check(CArithmetic.BOOL);
     }
     return undefined;
 }

@@ -41,6 +41,9 @@ function constant(c: CConstant): byte[] {
         return encode(8, d => d.setFloat64(0, Number(c.value)));
     } else if (CArithmetic.Fp32.equals(c.type)) {
         return encode(4, d => d.setFloat32(0, Number(c.value)));
+    } else if (CArithmetic.BOOL.equals(c.type)) {
+        // eslint-disable-next-line eqeqeq
+        return encode(4, d => d.setInt32(0, c.value == 0 ? 0 : 1, true));
     }
     throw new GenError("Unknown value type?", undefined, c.node);
 }
