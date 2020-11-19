@@ -1,4 +1,4 @@
-import {funcidx, localidx, byte} from "./base_types";
+import {funcidx, localidx, byte, tableidx} from "./base_types";
 import {encodeU32} from "./encoding";
 import {WExpression} from "./instructions";
 import {ModuleBuilder} from "./module";
@@ -7,6 +7,7 @@ import {ValueType, ResultType, FunctionType, encodeVec} from "./wtypes";
 
 export class WImportedFunction {
     constructor(private readonly idxFn: (x: WImportedFunction) => funcidx,
+                private readonly tableFn: (x: WImportedFunction) => tableidx,
                 readonly type: FunctionType,
                 readonly module: string,
                 readonly name: string) {
@@ -15,10 +16,15 @@ export class WImportedFunction {
     getIndex(): funcidx {
         return this.idxFn(this);
     }
+
+    getTableIndex(): tableidx {
+        return this.tableFn(this);
+    }
 }
 
 export class WFunction {
     constructor(private readonly idxFn: (x: WFunction) => funcidx,
+                private readonly tableFn: (x: WFunction) => tableidx,
                 readonly type: FunctionType,
                 private readonly builder: WFunctionBuilder,
                 readonly exportName?: string) {
@@ -26,6 +32,10 @@ export class WFunction {
 
     getIndex(): funcidx {
         return this.idxFn(this);
+    }
+
+    getTableIndex(): tableidx {
+        return this.tableFn(this);
     }
 
     toBytes(): byte[] {

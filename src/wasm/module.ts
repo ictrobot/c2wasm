@@ -1,4 +1,4 @@
-import {byte, typeidx, funcidx, globalidx} from "./base_types";
+import {byte, typeidx, funcidx, globalidx, tableidx} from "./base_types";
 import {encodeU32, encodeUtf8} from "./encoding";
 import {WFunctionBuilder, WFunction, WImportedFunction} from "./functions";
 import {WGlobal} from "./global";
@@ -8,6 +8,8 @@ import {encodeVec, ResultType, encodeFunctionType, FunctionType, MemoryType, enc
 export class ModuleBuilder {
     private _functions: WFunction[] = [];
     private _importedFunctions: WImportedFunction[] = [];
+    private _functionTable: (WFunction | WImportedFunction)[] = [];
+    private _functionTypes: byte[][] = [];
     private _globals: WGlobal[] = [];
     private _memory?: MemoryType;
     private _dataSegments: [offset: number, contents: byte[]][] = [];
@@ -17,14 +19,14 @@ export class ModuleBuilder {
         const builder = new WFunctionBuilder(this, params, bodyFn);
         const type: FunctionType = [params, returnValue];
 
-        const fn = new WFunction(this._funcIndex.bind(this), type, builder, exportName);
+        const fn = new WFunction(this._funcIndex.bind(this), this._tableIndex.bind(this), type, builder, exportName);
         builder._getIndex = fn.getIndex.bind(fn); // enable recursive calls in builder
         this._functions.push(fn);
         return fn;
     }
 
     importFunction(param: ResultType, returnValue: ResultType, module: string, name: string): WImportedFunction {
-        const fn = new WImportedFunction(this._funcIndex.bind(this), [param, returnValue], module, name);
+        const fn = new WImportedFunction(this._funcIndex.bind(this), this._tableIndex.bind(this), [param, returnValue], module, name);
         this._importedFunctions.push(fn);
         return fn;
     }
@@ -52,9 +54,8 @@ export class ModuleBuilder {
     }
 
     private byteList(): byte[] {
-        const types: byte[][] = [];
-        const imports = this._encodeImports(types);
-        const funcTypes = this._functions.map(x => encodeU32(getTypeIndex(x.type, types)));
+        const imports = this._encodeImports();
+        const funcTypes = this._functions.map(x => encodeU32(this.typeIndex(x.type)));
 
         const startSection: byte[] = [];
         if (this.startFunction) {
@@ -67,14 +68,15 @@ export class ModuleBuilder {
         return [
             0x00, 0x61, 0x73, 0x6D, // magic
             0x01, 0x00, 0x00, 0x00, // version
-            ...encodeSection(1, types), // type section
+            ...encodeSection(1, this._functionTypes), // type section
             ...encodeSection(2, imports), // import section
             ...encodeSection(3, funcTypes), // function section,
+            ...encodeSection(4, this._encodeTable()), // table section
             ...encodeSection(5, this._memory ? [encodeLimits(this._memory)] : []), // memory section
             ...encodeSection(6, this._globals.map(x => x.toBytes())), // globals section
             ...encodeSection(7, this._encodeExports()), // export section
-            ...startSection, // start function section
-
+            ...startSection, // 8, start function section
+            ...encodeSection(9, this._encodeElements()),
             ...encodeSection(10, this._functions.map(x => x.toBytes())), // code section
             ...encodeSection(11, this._encodeDataSegments()) // data segments section
         ] as byte[];
@@ -89,14 +91,22 @@ export class ModuleBuilder {
         return module.instance.exports;
     }
 
-    private _encodeImports(funcTypes: byte[][]): byte[][] {
+    private _encodeImports(): byte[][] {
         const imports: byte[][] = [];
 
         for (const i of this._importedFunctions) {
-            imports.push([...encodeUtf8(i.module), ...encodeUtf8(i.name), 0x00 as byte, ...encodeU32(getTypeIndex(i.type, funcTypes))]);
+            imports.push([...encodeUtf8(i.module), ...encodeUtf8(i.name), 0x00 as byte, ...encodeU32(this.typeIndex(i.type))]);
         }
 
         return imports;
+    }
+
+    private _encodeTable(): byte[][] {
+        if (this._functionTable.length === 0) return [];
+
+        const tableSize = BigInt(this._functionTable.length);
+        const table: byte[] = [0x70 as byte, ...encodeLimits([tableSize, tableSize])];
+        return [table];
     }
 
     private _encodeExports(): byte[][] {
@@ -111,6 +121,14 @@ export class ModuleBuilder {
         if (this._memory) exports.push([...encodeUtf8("__mem"), 0x02 as byte, 0x00 as byte]);
 
         return exports;
+    }
+
+    private _encodeElements(): byte[][] {
+        if (this._functionTable.length === 0) return [];
+
+        return [[0x00 as byte,
+            ...Instructions.i32.const(0)(), 0x0B as byte, // i32.const expression
+            ...encodeVec(this._functionTable.map(x => encodeU32(x.getIndex())))]];
     }
 
     private _encodeDataSegments(): byte[][] {
@@ -136,6 +154,24 @@ export class ModuleBuilder {
         return BigInt(idx) as funcidx;
     }
 
+    private _tableIndex(fn: WFunction | WImportedFunction): tableidx {
+        let idx = this._functionTable.indexOf(fn);
+        if (idx < 0) {
+            idx = this._functionTable.push(fn) - 1;
+        }
+        return BigInt(idx) as tableidx;
+    }
+
+    typeIndex(x: FunctionType): typeidx {
+        const encoded = encodeFunctionType(x);
+        for (let i = 0; i < this._functionTypes.length; i++) {
+            if (this._functionTypes[i].length === encoded.length && this._functionTypes[i].every((v, i) => v === encoded[i])) {
+                return BigInt(i) as typeidx;
+            }
+        }
+        return BigInt(this._functionTypes.push(encoded) - 1) as typeidx;
+    }
+
     private _globalIndex(g: WGlobal): globalidx {
         const idx = this._globals.indexOf(g);
         if (idx < 0) throw new Error("Global not found?");
@@ -149,16 +185,6 @@ export class ModuleBuilder {
     get functionImports(): ReadonlyArray<WImportedFunction> {
         return this._importedFunctions;
     }
-}
-
-function getTypeIndex(x: FunctionType, list: byte[][]): typeidx {
-    const encoded = encodeFunctionType(x);
-    for (let i = 0; i < list.length; i++) {
-        if (list[i].length === encoded.length && list[i].every((v, i) => v === encoded[i])) {
-            return BigInt(i) as typeidx;
-        }
-    }
-    return BigInt(list.push(encoded) - 1) as typeidx;
 }
 
 function encodeSection(id: number, vec: byte[][]): byte[] {
