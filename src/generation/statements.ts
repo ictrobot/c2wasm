@@ -1,12 +1,14 @@
 import {CFuncDefinition} from "../tree/declarations";
 import * as c from "../tree/statements";
-import {Instructions} from "../wasm";
+import {CArithmetic} from "../tree/types";
+import {Instructions, i32Type} from "../wasm";
 import {labelidx} from "../wasm/base_types";
 import {WExpression, WInstruction} from "../wasm/instructions";
-import {subExpr, condition} from "./expressions";
+import {subExpr, condition, expressionGeneration, gInstr} from "./expressions";
 import {GenError} from "./gen_error";
 import {WFnGenerator} from "./generator";
 import {storageSetupScope} from "./storage";
+import {valueType} from "./type_conversion";
 
 function _compoundStatement(ctx: WFnGenerator, s: c.CCompoundStatement): WExpression {
     const instr = storageSetupScope(ctx, s.scope);
@@ -96,8 +98,40 @@ function _doLoop(ctx: WFnGenerator, s: c.CDoLoop): WExpression {
 }
 
 function _switch(ctx: WFnGenerator, s: c.CSwitch): WExpression {
-    // TODO implement switch
-    throw new GenError("TODO: implement switch", ctx, s.node);
+    const defaultIndex = s.children.findIndex(x => x.default);
+    if (defaultIndex !== -1 && defaultIndex !== s.children.length - 1) {
+        throw new GenError("Only switch statements were the default block is the last block are supported");
+    }
+
+    const type = valueType(s.expression.type as CArithmetic);
+    const body: WExpression = ctx.withTemporaryLocal(type, value => ctx.withTemporaryLocal(i32Type, matched => {
+        const instr: WExpression = [...expressionGeneration(ctx, s.expression, false), Instructions.local.set(value)];
+
+        for (const child of s.children) {
+            // condition
+            if (child.default) {
+                instr.push(Instructions.i32.const(1));
+            } else {
+                instr.push(Instructions.local.get(matched)); // TODO short circuit
+
+                for (const sCase of child.cases) {
+                    instr.push(Instructions.local.get(value), ...subExpr(ctx, sCase, s.expression.type), gInstr(type, "eq"));
+                    instr.push(Instructions.i32.or());
+                }
+            }
+
+            // body
+            instr.push(Instructions.if(null, [
+                Instructions.i32.const(1),
+                Instructions.local.set(matched),
+                ...ctx.statement(child.body)
+            ]));
+        }
+
+        return instr;
+    }));
+
+    return [Instructions.block(null, [storeBreakDepth(s), ...body])];
 }
 
 function _continue(ctx: WFnGenerator, s: c.CContinue): WExpression {

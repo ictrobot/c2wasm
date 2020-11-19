@@ -492,7 +492,7 @@ function iInstr(t: ImplementationType, op: (keyof typeof Instructions.i32 & keyo
 }
 
 /** generic instruction - i32, i64, f32 or f64 */
-function gInstr(t: ImplementationType, op: (keyof typeof Instructions.i32 & keyof typeof Instructions.i64 & keyof typeof Instructions.f32 & keyof typeof Instructions.f64), ...args: any[]) {
+export function gInstr(t: ImplementationType, op: (keyof typeof Instructions.i32 & keyof typeof Instructions.i64 & keyof typeof Instructions.f32 & keyof typeof Instructions.f64), ...args: any[]) {
     if (typeof t !== "number") throw new Error("Instructions can only operate on value types");
 
     if (t === i32Type) {
