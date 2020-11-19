@@ -14,6 +14,7 @@ class WrappedLexer {
     yytext?: string;
     yylloc: parsetree.Location = newLocation();
     yylineno: number = 0;
+    types = new Map<string, boolean>();
 
     /** return the token type and update yytext, yylloc, yylineno */
     lex(): string {
@@ -34,6 +35,9 @@ class WrappedLexer {
         };
         this.yylineno = this.yylloc.first_line;
 
+        if (token.type === "IDENTIFIER" && this.types.get(token.text)) {
+            return "TYPE_NAME";
+        }
         return token.type;
     }
 
@@ -42,10 +46,20 @@ class WrappedLexer {
         this.yylloc = newLocation();
         this.yylineno = 0;
         this.yytext = undefined;
+        this.types.clear();
 
         lexer.reset(input);
         this.yylloc._source = input; // store source on the parser tokens, allowing error information to be easily printed
         this.yylloc._sourceId = nextSourceId++; // identifier which can be used to check if tokens are from the same file
+    }
+
+    externalDeclaration(d: parsetree.Declaration) {
+        if (d.typeInfo.storageList[0] !== "typedef") return;
+
+        for (let declarator of d.list) {
+            while (!(declarator instanceof parsetree.IdentifierDeclarator)) declarator = declarator.body;
+            this.types.set(declarator.id, true);
+        }
     }
 }
 

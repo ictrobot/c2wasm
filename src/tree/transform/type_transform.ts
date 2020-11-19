@@ -152,8 +152,9 @@ function getSpecifierType(d: pt.SpecifierQualifiers | pt.DeclarationSpecifiers, 
         const type = getArithmeticType(specifiers as ReadonlyArray<pt.TypeSpecifier & string>);
         if (type) return type;
 
-    } else if (specifiers.find(x => x instanceof pt.CustomTypeSpecifier)) {
-        throw new ParseTreeValidationError(d, "Not implemented"); // TODO implement custom types (typedef)
+    } else if (specifiers.length === 1 && specifiers[0] instanceof pt.CustomTypeSpecifier) {
+        // typedef
+        return scope.lookupTypedef(specifiers[0].name);
     }
 
     throw new ParseTreeValidationError(d, "Invalid specifier");

@@ -191,8 +191,8 @@ init_declarator
     ;
 
 storage_class_specifier
-//  : TYPEDEF                                                                           -> yytext
-    : EXTERN                                                                            -> yytext
+    : TYPEDEF                                                                           -> yytext
+    | EXTERN                                                                            -> yytext
     | STATIC                                                                            -> yytext
 //  | AUTO                                                                              -> yytext
 //  | REGISTER                                                                          -> yytext
@@ -211,7 +211,7 @@ type_specifier
 //  | BOOL                                                                              -> yytext
     | struct_or_union_specifier                                                         -> $1
     | enum_specifier                                                                    -> $1
-//  | TYPE_NAME                                                                         -> new t.CustomTypeSpecifier(@$, $1)
+    | TYPE_NAME                                                                         -> new t.CustomTypeSpecifier(@$, $1)
     ;
 
 struct_or_union_specifier
@@ -429,7 +429,7 @@ translation_unit
 
 external_declaration
     : function_definition                                                               -> $1
-    | declaration                                                                       -> $1
+    | declaration                                                                       -> (yylexer.externalDeclaration($1), $1)
     ;
 
 function_definition

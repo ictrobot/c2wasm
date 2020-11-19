@@ -84,9 +84,10 @@ function displayObject(parent: HTMLElement, key: string, obj: any): void {
 function update(input: string) {
     const identifiers = window.document.getElementById("identifiers");
     const tags = window.document.getElementById("tags");
+    const typedefs = window.document.getElementById("typedefs");
     const errors = window.document.getElementById("errors");
-    if (!identifiers || !tags || !errors) throw new Error("Element not found");
-    identifiers.innerHTML = tags.innerText = "";
+    if (!identifiers || !tags || !errors || !typedefs) throw new Error("Element not found");
+    identifiers.innerHTML = tags.innerText = typedefs.innerText = "";
     currentId = 0;
     displayedMap = new WeakMap<any, number>();
 
@@ -106,6 +107,9 @@ function update(input: string) {
     for (const [key, value] of (ir as any).tags) {
         displayObject(tags, key, value);
     }
+    for (const [key, value] of (ir as any).typedefs) {
+        displayObject(typedefs, key, value);
+    }
 }
 
 
@@ -121,6 +125,8 @@ if (typeof window !== 'undefined' && window.document) {
             <ul id="identifiers" class="treelist"></ul>
             <h3>Tags:</h3>
             <ul id="tags" class="treelist"></ul>
+            <h3>Typedefs:</h3>
+            <ul id="typedefs" class="treelist"></ul>
         </div>
 
         <style>

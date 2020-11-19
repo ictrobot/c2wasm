@@ -25,6 +25,11 @@ export function ptTransform(translationUnit: pt.TranslationUnit): Scope {
 /** Add the pt declarations to the scope, and either store their static initializer on the variables or return a
  * list of assignments to add to the body of the current function to set their initial values */
 function ptDeclaration(declaration: pt.Declaration, scope: Scope, inFunction: boolean): CAssignment[] {
+    if (declaration.typeInfo.storageList[0] === "typedef") {
+        ptTypedef(declaration, scope);
+        return [];
+    }
+
     const declType = getType(declaration, scope);
     const assignments = [];
     for (let entry of declaration.list) {
@@ -118,6 +123,18 @@ function ptDeclaration(declaration: pt.Declaration, scope: Scope, inFunction: bo
     return assignments;
 }
 
+function ptTypedef(node: pt.Declaration, scope: Scope) {
+    if (node.list.length === 0) throw new ParseTreeValidationError(node, "typedef must define at least one identifier");
+    const baseType = getType(node, scope);
+
+    for (const decl of node.list) {
+        if (decl instanceof pt.InitDeclarator) throw new ParseTreeValidationError(node, "cannot initialize a typedef");
+        const type = getDeclaratorType(baseType, decl, scope);
+        const name = getDeclaratorName(decl);
+        scope.addTypedef(name, type, decl);
+    }
+}
+
 /** Transform an initializer to either a CInitializer (for arrays, structs & unions) or a CExpression */
 function ptInitializer(node: pt.ParseNode, initializer: pt.Initializer, scope: Scope): CExpression | CInitializer {
     if (Array.isArray(initializer)) {
@@ -139,7 +156,11 @@ function ptFunction(fn: pt.FunctionDefinition, scope: Scope): void {
     // get the function name
     const name = getDeclaratorName(fn.declarator);
 
-    const linkage = fn.typeInfo.storageList[0] === "static" ? "internal" : "external";
+    let linkage: "internal" | "external";
+    if (fn.typeInfo.storageList[0] === "static") linkage = "internal";
+    else if (fn.typeInfo.storageList[0] === "typedef") throw new ParseTreeValidationError(fn, "Invalid typedef");
+    else linkage = "external";
+
     const cfn = new CFuncDefinition(fn, name, type, linkage, scope);
     scope.addIdentifier(cfn);
 

@@ -51,9 +51,13 @@ const typeValidation = (d: pt.SpecifierQualifiers | pt.DeclarationSpecifiers) =>
 
 validator(pt.SpecifierQualifiers, typeValidation);
 validator(pt.DeclarationSpecifiers, typeValidation);
-validator(pt.DeclarationSpecifiers, d => {
+validator(pt.DeclarationSpecifiers, (d, parents) => {
     if (d.storageList.length > 1) throw new ParseTreeValidationError(d, "Invalid storage class list.");
     if (d.fnSpecifierList.length > 1) throw new ParseTreeValidationError(d, "Invalid fn specifier list.");
+
+    if (d.storageList[0] === "typedef" && parents.length !== 1) {
+        throw new ParseTreeValidationError(d, "Nested typedefs are not allowed");
+    }
 });
 
 // Constant expr validation

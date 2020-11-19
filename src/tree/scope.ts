@@ -2,7 +2,7 @@ import {CError} from "../c_error";
 import type {ParseNode} from "../parsing";
 import type {CDeclaration} from "./declarations";
 import {CFuncDeclaration, CFuncDefinition, CVarDeclaration, CVarDefinition} from "./declarations";
-import type {CCompound} from "./types";
+import type {CCompound, CType} from "./types";
 
 /**
  * Represents a scope storing identifiers (variables & functions) and tags (struct, union & enum names) in the IR.
@@ -15,6 +15,7 @@ import type {CCompound} from "./types";
 export class Scope {
     private tags = new Map<string, CCompound>(); // names of structs, unions & enums
     private identifiers = new Map<string, CDeclaration>(); // names of variables and functions
+    private typedefs = new Map<string, CType>();
 
     constructor(readonly node?: ParseNode, readonly parent?: Scope) {
     }
@@ -24,7 +25,7 @@ export class Scope {
         return this.tags.get(tag) ?? this.parent?._getTag(tag);
     }
 
-    lookupTag<T extends CCompound>(tag: string, wantedType?: {new(...args: any[]): T}, node?: ParseNode): T | undefined {
+    lookupTag<T extends CCompound>(tag: string, wantedType?: { new(...args: any[]): T }, node?: ParseNode): T | undefined {
         const result = this._getTag(tag);
         if (wantedType && result && wantedType.prototype !== Object.getPrototypeOf(result)) {
             throw new ScopeError("`" + tag + "` was already declared as a " + result.typeName, result.node, node);
@@ -87,6 +88,28 @@ export class Scope {
 
     get declarations(): ReadonlyArray<CDeclaration> {
         return [...this.identifiers.values()];
+    }
+
+    private _getTypedef(id: string): CType | undefined {
+        // perform recursive lookup in parents if not found
+        return this.typedefs.get(id) ?? this.parent?._getTypedef(id);
+    }
+
+    lookupTypedef(id: string, node?: ParseNode): CType {
+        const result = this._getTypedef(id);
+        if (result === undefined) {
+            throw new ScopeError("typedef `" + id + "` not found in scope", node);
+        }
+        return result;
+    }
+
+    addTypedef(id: string, type: CType, node?: ParseNode): void {
+        const existing = this._getTypedef(id);
+        if (existing) {
+            if (existing.equals(type)) return;
+            throw new ScopeError("typedef already defined with a different type", node);
+        }
+        this.typedefs.set(id, type);
     }
 }
 
