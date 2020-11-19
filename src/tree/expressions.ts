@@ -155,7 +155,7 @@ export class CIncrDecr {
                 readonly op: "++" | "--", readonly pos: "pre" | "post") {
         checks.checkLvalue(body, true);
 
-        this.type = checks.asArithmeticOrPointer(body.node, body.type);
+        this.type = checks.asNonFunctionPointer(body.node, checks.asArithmeticOrPointer(body.node, body.type));
         if (this.type instanceof CPointer) checkTypeComplete(this.type.type);
     }
 }
@@ -183,8 +183,8 @@ export class CAddressOf { // &
 
     constructor(readonly node: ParseNode, body: CExpression) {
         if (body instanceof CArrayPointer) body = body.arrayIdentifier;
-        checks.checkLvalue(body, true);
-        this.type = new CPointer(node, checks.asCType(body));
+        if (!(body instanceof CIdentifier && body.type instanceof CFuncType)) checks.checkLvalue(body, true);
+        this.type = new CPointer(node, body.type);
 
         if (body instanceof CIdentifier) {
             // when translating to wasm all variables which have their address taken have to be stored on the shadow stack
@@ -279,17 +279,18 @@ export class CAddSub {
         if (lhs.type instanceof CPointer && rhs.type instanceof CPointer) { // both pointers
             if (!lhs.type.equals(rhs.type)) throw new checks.ExpressionTypeError(node, "both pointers to have the same type");
             checkTypeComplete(lhs.type.type);
-            this.type = lhs.type;
+            this.type = checks.asNonFunctionPointer(lhs.node, lhs.type);
+            checks.asNonFunctionPointer(rhs.node, rhs.type);
 
         } else if (lhs.type instanceof CPointer) { // one pointer, one integral
             checks.asInteger(rhs.node, rhs.type);
             checkTypeComplete(lhs.type.type);
-            this.type = lhs.type;
+            this.type = checks.asNonFunctionPointer(lhs.node, lhs.type);
 
         } else if (rhs.type instanceof CPointer) { // one pointer, one integral
             checks.asInteger(lhs.node, lhs.type);
             checkTypeComplete(rhs.type.type);
-            this.type = rhs.type;
+            this.type = checks.asNonFunctionPointer(rhs.node, rhs.type);
 
         } else {
             this.type = usualArithmeticConversion(checks.asArithmetic(lhs.node, lhs.type), checks.asArithmetic(rhs.node, rhs.type));
@@ -442,6 +443,10 @@ export class CAssignment {
             if (varType.type instanceof CVoid || valueType.type instanceof CVoid) return;
             // allow non-constant pointers to be assigned to constant pointers
             if (varType.type.equals(valueType.type) && valueType.qualifier !== "const") return;
+        }
+        if (varType instanceof CPointer && valueType instanceof CFuncType) {
+            // implicit function pointer conversion
+            if (varType.type.equals(valueType)) return;
         }
 
         throw new checks.ExpressionTypeError(node, varType.typeName, valueType.typeName);

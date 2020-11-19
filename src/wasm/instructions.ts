@@ -291,8 +291,8 @@ function encodeIndex<T extends bigint>(idx: index<T>, depth: number): byte[] {
     return encodeU32(value);
 }
 
-function indexArg<T extends bigint>(opcode: number, ...extra: number[]): (x: index<T>) => WInstruction {
-    return (i) => (depth: number) => [opcode as byte, ...extra as byte[], ...encodeIndex(i, depth)];
+function indexArg<T extends bigint>(opcode: number, ...after: number[]): (x: index<T>) => WInstruction {
+    return (i) => (depth: number) => [opcode as byte, ...encodeIndex(i, depth), ...after as byte[]];
 }
 
 function memArg(opcode: number): (align: bigint | number, offset: bigint | number) => WInstruction {

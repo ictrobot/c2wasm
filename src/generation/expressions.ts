@@ -1,6 +1,7 @@
 import {CFuncDefinition, CFuncDeclaration} from "../tree/declarations";
+import {CIdentifier} from "../tree/expressions";
 import * as c from "../tree/expressions";
-import {CType, CArithmetic, CPointer, CArray, CSizeT, CUnion, CStruct} from "../tree/types";
+import {CType, CArithmetic, CPointer, CArray, CSizeT, CUnion, CStruct, CFuncType} from "../tree/types";
 import {i32Type, Instructions, i64Type, f32Type, f64Type} from "../wasm";
 import {WExpression, WInstruction} from "../wasm/instructions";
 import {GenError} from "./gen_error";
@@ -22,6 +23,11 @@ function constant(ctx: WFnGenerator, e: c.CConstant, discard: boolean): WExpress
 function identifier(ctx: WFnGenerator, e: c.CIdentifier, discard: boolean): WExpression {
     if (discard) return []; // no possible side effects
 
+    if (e.value instanceof CFuncDefinition || e.value instanceof CFuncDeclaration) {
+        // get function pointer
+        const fn = e.value;
+        return [() => Instructions.i32.const(ctx.gen.indirectIndex(fn))()];
+    }
     return storageGet(ctx, e.type, e);
 }
 
@@ -42,22 +48,27 @@ function stringLiteral(ctx: WFnGenerator, e: c.CStringLiteral, discard: boolean)
 }
 
 function functionCall(ctx: WFnGenerator, e: c.CFunctionCall, discard: boolean): WExpression {
-    if (!(e.body instanceof c.CIdentifier) || !(e.body.value instanceof CFuncDefinition || e.body.value instanceof CFuncDeclaration)) {
+    const indirectValue: WExpression = [];
+    if (e.body instanceof c.CIdentifier && (e.body.value instanceof CFuncDefinition || e.body.value instanceof CFuncDeclaration)) {
+        // normal function call
+    } else if (e.body.type instanceof CFuncType || (e.body.type instanceof CPointer && e.body.type.type instanceof CFuncType)) {
+        // indirect function call
+        indirectValue.push(...subExpr(ctx, e.body, e.body.type));
+    } else {
         throw new GenError("Invalid fn call identifier", ctx, e.body.node);
     }
 
     const internalExpression = internalFunctions(ctx, e, discard); // __wasm__ etc
     if (internalExpression !== undefined) return internalExpression;
 
-    const fn = e.body.value as CFuncDeclaration | CFuncDefinition;
-    const instr = fn.type.parameterTypes.flatMap((t, i) => subExpr(ctx, e.args[i], t));
+    const instr = e.fnType.parameterTypes.flatMap((t, i) => subExpr(ctx, e.args[i], t));
     let shadowUsage = ctx.shadowStackUsage;
 
-    if (fn.type.variadic) {
-        shadowUsage += 16; // empty region to help prevent overruns
-
+    if (e.fnType.variadic) {
         // push variadic variables onto shadow stack
-        for (let i = e.args.length - 1; i >= fn.type.parameterTypes.length; i--) {
+
+        shadowUsage += 16; // empty region to help prevent overruns
+        for (let i = e.args.length - 1; i >= e.fnType.parameterTypes.length; i--) {
             // storing realType so C code needs to do __wasm_rload__ to account for structs being pointers etc
             const valueType = realType(e.args[i].type);
             instr.push(Instructions.global.get(ctx.gen.shadowStackPtr),
@@ -65,6 +76,10 @@ function functionCall(ctx: WFnGenerator, e: c.CFunctionCall, discard: boolean): 
                 gInstr(valueType, "store", 2, shadowUsage));
             shadowUsage += 8;
         }
+    }
+    if (indirectValue.length > 0) {
+        // indirect call index
+        instr.push(...indirectValue);
     }
     if (shadowUsage > 0) {
         // increment shadow stack pointer for callee
@@ -74,9 +89,17 @@ function functionCall(ctx: WFnGenerator, e: c.CFunctionCall, discard: boolean): 
             Instructions.global.set(ctx.gen.shadowStackPtr));
     }
 
-    instr.push(Instructions.call(ctx.gen.functionIndex(fn)));
+    // do actual call
+    if (indirectValue.length > 0) {
+        instr.push(Instructions.call_indirect(ctx.gen.typeIndex(e.fnType)));
+    } else {
+        // direct call
+        const fn = (e.body as CIdentifier).value as CFuncDeclaration | CFuncDefinition;
+        instr.push(Instructions.call(ctx.gen.functionIndex(fn)));
+    }
 
     if (discard && e.fnType.returnType.bytes > 0) {
+        // cleanup return value if needed
         instr.push(Instructions.drop());
     }
     if (shadowUsage > 0) {
@@ -118,12 +141,21 @@ function incrDecr(ctx: WFnGenerator, e: c.CIncrDecr, discard: boolean): WExpress
 function addressOf(ctx: WFnGenerator, e: c.CAddressOf, discard: boolean): WExpression {
     if (discard) return expressionGeneration(ctx, e.body, true); // get any side effects
 
+    if (e.body instanceof CIdentifier && (e.body.value instanceof CFuncDefinition || e.body.value instanceof CFuncDeclaration)) {
+        // get function pointer
+        const fn = e.body.value;
+        return [() => Instructions.i32.const(ctx.gen.indirectIndex(fn))()];
+    }
     return getAddress(ctx, e.body);
 }
 
 function dereference(ctx: WFnGenerator, e: c.CDereference, discard: boolean): WExpression {
     if (discard) return expressionGeneration(ctx, e.body, true); // get any side effects
 
+    if (e.type instanceof CFuncType) {
+        // don't do final deref of function pointers
+        return expressionGeneration(ctx, e.body, false);
+    }
     return storageGet(ctx, e.type, e);
 }
 

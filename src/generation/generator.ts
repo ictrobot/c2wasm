@@ -2,8 +2,9 @@ import type {Linker} from "../linker";
 import {CFuncDefinition, CFuncDeclaration} from "../tree/declarations";
 import type {CExpression} from "../tree/expressions";
 import type {CStatement} from "../tree/statements";
+import type {CFuncType} from "../tree/types";
 import {ModuleBuilder, WFunctionBuilder, WFunction, Instructions, WImportedFunction, ValueType, i32Type} from "../wasm";
-import type {funcidx} from "../wasm/base_types";
+import type {funcidx, tableidx, typeidx} from "../wasm/base_types";
 import type {WLocal} from "../wasm/functions";
 import type {WGlobal} from "../wasm/global";
 import type {WExpression} from "../wasm/instructions";
@@ -98,6 +99,17 @@ export class WGenerator {
                 return wasmFunc.getIndex();
             }
         };
+    }
+
+    typeIndex(fnType: CFuncType): typeidx {
+        return this.module.typeIndex([fnType.parameterTypes.map(realType), returnType(fnType.returnType)]);
+    }
+
+    indirectIndex(fn: CFuncDeclaration | CFuncDefinition): tableidx {
+        while (fn instanceof CFuncDeclaration && fn.definition !== undefined) fn = fn.definition;
+        const wasmFunc = this.functions.get(fn);
+        if (wasmFunc === undefined) throw new GenError(`Function ${fn.name} not found in scope`, undefined, fn.node);
+        return wasmFunc.getTableIndex();
     }
 }
 

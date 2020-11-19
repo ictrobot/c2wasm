@@ -1,4 +1,4 @@
-import {CVariable, CVarDefinition} from "../declarations";
+import {CVarDefinition} from "../declarations";
 import {CConstant} from "../expressions";
 import {Scope} from "../scope";
 import {CType, getArithmeticType, CPointer, addQualifier, CFuncType, CNotFuncType, CArray, CEnum, CStruct, CUnion, CCompoundMember} from "../types";
@@ -65,10 +65,8 @@ export function getDeclaratorType(type: CType, declarator: pt.Declarator | pt.Ab
                 parameterNames = [];
             }
 
-            if (d.body && !(d.body instanceof pt.IdentifierDeclarator)) {
-                throw new ParseTreeValidationError(d.body, "Unexpected declarator");
-            }
-            return new CFuncType(d, type as CNotFuncType, parameterTypes, parameterNames, d.variadic);
+            type = new CFuncType(d, type as CNotFuncType, parameterTypes, parameterNames, d.variadic);
+            d = d.body;
         }
     }
     return type;

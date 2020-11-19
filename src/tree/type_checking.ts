@@ -40,8 +40,16 @@ export function asArithmeticOrPointer(node: ParseNode, t: CType): CArithmetic | 
     throw new ExpressionTypeError(node, "arithmetic or pointer", t.typeName);
 }
 
+export function asNonFunctionPointer<T extends CType>(node: ParseNode, t: T): T {
+    if (t instanceof CPointer && t.type instanceof CFuncType) {
+        throw new ExpressionTypeError(node, "non-function pointer", "function pointer");
+    }
+    return t;
+}
+
 export function asFunction(node: ParseNode, t: CType): CFuncType {
     if (t instanceof CFuncType) return t;
+    if (t instanceof CPointer && t.type instanceof CFuncType) return t.type;
     throw new ExpressionTypeError(node, "function", t.typeName);
 }
 
@@ -55,9 +63,4 @@ export function asStructOrUnion(node: ParseNode, t: CType): CStruct | CUnion {
 export function checkLvalue(expression: CExpression, lvalue: boolean): CExpression {
     if (expression.lvalue === lvalue) return expression;
     throw new ExpressionTypeError(expression.node, `lvalue=${lvalue}`, `lvalue=${expression.lvalue}`);
-}
-
-export function asCType(expression: CExpression): CType {
-    if (!(expression.type instanceof CFuncType)) return expression.type;
-    throw new ExpressionTypeError(expression.node, "non-function", "function");
 }

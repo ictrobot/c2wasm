@@ -50,6 +50,9 @@ export function conversion(inType: CType, outType: CType): WExpression {
     } else if (outType instanceof CPointer && inType instanceof CPointer) {
         // pointer.type change
         return [];
+    } else if (inType instanceof CFuncType && outType instanceof CPointer && inType.equals(outType.type)) {
+        // fn to pointer (function should already a pointer)
+        return [];
     }
 
     throw new Error(`Cannot convert ${inType.typeName} to ${outType.typeName}`);

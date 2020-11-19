@@ -1,4 +1,3 @@
-import {CFuncDefinition, CFuncDeclaration} from "../tree/declarations";
 import {CFunctionCall, CIdentifier, CConstant} from "../tree/expressions";
 import {INTERNAL_FNS} from "../tree/internal_scope";
 import {CArithmetic, CStruct, CUnion, CPointer} from "../tree/types";
@@ -8,9 +7,8 @@ import {GenError} from "./gen_error";
 import {WFnGenerator} from "./generator";
 
 export function internalFunctions(ctx: WFnGenerator, e: CFunctionCall, discard: boolean): WExpression | undefined {
-    if (!(e.body instanceof CIdentifier) || !(e.body.value instanceof CFuncDefinition || e.body.value instanceof CFuncDeclaration)) {
-        throw new GenError("Invalid fn call identifier", ctx, e.node);
-    }
+    if (!(e.body instanceof CIdentifier)) return undefined; // indirect call
+
     switch (e.body.value) {
 
     case INTERNAL_FNS.wasm:

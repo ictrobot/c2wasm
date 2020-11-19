@@ -56,6 +56,7 @@ export class ModuleBuilder {
     private byteList(): byte[] {
         const imports = this._encodeImports();
         const funcTypes = this._functions.map(x => encodeU32(this.typeIndex(x.type)));
+        const code = this._functions.map(x => x.toBytes());
 
         const startSection: byte[] = [];
         if (this.startFunction) {
@@ -77,7 +78,7 @@ export class ModuleBuilder {
             ...encodeSection(7, this._encodeExports()), // export section
             ...startSection, // 8, start function section
             ...encodeSection(9, this._encodeElements()),
-            ...encodeSection(10, this._functions.map(x => x.toBytes())), // code section
+            ...encodeSection(10, code), // code section
             ...encodeSection(11, this._encodeDataSegments()) // data segments section
         ] as byte[];
     }
