@@ -13,7 +13,7 @@ static struct node {
 // inspired by https://github.com/embeddedartistry/embedded-resources/blob/master/examples/c/malloc_freelist.c
 
 static void merge_blocks(struct node* node) {
-    struct node* last = 0;
+    struct node* last = NULL;
 
     while(node && node->next) {
         size_t end = (size_t) node + ALLOC_OFFSET + node->size;
@@ -26,8 +26,8 @@ static void merge_blocks(struct node* node) {
             if (node->next->prev) node->next->prev = node;
 
             // clear old allocation header to zero
-            next->prev = 0;
-            next->next = 0;
+            next->prev = NULL;
+            next->next = NULL;
             next->size = 0;
         } else {
             node = next;
@@ -78,7 +78,7 @@ void* malloc(size_t size) {
         int result = __wasm_i32__(0x40, 0); // wasm: memory.grow
         if (result < 0) {
             // failed to allocate...
-            return 0;
+            return NULL;
         } else {
             last->next = (struct node*) (result * PAGE_SIZE);
             last->next->size = (pages * PAGE_SIZE) - ALLOC_OFFSET;
@@ -89,7 +89,7 @@ void* malloc(size_t size) {
         }
     }
 
-    return 0;
+    return NULL;
 }
 
 void free(void* ptr) {
@@ -129,7 +129,7 @@ void* realloc(void* ptr, size_t size) {
 
         if ((int) block->next != -1 || (int) block->prev != 7) {
             // not an allocated block!
-            return 0;
+            return NULL;
         }
 
         if (block->size > size) {
@@ -143,7 +143,7 @@ void* realloc(void* ptr, size_t size) {
         free(ptr);
         return new_ptr;
     }
-    return 0;
+    return NULL;
 }
 
 void* calloc(size_t nobj, size_t size) {
@@ -158,5 +158,5 @@ void* calloc(size_t nobj, size_t size) {
         }
         return ptr;
     }
-    return 0;
+    return NULL;
 }
