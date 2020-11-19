@@ -157,6 +157,8 @@ function ptConstant(e: pt.Constant): CConstant {
         if (value.endsWith("l")) {
             value = value.slice(0, -1);
             long = true;
+            // may be a second l for long long
+            if (value.endsWith("l")) value = value.slice(0, -1);
         }
         if (!unsigned && value.endsWith("u")) {
             // check u again as u and l can appear in either order

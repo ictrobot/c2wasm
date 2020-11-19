@@ -21,9 +21,9 @@ export const lexer = moo.compile({
         type: moo.keywords(Object.fromEntries(keywords.map(x => [x.toUpperCase(), x])))
     },
     CONSTANT_FLOAT: /(?:[0-9]+[Ee][+-]?[0-9]+|(?:[0-9]*\.[0-9]+|[0-9]+\.[0-9]*)(?:[Ee][+-]?[0-9]+)?)[fFlL]?|(?:[1-9][0-9]*|0)[fF]/,
-    CONSTANT_HEX: /0[xX][a-fA-F0-9]+(?:[uU][lL]?|[lL][uU]?|)/,
-    CONSTANT_OCTAL: /0[0-7]+(?:[uU][lL]?|[lL][uU]?|)/,
-    CONSTANT_INT: /(?:[1-9][0-9]*|0)(?:[uU][lL]?|[lL][uU]?|)/,
+    CONSTANT_HEX: /0[xX][a-fA-F0-9]+(?:[uU][lL]{0,2}|[lL]{1,2}[uU]?|)/,
+    CONSTANT_OCTAL: /0[0-7]+(?:[uU][lL]{0,2}|[lL]{1,2}[uU]?|)/,
+    CONSTANT_INT: /(?:[1-9][0-9]*|0)(?:[uU][lL]{0,2}|[lL]{1,2}[uU]?|)/,
     CONSTANT_CHAR: {match: /'(?:[^\\\n']|\\(?:.|x[0-9a-fA-F]{1,2}|[0-7]{1,3}))'/, value: x => x.slice(1, -1)},
     STRING_LITERAL: {match: /"(?:[^\\\n"]|\\(?:[^x0-7\n]|x[0-9a-fA-F]{1,2}|[0-7]{1,3}))*"/, value: x => x.slice(1, -1)},
     ELLIPSIS: "...",
