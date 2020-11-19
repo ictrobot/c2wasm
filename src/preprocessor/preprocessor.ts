@@ -18,7 +18,7 @@ export class Preprocessor {
         this.definitions.set("__FILE__", new Definition(this, "__FILE__", [{value: `"${filename}"`}], []));
     }
 
-    process(text: string): string {
+    process(text: string, filename: string = this.filename): string {
         // remove comments
         text = text.replace(PreProRegex.comments, " ");
 
@@ -39,6 +39,15 @@ export class Preprocessor {
                     output += this._ifdef(match.remainingLine, true, lines);
                 } else if ((match = consume(line, "#ifndef")).success) {
                     output += this._ifdef(match.remainingLine, false, lines);
+                } else if ((match = consume(line, "#pragma")).success) {
+                    const l = mustConsume(match.remainingLine, PreProRegex.whitespace, "whitespace").remainingLine;
+                    if (l.trim() === "once") {
+                        // only include source file once
+                        const defName = `__pragma_once_${filename}__`;
+                        if (this.definitions.has(defName)) return output;
+                        this.definitions.set(defName, new Definition(this, defName, [], []));
+                    }
+                    // unknown pragmas must be ignored
                 } else if (line.trim().length > 1) {
                     throw this.error("Unknown preprocessor directive");
                 }
@@ -97,13 +106,13 @@ export class Preprocessor {
     private _includeLib(path: string) {
         const file = this.libraryFiles.get(path);
         if (file === undefined) throw this.error("Unknown path `" + path + "`");
-        return this.process(file);
+        return this.process(file, `<${path}>`);
     }
 
     private _includeUser(path: string) {
         const file = this.userFiles.get(path);
         if (file === undefined) return this._includeLib(path);
-        return this.process(file);
+        return this.process(file, path);
     }
 
     private _define(line: string) {
@@ -143,6 +152,10 @@ export class Preprocessor {
             // body
             while (line.length > 0) {
                 const token = consumeAny(line);
+                if (token.type !== "identifier" || !parameters.includes(token.value)) {
+                    token.value = this.expandDefinitions(token.value);
+                }
+
                 tokens.push(token);
                 line = token.remainingLine;
             }
