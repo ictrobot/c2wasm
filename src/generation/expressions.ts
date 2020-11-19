@@ -49,13 +49,27 @@ function functionCall(ctx: WFnGenerator, e: c.CFunctionCall, discard: boolean): 
     const internalExpression = internalFunctions(ctx, e, discard); // __wasm__ etc
     if (internalExpression !== undefined) return internalExpression;
 
-    const instr = e.args.flatMap((arg, i) => subExpr(ctx, arg, e.fnType.parameterTypes[i]));
-
     const fn = e.body.value as CFuncDeclaration | CFuncDefinition;
-    if (ctx.shadowStackUsage > 0) {
+    const instr = fn.type.parameterTypes.flatMap((t, i) => subExpr(ctx, e.args[i], t));
+    let shadowUsage = ctx.shadowStackUsage;
+
+    if (fn.type.variadic) {
+        shadowUsage += 16; // empty region to help prevent overruns
+
+        // push variadic variables onto shadow stack
+        for (let i = e.args.length - 1; i >= fn.type.parameterTypes.length; i--) {
+            // storing realType so C code needs to do __wasm_rload__ to account for structs being pointers etc
+            const valueType = realType(e.args[i].type);
+            instr.push(Instructions.global.get(ctx.gen.shadowStackPtr),
+                ...expressionGeneration(ctx, e.args[i], false),
+                gInstr(valueType, "store", 2, shadowUsage));
+            shadowUsage += 8;
+        }
+    }
+    if (shadowUsage > 0) {
         // increment shadow stack pointer for callee
         instr.push(Instructions.global.get(ctx.gen.shadowStackPtr),
-            Instructions.i32.const(ctx.shadowStackUsage),
+            Instructions.i32.const(shadowUsage),
             Instructions.i32.add(),
             Instructions.global.set(ctx.gen.shadowStackPtr));
     }
@@ -65,10 +79,10 @@ function functionCall(ctx: WFnGenerator, e: c.CFunctionCall, discard: boolean): 
     if (discard && e.fnType.returnType.bytes > 0) {
         instr.push(Instructions.drop());
     }
-    if (ctx.shadowStackUsage > 0) {
+    if (shadowUsage > 0) {
         // restore shadow stack pointer
         instr.push(Instructions.global.get(ctx.gen.shadowStackPtr),
-            Instructions.i32.const(ctx.shadowStackUsage),
+            Instructions.i32.const(shadowUsage),
             Instructions.i32.sub(),
             Instructions.global.set(ctx.gen.shadowStackPtr));
     }

@@ -290,7 +290,7 @@ direct_declarator
     | '(' declarator ')'                                                                -> $2
     | direct_declarator '[' constant_expression ']'                                     -> new t.ArrayDeclarator(@$, $1, $3)
     | direct_declarator '[' ']'                                                         -> new t.ArrayDeclarator(@$, $1)
-    | direct_declarator '(' parameter_type_list ')'                                     -> new t.FunctionDeclarator(@$, $1, $3)
+    | direct_declarator '(' parameter_type_list ')'                                     -> new t.FunctionDeclarator(@$, $1, $3, $3.variadic)
 //  | direct_declarator '(' identifier_list ')'                                         -> new t.FunctionDeclarator(@$, $1, $3)
     | direct_declarator '(' ')'                                                         -> new t.FunctionDeclarator(@$, $1)
     ;
@@ -309,8 +309,8 @@ type_qualifier_list
 
 
 parameter_type_list
-    : parameter_list                                                                    -> $1
-//  | parameter_list ',' ELLIPSIS                                                       {{ throw new JisonParserError("Unsupported rule: parameter_type_list (ellipsis)"); }}
+    : parameter_list                                                                    -> ($1.variadic = false, $1)
+    | parameter_list ',' ELLIPSIS                                                       -> ($1.variadic = true, $1)
     ;
 
 parameter_list
@@ -348,9 +348,9 @@ direct_abstract_declarator
     | direct_abstract_declarator '[' ']'                                                -> new t.AbstractArrayDeclarator(@$, $1)
     | direct_abstract_declarator '[' constant_expression ']'                            -> new t.AbstractArrayDeclarator(@$, $1, $3)
     | '(' ')'                                                                           -> new t.AbstractFunctionDeclarator(@$)
-    | '(' parameter_type_list ')'                                                       -> new t.AbstractFunctionDeclarator(@$, undefined, $2)
+    | '(' parameter_type_list ')'                                                       -> new t.AbstractFunctionDeclarator(@$, undefined, $2, $2.variadic)
     | direct_abstract_declarator '(' ')'                                                -> new t.AbstractFunctionDeclarator(@$, $1)
-    | direct_abstract_declarator '(' parameter_type_list ')'                            -> new t.AbstractFunctionDeclarator(@$, $1, $3)
+    | direct_abstract_declarator '(' parameter_type_list ')'                            -> new t.AbstractFunctionDeclarator(@$, $1, $3, $3.variadic)
     ;
 
 initializer

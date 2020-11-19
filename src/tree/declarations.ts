@@ -89,7 +89,6 @@ export class CFuncDefinition {
                 readonly type: CQualifiedType<CFuncType>,
                 public linkage: "none" | "internal" | "external",
                 readonly translationUnit: Scope) {
-        if (type.variadic) throw new Error("Cannot define variadic functions");
         this.body = new CCompoundStatement(node.body, this);
     }
 

@@ -350,7 +350,7 @@ export class FunctionDeclarator extends ParseNode {
     readonly type= "functionDeclarator";
     readonly abstractDeclarator = false;
 
-    constructor(loc: Location, readonly body: Declarator, readonly args?: ReadonlyArray<ParameterDeclaration>) {
+    constructor(loc: Location, readonly body: Declarator, readonly args?: ReadonlyArray<ParameterDeclaration>, readonly variadic: boolean = false) {
         super(loc);
     }
 
@@ -434,7 +434,7 @@ export class AbstractFunctionDeclarator extends ParseNode {
     readonly type= "abstractFunctionDeclarator";
     readonly abstractDeclarator = true;
 
-    constructor(loc: Location, readonly body?: AbstractDeclarator, readonly args?: ReadonlyArray<ParameterDeclaration>) {
+    constructor(loc: Location, readonly body?: AbstractDeclarator, readonly args?: ReadonlyArray<ParameterDeclaration>, readonly variadic: boolean = false) {
         super(loc);
     }
 

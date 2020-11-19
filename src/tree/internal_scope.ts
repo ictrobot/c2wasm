@@ -1,7 +1,7 @@
 import {ParseNode} from "../parsing";
 import {CFuncDeclaration} from "./declarations";
 import {Scope} from "./scope";
-import {CFuncType, CVoid, CArithmetic} from "./types";
+import {CFuncType, CVoid, CArithmetic, CPointer} from "./types";
 
 const fakeParseNode: ParseNode = new class extends ParseNode {
     readonly type: string = "__internal__";
@@ -11,7 +11,7 @@ const fakeParseNode: ParseNode = new class extends ParseNode {
     }
 }();
 
-export const INTERNAL_FNS: {[s: string]: CFuncDeclaration} = {
+export const INTERNAL_FNS = {
     /** For executing arbitrary Wasm
      *
      * __wasm_push__([byte1], [bytes]...]);
@@ -72,6 +72,29 @@ export const INTERNAL_FNS: {[s: string]: CFuncDeclaration} = {
         new CFuncType(fakeParseNode, new CVoid(), [CArithmetic.U32], undefined, true),
         "internal"
     ),
+    /** For getting the value of the shadow stack pointer
+     *
+     * __wasm_ssp__();
+     */
+    wasm_ssp: new CFuncDeclaration(
+        fakeParseNode,
+        "__wasm_ssp__",
+        new CFuncType(fakeParseNode, new CPointer(fakeParseNode, new CVoid(), true), []),
+        "internal"
+    ),
+    /**
+     * Wasm real type load - compensates for conversation/type_conversion.ts realType()
+     * Most C values are directly stored as Wasm values, but CStruct and CUnions have to be stored as pointers.
+     * This isn't directly expressed in the type information, and so this function is needed for any C directly manipulating memory.
+     *
+     * __wasm_rload__([ptr]);
+     */
+    wasm_rload: new CFuncDeclaration(
+        fakeParseNode,
+        "__wasm_rload__",
+        new CFuncType(fakeParseNode, new CPointer(fakeParseNode, new CVoid(), true), [new CPointer(fakeParseNode, new CVoid(), true)]),
+        "internal"
+    )
 };
 
 export const INTERNAL_SCOPE = new Scope();
