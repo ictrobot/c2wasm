@@ -274,9 +274,9 @@ type_qualifier
     ;
 
 function_specifier
-//  : INLINE                                                                            -> "inline"
+    : INLINE                                                                            -> "inline"
 // custom for wasm imports
-    : IMPORT                                                                            -> yytext
+    | IMPORT                                                                            -> yytext
     ;
 
 declarator

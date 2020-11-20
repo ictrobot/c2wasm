@@ -2,11 +2,11 @@ import moo from "moo";
 
 const keywords = [
     "if", "break", "case", "char", "const", "continue", "default", "do", "double", "else", "enum", "extern", "float",
-    "for", "int", "long", "return", "short", "signed", "sizeof", "static", "struct", "switch", "union", "unsigned",
-    "void", "while", "_Bool",
+    "for", "inline", "int", "long", "return", "short", "signed", "sizeof", "static", "struct", "switch", "typedef",
+    "union", "unsigned", "void", "while", "_Bool",
 
     // currently unsupported (but still lex so parser throws error)
-    "auto", "goto", "inline", "register", "typedef", "volatile",
+    "auto", "goto", "register", "volatile",
 
     // special for c2wasm, not on spec
     "import"

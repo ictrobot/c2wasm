@@ -59,7 +59,7 @@ function ptDeclaration(declaration: pt.Declaration, scope: Scope, inFunction: bo
             scope.addIdentifier(new CFuncDeclaration(entry, name, type, linkage, fnImport));
         } else {
             if (declaration.typeInfo.fnSpecifierList.length > 0) {
-                throw new ExpressionTypeError(entry, "variable declaration without function specifier");
+                throw new ExpressionTypeError(entry, "variable declaration with function specifier");
             }
 
             // work out storage, linkage and if definition or declaration

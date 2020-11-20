@@ -188,7 +188,7 @@ export type TypeSpecifier =
     | EnumSpecifier
     | CustomTypeSpecifier;
 export type TypeQualifier = "const"; // | "restrict" | "volatile";
-export type FnSpecifier = "import"; // "inline";
+export type FnSpecifier = "import" | "inline";
 
 export class SpecifierQualifiers extends ParseNode {
     readonly type = "specifiersAndQualifiers";
