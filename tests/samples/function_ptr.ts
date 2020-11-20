@@ -1,7 +1,7 @@
 import test from "ava";
 import {compile} from "../../src/compile";
 
-test("list sum", async t => {
+test("function pointers", async t => {
     const values: number[] = [];
 
     const {main} = await compile(`

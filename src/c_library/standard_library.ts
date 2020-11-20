@@ -18,7 +18,7 @@ function list(folder: string, baseFolder: string, files: Map<string, string> = n
             const contents = fs.readFileSync(baseFolder + name, "utf8")
                 .replace(/\r\n/g, "\n") // convert CRLF
                 .replace(/(?:\/\*[^]*?\*\/)|(?:\/\/.*?$)/gm, " ") // remove comments
-                .replace(/^(?:[ \t]+|[ \t]*\n)/gm, ""); // remove leading whitespace and empty lines
+                .replace(/^(?:[ \t]*\n+|[ \t]+)/gm, ""); // remove leading whitespace and empty lines
             files.set(name, contents);
         }
     }

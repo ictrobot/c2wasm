@@ -3,7 +3,7 @@ import {WGenerator} from "./generation";
 import {Linker} from "./linker";
 import {ModuleBuilder} from "./wasm";
 
-export function compile(files: ReadonlyMap<string, string> | string, library: Linker | undefined = stdLibrary): ModuleBuilder {
+export function compile(files: ReadonlyMap<string, string> | string, library: () => Linker | undefined = stdLibrary): ModuleBuilder {
     if (typeof files === "string") {
         const f = new Map<string, string>();
         f.set("main.c", files);
@@ -13,7 +13,7 @@ export function compile(files: ReadonlyMap<string, string> | string, library: Li
     // "linker" also calls preprocessor, lexer, parser and pt transformation into IR
     const linker = new Linker(files);
     if (library) {
-        linker.link(library);
+        linker.link(library());
     } else {
         linker.link();
     }
@@ -32,4 +32,11 @@ export function compileSnippet(source: string): ModuleBuilder {
     return new WGenerator(linker).module;
 }
 
-const stdLibrary: Linker = new Linker(LIBRARY_SOURCE);
+let _standardLibrary: Linker | undefined;
+function stdLibrary() {
+    if (!_standardLibrary) {
+        _standardLibrary = new Linker(LIBRARY_SOURCE);
+        _standardLibrary.link();
+    }
+    return _standardLibrary;
+}

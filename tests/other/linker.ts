@@ -30,7 +30,8 @@ void main() {
 
     const {main} = await compile(map).execute({
         c2wasm: {
-            log: (x: bigint) => values.push(x)
+            log: (x: bigint) => values.push(x),
+            __put_char: () => undefined
         }
     }) as {
         main: () => void
