@@ -1,4 +1,4 @@
-import {LIBRARY_SOURCE} from "./c_library/standard_library";
+import {STANDARD_LIBRARY} from "./c_library/standard_library";
 import {WGenerator} from "./generation";
 import {Linker} from "./linker";
 import {ModuleBuilder} from "./wasm";
@@ -35,7 +35,7 @@ export function compileSnippet(source: string): ModuleBuilder {
 let _standardLibrary: Linker | undefined;
 function stdLibrary() {
     if (!_standardLibrary) {
-        _standardLibrary = new Linker(LIBRARY_SOURCE);
+        _standardLibrary = new Linker(STANDARD_LIBRARY);
         _standardLibrary.link();
     }
     return _standardLibrary;

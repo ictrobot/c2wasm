@@ -1,4 +1,4 @@
-import {Token, PreProRegex, consume, mustConsume} from "./helpers";
+import {Token, PreProRegex} from "./helpers";
 import type {Preprocessor} from "./preprocessor";
 
 export class Definition {
@@ -19,22 +19,22 @@ export class Definition {
     private expandWithParameters(line: string) {
         // check if macro call
         const originalLine = line;
-        line = consume(line, PreProRegex.whitespace).remainingLine;
+        line = this.preprocessor.consume(line, PreProRegex.whitespace).remainingLine;
         if (line.length === 0 || line[0] !== "(") {
             // not referencing the definition
             return {output: this.identifier, line: originalLine};
         }
-        line = mustConsume(line, "(").remainingLine;
+        line = this.preprocessor.mustConsume(line, "(").remainingLine;
 
         // consume args
         const args: string[] = [];
         for (let i = 0; i < this.parameters.length; i++) {
-            const match = mustConsume(line, PreProRegex.definitionArgument, "macro argument");
+            const match = this.preprocessor.mustConsume(line, PreProRegex.definitionArgument, "macro argument");
             args.push(match.value.trim());
             if (i !== this.parameters.length - 1) {
-                line = mustConsume(match.remainingLine, ",").remainingLine;
+                line = this.preprocessor.mustConsume(match.remainingLine, ",").remainingLine;
             } else {
-                line = mustConsume(match.remainingLine, ")").remainingLine;
+                line = this.preprocessor.mustConsume(match.remainingLine, ")").remainingLine;
             }
         }
 

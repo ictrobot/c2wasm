@@ -1,15 +1,16 @@
 import {LIBRARY_HEADERS} from "../c_library/standard_library";
 import {ppEvaluate} from "./conditionals";
 import {Definition} from "./definition";
-import {consume, mustConsume, consumeAny, PreProRegex} from "./helpers";
+import {PreProRegex, PreprocessorBase} from "./helpers";
 
-export class Preprocessor {
+export class Preprocessor extends PreprocessorBase {
     definitions = new Map<string, Definition>();
 
     libraryFiles: Map<string, string>; // #include <...>
     userFiles = new Map<string, string>(); // #include "..."
 
     constructor(readonly filename: string, standardHeaders: boolean = true) {
+        super();
         if (standardHeaders) {
             this.libraryFiles = new Map<string, string>(LIBRARY_HEADERS);
         } else {
@@ -24,26 +25,27 @@ export class Preprocessor {
         text = text.replace(PreProRegex.comments, " ");
 
         let output = "";
-        const lines = text.split("\n");
+        const lines = text.replace(/\\\n/g, "").split("\n");
+
         while (lines.length > 0) {
             const line = lines.shift() as string;
 
             if (line.startsWith("#")) {
-                let match: ReturnType<typeof consume>;
-                if ((match = consume(line, "#define")).success) {
+                let match: ReturnType<typeof Preprocessor.prototype["consume"]>;
+                if ((match = this.consume(line, "#define")).success) {
                     this._define(match.remainingLine);
-                } else if ((match = consume(line, "#undef")).success) {
+                } else if ((match = this.consume(line, "#undef")).success) {
                     this._undef(match.remainingLine);
-                } else if ((match = consume(line, "#include")).success) {
+                } else if ((match = this.consume(line, "#include")).success) {
                     output += this._include(match.remainingLine) + "\n";
-                } else if ((match = consume(line, "#ifdef")).success) {
+                } else if ((match = this.consume(line, "#ifdef")).success) {
                     this._ifdef(match.remainingLine, true, lines);
-                } else if ((match = consume(line, "#ifndef")).success) {
+                } else if ((match = this.consume(line, "#ifndef")).success) {
                     this._ifdef(match.remainingLine, false, lines);
-                } else if ((match = consume(line, "#if")).success) {
+                } else if ((match = this.consume(line, "#if")).success) {
                     output += this._if(match.remainingLine, lines);
-                } else if ((match = consume(line, "#pragma")).success) {
-                    const l = mustConsume(match.remainingLine, PreProRegex.whitespace, "whitespace").remainingLine;
+                } else if ((match = this.consume(line, "#pragma")).success) {
+                    const l = this.mustConsume(match.remainingLine, PreProRegex.whitespace, "whitespace").remainingLine;
                     if (l.trim() === "once") {
                         // only include source file once
                         const defName = `__pragma_once_${filename}__`;
@@ -65,7 +67,7 @@ export class Preprocessor {
     expandDefinitions(line: string): string {
         let output = "";
         while (line.length > 0) {
-            const token = consumeAny(line);
+            const token = this.consumeAny(line);
             if (token?.type === "identifier") {
                 const def = this.definitions.get(token.value);
                 if (def !== undefined) {
@@ -88,7 +90,7 @@ export class Preprocessor {
     }
 
     private _include(line: string): string {
-        line = mustConsume(line, PreProRegex.whitespace, "whitespace").remainingLine.trim();
+        line = this.mustConsume(line, PreProRegex.whitespace, "whitespace").remainingLine.trim();
         if (line.startsWith('"') && line.endsWith('"')) {
             return this._includeUser(line.substring(1, line.length - 1));
         } else if (line.startsWith("<") && line.endsWith(">")) {
@@ -113,48 +115,51 @@ export class Preprocessor {
     }
 
     private _includeUser(path: string) {
-        const file = this.userFiles.get(path);
-        if (file === undefined) return this._includeLib(path);
+        const localPath = this.filename.replace(/[^/\\]*$/, path);
+        let file = this.userFiles.get(localPath);
+        if (file === undefined) {
+            file = this.userFiles.get(path);
+            if (file === undefined) return this._includeLib(path);
+        }
         return this.process(file, path);
     }
-
     private _define(line: string) {
-        line = mustConsume(line, PreProRegex.whitespace, "whitespace").remainingLine;
-        const identifier = mustConsume(line, PreProRegex.identifier, "identifier");
+        line = this.mustConsume(line, PreProRegex.whitespace, "whitespace").remainingLine;
+        const identifier = this.mustConsume(line, PreProRegex.identifier, "identifier");
         const tokens = [];
         const parameters: string[] = [];
 
         if (identifier.remainingLine.trim().length > 0) {
             if (identifier.remainingLine[0] === "(") {
                 // definition with parameters
-                line = mustConsume(identifier.remainingLine, "(").remainingLine;
+                line = this.mustConsume(identifier.remainingLine, "(").remainingLine;
                 while (line.length > 0) {
-                    line = consume(line, PreProRegex.whitespace).remainingLine;
-                    const parameter = mustConsume(line, PreProRegex.identifier, "identifier");
+                    line = this.consume(line, PreProRegex.whitespace).remainingLine;
+                    const parameter = this.mustConsume(line, PreProRegex.identifier, "identifier");
                     parameters.push(parameter.value);
-                    line = consume(parameter.remainingLine, PreProRegex.whitespace).remainingLine;
+                    line = this.consume(parameter.remainingLine, PreProRegex.whitespace).remainingLine;
 
                     if (line.length === 0) {
                         throw this.error("Unexpected end of line");
                     } else if (line[0] === ",") {
-                        line = mustConsume(line, ",").remainingLine;
+                        line = this.mustConsume(line, ",").remainingLine;
                     } else if (line[0] === ")") {
                         break;
                     } else {
                         throw this.error("Unexpected");
                     }
                 }
-                line = mustConsume(line, ")").remainingLine;
-                line = mustConsume(line, PreProRegex.whitespace, "whitespace").remainingLine;
+                line = this.mustConsume(line, ")").remainingLine;
+                line = this.mustConsume(line, PreProRegex.whitespace, "whitespace").remainingLine;
 
             } else {
                 // normal definition
-                line = mustConsume(identifier.remainingLine, PreProRegex.whitespace, "whitespace").remainingLine;
+                line = this.mustConsume(identifier.remainingLine, PreProRegex.whitespace, "whitespace").remainingLine;
             }
 
             // body
             while (line.length > 0) {
-                const token = consumeAny(line);
+                const token = this.consumeAny(line);
                 if (token.type !== "identifier" || !parameters.includes(token.value)) {
                     token.value = this.expandDefinitions(token.value);
                 }
@@ -173,20 +178,20 @@ export class Preprocessor {
     }
 
     private _undef(line: string) {
-        line = mustConsume(line, PreProRegex.whitespace, "whitespace").remainingLine;
-        const identifier = mustConsume(line, PreProRegex.identifier, "identifier");
+        line = this.mustConsume(line, PreProRegex.whitespace, "whitespace").remainingLine;
+        const identifier = this.mustConsume(line, PreProRegex.identifier, "identifier");
         if (identifier.remainingLine.trim().length !== 0) throw this.error("Unexpected extra characters in undef");
         this.definitions.delete(identifier.value);
     }
 
     private _ifdef(line: string, ifdef: boolean, lines: string[]) {
-        line = mustConsume(line, PreProRegex.whitespace, "whitespace").remainingLine;
-        const identifier = mustConsume(line, PreProRegex.identifier, "identifier");
+        line = this.mustConsume(line, PreProRegex.whitespace, "whitespace").remainingLine;
+        const identifier = this.mustConsume(line, PreProRegex.identifier, "identifier");
         lines.unshift(`#if ${ifdef ? "" : "!"} defined ${identifier.value}`);
     }
 
     private _if(line: string, lines: string[]): string {
-        const expression = mustConsume(line, PreProRegex.whitespace, "whitespace").remainingLine;
+        const expression = this.mustConsume(line, PreProRegex.whitespace, "whitespace").remainingLine;
         let condition = this._condition(expression), anyCondition = condition, depth = 1, hadElse = false;
 
         const body: string[] = [];
@@ -215,7 +220,7 @@ export class Preprocessor {
                 if (anyCondition) {
                     condition = false;
                 } else {
-                    const expression = mustConsume(lines[i].substring(5), PreProRegex.whitespace, "whitespace").remainingLine;
+                    const expression = this.mustConsume(lines[i].substring(5), PreProRegex.whitespace, "whitespace").remainingLine;
                     condition = this._condition(expression);
                     anyCondition ||= condition;
                 }
