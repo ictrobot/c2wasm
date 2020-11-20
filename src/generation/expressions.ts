@@ -119,10 +119,9 @@ function memberAccess(ctx: WFnGenerator, e: c.CMemberAccess, discard: boolean): 
 }
 
 function incrDecr(ctx: WFnGenerator, e: c.CIncrDecr, discard: boolean): WExpression {
-    let amount = 1;
-    if (e.type instanceof CPointer) amount = Math.ceil(e.body.type.bytes / 4) * 4;
-
+    const amount = e.type instanceof CPointer ? e.body.type.bytes : 1;
     const type = realType(e.type);
+
     if (e.pos === "post" && !discard) {
         return storageGetThenUpdate(ctx, e.body.type, e.body, [
             gConst(type, amount),
@@ -181,7 +180,7 @@ function logicalNot(ctx: WFnGenerator, e: c.CLogicalNot, discard: boolean): WExp
     if (discard) return expressionGeneration(ctx, e.body, true); // get any side effects
 
     const instr = expressionGeneration(ctx, e.body, false);
-    const wType = valueType(e.type);
+    const wType = realType(e.body.type);
 
     if (isIValueType(wType)) {
         return [...instr, iInstr(wType, "eqz")];
