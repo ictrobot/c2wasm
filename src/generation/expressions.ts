@@ -2,7 +2,7 @@ import {CFuncDefinition, CFuncDeclaration} from "../tree/declarations";
 import {CIdentifier} from "../tree/expressions";
 import * as c from "../tree/expressions";
 import {CType, CArithmetic, CPointer, CArray, CSizeT, CUnion, CStruct, CFuncType, integerPromotion} from "../tree/types";
-import {i32Type, Instructions, i64Type, f32Type, f64Type} from "../wasm";
+import {i32Type, Instructions, i64Type, f32Type, f64Type, ValueType} from "../wasm";
 import {WExpression, WInstruction} from "../wasm/instructions";
 import {GenError} from "./gen_error";
 import {WFnGenerator} from "./generator";
@@ -47,6 +47,18 @@ function stringLiteral(ctx: WFnGenerator, e: c.CStringLiteral, discard: boolean)
     return [Instructions.i32.const(stringAddress)];
 }
 
+/**
+ * Stack has to contain function arguments.
+ * If any argument (or function pointer) is varadic then it will try to manipulate the same region so need to call all
+ * child expressions before storing. This means pushing everything onto the stack in the right order.
+ * - evaluate normal function arguments
+ * - (evaluate indirect function id)
+ * - (evaluate variadic arguments)
+ * - (store variadic arguments)
+ * - increment shadow stack pointer
+ * - call function (and cleanup)
+ * - decrement shadow stack pointer
+ */
 function functionCall(ctx: WFnGenerator, e: c.CFunctionCall, discard: boolean): WExpression {
     const indirectValue: WExpression = [];
     if (e.body instanceof c.CIdentifier && (e.body.value instanceof CFuncDefinition || e.body.value instanceof CFuncDeclaration)) {
@@ -62,13 +74,16 @@ function functionCall(ctx: WFnGenerator, e: c.CFunctionCall, discard: boolean): 
     if (internalExpression !== undefined) return internalExpression;
 
     const instr = e.fnType.parameterTypes.flatMap((t, i) => subExpr(ctx, e.args[i], t));
+    if (indirectValue.length > 0) {
+        // indirect call index
+        instr.push(...indirectValue);
+    }
+
     let shadowUsage = ctx.shadowStackUsage;
-
     if (e.fnType.variadic) {
-        // push variadic variables onto shadow stack
-
-        shadowUsage += 16; // empty region to help prevent overruns
-        for (let i = e.args.length - 1; i >= e.fnType.parameterTypes.length; i--) {
+        // push variadic variables onto stack
+        const types: ValueType[] = [];
+        for (let i = e.fnType.parameterTypes.length; i < e.args.length; i++) {
             // default argument promotions
             let type = e.args[i].type;
             if (type instanceof CArithmetic) {
@@ -77,16 +92,15 @@ function functionCall(ctx: WFnGenerator, e: c.CFunctionCall, discard: boolean): 
             }
 
             // storing realType so C code needs to do __wasm_rload__ to account for structs being pointers etc
-            const valueType = realType(type);
-            instr.push(Instructions.global.get(ctx.gen.shadowStackPtr),
-                ...subExpr(ctx, e.args[i], type),
-                gInstr(valueType, "store", 2, shadowUsage));
+            types.unshift(realType(type));
+            instr.push(Instructions.global.get(ctx.gen.shadowStackPtr), ...subExpr(ctx, e.args[i], type));
+        }
+
+        shadowUsage += 16; // empty region to help prevent overruns
+        for (const type of types) {
+            instr.push(gInstr(type, "store", 2, shadowUsage));
             shadowUsage += 8;
         }
-    }
-    if (indirectValue.length > 0) {
-        // indirect call index
-        instr.push(...indirectValue);
     }
     if (shadowUsage > 0) {
         // increment shadow stack pointer for callee
