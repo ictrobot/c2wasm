@@ -38,9 +38,9 @@ function constant(c: CConstant): byte[] {
     } else if (CArithmetic.U8.equals(c.type)) {
         return encode(1, d => d.setUint8(0, Number(c.value)));
     } else if (CArithmetic.Fp64.equals(c.type)) {
-        return encode(8, d => d.setFloat64(0, Number(c.value)));
+        return encode(8, d => d.setFloat64(0, Number(c.value), true));
     } else if (CArithmetic.Fp32.equals(c.type)) {
-        return encode(4, d => d.setFloat32(0, Number(c.value)));
+        return encode(4, d => d.setFloat32(0, Number(c.value), true));
     } else if (CArithmetic.BOOL.equals(c.type)) {
         // eslint-disable-next-line eqeqeq
         return encode(4, d => d.setInt32(0, c.value == 0 ? 0 : 1, true));
