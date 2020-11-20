@@ -119,7 +119,7 @@ function memberAccess(ctx: WFnGenerator, e: c.CMemberAccess, discard: boolean): 
 }
 
 function incrDecr(ctx: WFnGenerator, e: c.CIncrDecr, discard: boolean): WExpression {
-    const amount = e.type instanceof CPointer ? e.body.type.bytes : 1;
+    const amount = e.type instanceof CPointer ? e.type.type.bytes : 1;
     const type = realType(e.type);
 
     if (e.pos === "post" && !discard) {
