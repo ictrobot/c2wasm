@@ -105,7 +105,12 @@ function _switch(ctx: WFnGenerator, s: c.CSwitch): WExpression {
 
     const type = valueType(s.expression.type as CArithmetic);
     const body: WExpression = ctx.withTemporaryLocal(type, value => ctx.withTemporaryLocal(i32Type, matched => {
-        const instr: WExpression = [...expressionGeneration(ctx, s.expression, false), Instructions.local.set(value)];
+        const instr: WExpression = [
+            ...expressionGeneration(ctx, s.expression, false),
+            Instructions.local.set(value),
+            Instructions.i32.const(0),
+            Instructions.local.set(matched) // ALWAYS remember to reset temporary variables before use
+        ];
 
         for (const child of s.children) {
             // condition
