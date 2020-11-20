@@ -17,7 +17,9 @@ export class Scope {
     private identifiers = new Map<string, CDeclaration>(); // names of variables and functions
     private typedefs = new Map<string, CType>();
 
-    constructor(readonly node?: ParseNode, readonly parent?: Scope) {
+    constructor(readonly node?: ParseNode,
+                readonly parent?: Scope,
+                readonly func: CFuncDefinition | undefined = parent?.func) {
     }
 
     private _getTag(tag: string): CCompound | undefined {

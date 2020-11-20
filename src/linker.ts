@@ -2,7 +2,7 @@ import {CError} from "./c_error";
 import {ParseNode} from "./parsing";
 import {Preprocessor} from "./preprocessor";
 import {toIR} from "./tree";
-import {CFuncDefinition, CFuncDeclaration, CVarDeclaration, CVarDefinition} from "./tree/declarations";
+import {CFuncDefinition, CFuncDeclaration, CVarDeclaration, CVarDefinition, CFunction, CFuncImport} from "./tree/declarations";
 import {Scope} from "./tree/scope";
 import {CStatement, CCompoundStatement, CForLoop, CIf, CWhileLoop, CDoLoop, CSwitch} from "./tree/statements";
 
@@ -25,8 +25,10 @@ export class Linker {
 
     /** check complete or link with other linker */
     public link(other?: Linker): void {
-        let usedOther = false;
+        if (this._linked) throw new LinkingError("Already linked!");
+        let usedOtherLinker = false;
 
+        // link this with other
         for (const linkable of this._linkables.values()) {
             if (linkable.definition !== undefined) continue; // we've got a definition
 
@@ -39,8 +41,8 @@ export class Linker {
                         throw new LinkingError("Tried to link incompatible types", linkable.parseNode, linkable2.parseNode);
                     }
 
-                    // we've found a definition in the other unit we can use!
-                    usedOther = true;
+                    // we've found a definition in the other linker we can use!
+                    usedOtherLinker = true;
                     this._linkables.set(linkable.id, linkable2);
                     for (const element of linkable.declarationArray) {
                         linkable2.addDeclaration(element as any);
@@ -55,23 +57,56 @@ export class Linker {
                 linkable.setDefinition(cvar);
                 this._emitVariables.push(cvar);
                 continue;
-            } else if (linkable.externalType === "function") {
-                // check if any of the declarations marked as "import"
-                if (linkable.declarationArray.some(x => x.fnImport)) {
-                    // import this function instead
-                    this._emitImports.push(linkable.declarationArray[0]);
-                    continue;
-                }
+            } else if (linkable.externalType === "function" && linkable.declarationArray[0].fnImport) {
+                // define the function import if didn't already exist in other linker
+                linkable.setDefinition(new CFuncImport(linkable.declarationArray[0]));
+                continue;
             }
 
             throw new LinkingError("Failed to find definition", linkable.parseNode);
         }
 
-        if (usedOther && other) {
-            // need to add all its functions and variables to the lists to be emitted
+        if (usedOtherLinker && other) {
+            // need to add all variables and used functions to the lists to be emitted
             this._emitVariables.push(...other._emitVariables);
-            this._emitImports.push(...other._emitImports);
-            this._emitFunctions.push(...other._emitFunctions);
+        }
+
+        // now work out which functions and imports to emit
+        const seenFunctions = new Map<CFuncDefinition | CFuncImport, boolean>();
+        const toEmit: (CFuncDefinition | CFuncImport)[] = [];
+        for (const linkable of this._linkables.values()) {
+            if (linkable.definition === undefined) {
+                throw new LinkingError("Invalid state - declaration has no definition in emit", linkable.parseNode);
+            } else if (linkable.externalType === "function") {
+                seenFunctions.set(linkable.definition, true);
+                toEmit.unshift(linkable.definition);
+            }
+        }
+
+        while (toEmit.length) {
+            const dependency = toEmit.shift() as CFuncDefinition | CFuncImport;
+            if (dependency instanceof CFuncImport) {
+                this._emitImports.push(dependency.declaration);
+            } else {
+                this._emitFunctions.push(dependency);
+
+                for (const dep2 of dependency.dependencies.keys()) {
+                    if (dep2 instanceof CFuncDeclaration) {
+                        if (dep2.node.type === "__internal__") {
+                            // not a real function! __wasm__ etc
+                        } else if (dep2.definition === undefined) {
+                            throw new LinkingError("Invalid state - declaration doesn't have definition in emit", dep2.node);
+                        } else if (!seenFunctions.has(dep2.definition)) {
+                            seenFunctions.set(dep2.definition, true);
+                            toEmit.push(dep2.definition);
+                        }
+
+                    } else if (!seenFunctions.has(dep2)) {
+                        seenFunctions.set(dep2, true);
+                        toEmit.push(dep2);
+                    }
+                }
+            }
         }
 
         this._linked = true;
@@ -95,6 +130,8 @@ export class Linker {
             if (decl instanceof CFuncDeclaration) {
                 if (decl.linkage === "external") {
                     this.externalFn(decl).addDeclaration(decl);
+                } else if (decl.fnImport) {
+                    decl.definition = new CFuncImport(decl);
                 } else {
                     throw new LinkingError("No definition of internally linked function", decl.node);
                 }
@@ -103,7 +140,6 @@ export class Linker {
                 if (decl.linkage === "external") {
                     this.externalFn(decl).setDefinition(decl);
                 }
-                this._emitFunctions.push(decl);
                 this.process_fn_body(decl.body);
 
             } else if (decl instanceof CVarDeclaration) { // "tentative definition" - if no def found initialize to 0
@@ -153,6 +189,8 @@ export class Linker {
             throw new LinkingError("Tried to link function with variable", node.node, result.parseNode);
         } else if (!result.type.equals(node.type)) {
             throw new LinkingError("Tried to link functions with incompatible types", node.node, result.parseNode);
+        } else if ((node instanceof CFuncDefinition ? false : node.fnImport) !== result.declarationArray[0].fnImport) {
+            throw new LinkingError("Tried to link mix of functions marked import", node.node, result.parseNode);
         }
         return result;
     }
@@ -171,8 +209,8 @@ export class Linker {
 }
 
 class Linkable<Decl extends CVarDeclaration | CFuncDeclaration> {
-    private readonly declarations: Decl[] = [];
-    private _definition?: Decl["definition"];
+    protected readonly declarations: Decl[] = [];
+    protected _definition?: Decl["definition"];
 
     constructor(readonly id: string, readonly type: Decl["type"]) {
 

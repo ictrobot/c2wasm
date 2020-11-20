@@ -90,7 +90,7 @@ export class WGenerator {
     }
 
     functionIndex(fn: CFuncDeclaration | CFuncDefinition): {getIndex(): funcidx} {
-        while (fn instanceof CFuncDeclaration && fn.definition !== undefined) fn = fn.definition;
+        if (fn instanceof CFuncDeclaration && fn.definition !== undefined) fn = fn.definition.getFunction();
 
         return {
             getIndex: () => {
@@ -106,7 +106,8 @@ export class WGenerator {
     }
 
     indirectIndex(fn: CFuncDeclaration | CFuncDefinition): tableidx {
-        while (fn instanceof CFuncDeclaration && fn.definition !== undefined) fn = fn.definition;
+        if (fn instanceof CFuncDeclaration && fn.definition !== undefined) fn = fn.definition.getFunction();
+
         const wasmFunc = this.functions.get(fn);
         if (wasmFunc === undefined) throw new GenError(`Function ${fn.name} not found in scope`, undefined, fn.node);
         return wasmFunc.getTableIndex();

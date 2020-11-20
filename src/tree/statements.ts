@@ -1,5 +1,5 @@
 import type * as pt from "../parsing/parsetree";
-import type {CFuncDefinition, CVariable} from "./declarations";
+import {CFuncDefinition} from "./declarations";
 import {CExpression, CConstant, CAssignment} from "./expressions";
 import {Scope} from "./scope";
 import {ExpressionTypeError, asArithmeticOrPointer} from "./type_checking";
@@ -15,7 +15,7 @@ export class CCompoundStatement {
     readonly statements: CStatement[] = [];
 
     constructor(readonly node: pt.ParseNode, readonly parent: CStatement | CFuncDefinition) {
-        this.scope = new Scope(node, parent.scope);
+        this.scope = new Scope(node, parent.scope, parent instanceof CFuncDefinition ? parent : undefined);
     }
 }
 

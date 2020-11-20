@@ -1,9 +1,8 @@
 import test from "ava";
 import {compile} from "../../src/compile";
 
-test("stdlib linking", async t => {
-    const map = new Map<string, string>();
-    map.set("main.c", `
+function standardLibraryTest() {
+    return compile(`
 #include <stdlib.h>
 #define NUM 21
 
@@ -23,12 +22,14 @@ void main() {
   }
   free(factArray);
 }`);
+}
 
+test("stdlib linking", async t => {
     const expected: bigint[] = [];
     for (let i = 0; i < 21; i++) expected.push(i < 2 ? 1n : BigInt(i) * expected[i - 1]);
     const values: bigint[] = [];
 
-    const {main} = await compile(map).execute({
+    const c = await standardLibraryTest().execute({
         c2wasm: {
             log: (x: bigint) => values.push(x),
             __put_char: () => undefined
@@ -37,8 +38,18 @@ void main() {
         main: () => void
     };
 
-    main();
+    c.main();
     t.deepEqual(values, expected);
+});
+
+test("selective library linking", async t => {
+    const module = standardLibraryTest();
+    t.truthy(module.functions.find(f => f.exportName === "malloc"));
+    t.falsy(module.functions.find(f => f.exportName === "printf"));
+
+    const module2 = compile(`#include <stdio.h>`);
+    t.falsy(module2.functions.find(f => f.exportName === "malloc"));
+    t.truthy(module2.functions.find(f => f.exportName === "printf"));
 });
 
 test("multiple files", async t => {

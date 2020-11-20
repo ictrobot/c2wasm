@@ -1,4 +1,5 @@
 import {ParseNode, ParseTreeValidationError, pt} from "../../parsing";
+import {CFuncDefinition, CFuncDeclaration} from "../declarations";
 import {
     CExpression, CConstant, CEvaluable, CIdentifier, CFunctionCall, CMemberAccess, CDereference, CConditional,
     CAssignment, CStringLiteral, CIncrDecr, CAddressOf, CUnaryPlusMinus, CBitwiseNot, CLogicalNot, CSizeof, CAddSub,
@@ -19,7 +20,13 @@ export function ptExpression(e: pt.Expression, scope: Scope): CExpression {
 
     } else if (e instanceof pt.Identifier) {
         const id = new CIdentifier(e, scope.lookupIdentifier(e.name, e));
-        if (id.type instanceof CArray) return new CArrayPointer(e, id);
+        if (id.type instanceof CArray) {
+            return new CArrayPointer(e, id);
+        } else if (id.value instanceof CFuncDefinition || id.value instanceof CFuncDeclaration) {
+            // add function as dependency for current function
+            if (!scope.func) throw new ParseTreeValidationError(id.node, "Function referenced outside function?");
+            scope.func.addFunctionDependency(id.value);
+        }
         return id;
 
     } else if (e instanceof pt.StringLiteral) {

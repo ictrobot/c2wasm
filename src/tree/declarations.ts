@@ -70,7 +70,7 @@ export class CArgument {
 
 export class CFuncDeclaration {
     readonly declType = "function";
-    definition?: CFuncDefinition;
+    definition?: CFuncDefinition | CFuncImport;
 
     constructor(readonly node: ParseNode,
                 readonly name: string,
@@ -80,9 +80,25 @@ export class CFuncDeclaration {
     }
 }
 
+export class CFuncImport {
+    readonly declType = "import";
+    readonly node: ParseNode;
+
+    constructor(readonly declaration: CFuncDeclaration) {
+        this.node = declaration.node;
+    }
+
+    getFunction(): CFuncDeclaration {
+        return this.declaration;
+    }
+}
+
 export class CFuncDefinition {
     readonly declType = "function";
     readonly body: CCompoundStatement;
+
+    readonly dependencies = new Map<CFunction, boolean>();
+    protected readonly _directDependencies = new Map<CFunction, boolean>();
 
     constructor(readonly node: FunctionDefinition,
                 readonly name: string,
@@ -98,5 +114,20 @@ export class CFuncDefinition {
 
     equals(t: object): boolean {
         return t === this;
+    }
+
+    addFunctionDependency(f: CFunction): void {
+        const direct = this._directDependencies.get(f);
+        if (direct) return; // prevent infinite recursion when 2 functions depend on each other
+        this._directDependencies.set(f, true);
+        this.dependencies.set(f, true);
+
+        if (f instanceof CFuncDefinition) {
+            for (const dep of f.dependencies.keys()) this.addFunctionDependency(dep);
+        }
+    }
+
+    getFunction(): CFuncDefinition {
+        return this;
     }
 }
