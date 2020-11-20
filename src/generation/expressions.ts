@@ -1,7 +1,7 @@
 import {CFuncDefinition, CFuncDeclaration} from "../tree/declarations";
 import {CIdentifier} from "../tree/expressions";
 import * as c from "../tree/expressions";
-import {CType, CArithmetic, CPointer, CArray, CSizeT, CUnion, CStruct, CFuncType} from "../tree/types";
+import {CType, CArithmetic, CPointer, CArray, CSizeT, CUnion, CStruct, CFuncType, integerPromotion} from "../tree/types";
 import {i32Type, Instructions, i64Type, f32Type, f64Type} from "../wasm";
 import {WExpression, WInstruction} from "../wasm/instructions";
 import {GenError} from "./gen_error";
@@ -69,10 +69,17 @@ function functionCall(ctx: WFnGenerator, e: c.CFunctionCall, discard: boolean): 
 
         shadowUsage += 16; // empty region to help prevent overruns
         for (let i = e.args.length - 1; i >= e.fnType.parameterTypes.length; i--) {
+            // default argument promotions
+            let type = e.args[i].type;
+            if (type instanceof CArithmetic) {
+                if (type.type === "float") type = CArithmetic.Fp64;
+                else type = integerPromotion(type);
+            }
+
             // storing realType so C code needs to do __wasm_rload__ to account for structs being pointers etc
-            const valueType = realType(e.args[i].type);
+            const valueType = realType(type);
             instr.push(Instructions.global.get(ctx.gen.shadowStackPtr),
-                ...expressionGeneration(ctx, e.args[i], false),
+                ...subExpr(ctx, e.args[i], type),
                 gInstr(valueType, "store", 2, shadowUsage));
             shadowUsage += 8;
         }
