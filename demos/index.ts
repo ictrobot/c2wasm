@@ -4,7 +4,7 @@ import {compile} from "../src/compile";
 import {ModuleBuilder} from "../src/wasm";
 
 const testInput = `
-import void print(int a, long b);
+#include <stdio.h>
 
 long factorial(unsigned int v) {
   return v < 2 ? 1 : v * factorial(v - 1);
@@ -12,7 +12,7 @@ long factorial(unsigned int v) {
 
 void main() {
   for (int i = 0; i < 21; ++i) {
-    print(i, factorial(i));
+    printf("%d! is %llu\\n", i, factorial(i));
   }
 }
 `.trimStart();
@@ -73,10 +73,16 @@ wabt().then(wabt => {
 
             const imports: {c2wasm: {[s: string]: typeof console.log}} = {c2wasm: {}};
             module.functionImports.filter(x => x.type[1].length === 0).forEach(f => {
-                imports.c2wasm[f.name] = (...args: any[]) => {
-                    console.log(...args);
-                    output.textContent += args.join(" ") + "\n";
-                };
+                if (f.name === "__put_char") {
+                    imports.c2wasm[f.name] = (char: number) => {
+                        output.textContent += String.fromCharCode(char);
+                    };
+                } else {
+                    imports.c2wasm[f.name] = (...args: any[]) => {
+                        console.log(...args);
+                        output.textContent += args.join(" ") + "\n";
+                    };
+                }
             });
 
             try {
