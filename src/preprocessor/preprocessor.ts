@@ -1,4 +1,5 @@
 import {LIBRARY_HEADERS} from "../c_library/standard_library";
+import {ppEvaluate} from "./conditionals";
 import {Definition} from "./definition";
 import {consume, mustConsume, consumeAny, PreProRegex} from "./helpers";
 
@@ -36,9 +37,11 @@ export class Preprocessor {
                 } else if ((match = consume(line, "#include")).success) {
                     output += this._include(match.remainingLine) + "\n";
                 } else if ((match = consume(line, "#ifdef")).success) {
-                    output += this._ifdef(match.remainingLine, true, lines);
+                    this._ifdef(match.remainingLine, true, lines);
                 } else if ((match = consume(line, "#ifndef")).success) {
-                    output += this._ifdef(match.remainingLine, false, lines);
+                    this._ifdef(match.remainingLine, false, lines);
+                } else if ((match = consume(line, "#if")).success) {
+                    output += this._if(match.remainingLine, lines);
                 } else if ((match = consume(line, "#pragma")).success) {
                     const l = mustConsume(match.remainingLine, PreProRegex.whitespace, "whitespace").remainingLine;
                     if (l.trim() === "once") {
@@ -78,7 +81,7 @@ export class Preprocessor {
         return output;
     }
 
-    private error(message: string): Error {
+    error(message: string): Error {
         return new class extends Error {
             name = "PreprocessorError";
         }(`In file '${this.filename}': ${message}`);
@@ -176,38 +179,75 @@ export class Preprocessor {
         this.definitions.delete(identifier.value);
     }
 
-    private _ifdef(line: string, ifdef: boolean, lines: string[]): string {
+    private _ifdef(line: string, ifdef: boolean, lines: string[]) {
         line = mustConsume(line, PreProRegex.whitespace, "whitespace").remainingLine;
         const identifier = mustConsume(line, PreProRegex.identifier, "identifier");
-        if (identifier.remainingLine.trim().length !== 0) throw this.error("Unexpected extra characters in ifdef");
-        const condition = this.definitions.has(identifier.value) === ifdef;
+        lines.unshift(`#if ${ifdef ? "" : "!"} defined ${identifier.value}`);
+    }
 
-        const ifBody: string[] = [], elseBody: string[] = [];
-        let depth = 1, inElse = false;
+    private _if(line: string, lines: string[]): string {
+        const expression = mustConsume(line, PreProRegex.whitespace, "whitespace").remainingLine;
+        let condition = this._condition(expression), anyCondition = condition, depth = 1, hadElse = false;
+
+        const body: string[] = [];
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i].trimEnd();
 
-            if (line.startsWith("#ifdef") || line.startsWith("#ifndef")) {
+            if (line.startsWith("#if")) {
                 depth++;
 
             } else if (line === "#endif") {
                 depth--;
                 if (depth === 0) {
                     // well formed ifdef
-                    const body = condition ? ifBody : elseBody;
                     lines.splice(0, i + 1);
                     return this.process(body.join("\n"));
                 }
 
             } else if (line === "#else" && depth === 1) {
-                if (inElse) throw this.error("more than one #else statement");
-                inElse = true;
-                continue;
+                if (hadElse) throw this.error("more than one #else statement");
+                hadElse = true;
 
+                condition = !anyCondition;
+                anyCondition = true;
+                continue;
+            } else if (line.startsWith("#elif") && depth === 1) {
+                if (anyCondition) {
+                    condition = false;
+                } else {
+                    const expression = mustConsume(lines[i].substring(5), PreProRegex.whitespace, "whitespace").remainingLine;
+                    condition = this._condition(expression);
+                    anyCondition ||= condition;
+                }
+                continue;
             }
-            (inElse ? elseBody : ifBody).push(lines[i]);
+
+            if (condition) body.push(lines[i]);
         }
 
         throw this.error("no matching #endif found");
+    }
+
+    private _condition(s: string): boolean {
+        // deal with "defined ..."
+        let processed = "";
+        for (const match of s.matchAll(PreProRegex.condition)) {
+            if (match.length !== 4) throw this.error("invalid regex result when processing #if condition");
+            const definitionName = match[1] ?? match[2];
+            if (definitionName) {
+                processed += this.definitions.has(definitionName) ? " 1L " : " 0L ";
+            } else {
+                processed += match[3];
+            }
+        }
+        // expand remaining macros
+        processed = this.expandDefinitions(processed);
+        // try evaluate
+        try {
+            return ppEvaluate(processed, this) !== 0n;
+        } catch (e) {
+            console.debug(e);
+            throw this.error("Invalid condition `" + s + "`");
+        }
     }
 }

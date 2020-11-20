@@ -11,7 +11,9 @@ export const PreProRegex = {
     definitionArgument: /^(?:"(?:\\"|[^\n"])*"|[^\n,")])*/, // allowed empty max(,) for max(a,b)
     whitespace: /^[ \t\v\f]+/,
     // used in first pass so is global and multiline
-    comments: /(?:\/\*[^]*?\*\/)|(?:\/\/.*?$)/gm
+    comments: /(?:\/\*[^]*?\*\/)|(?:\/\/.*?$)/gm,
+    // used to process conditions
+    condition: /defined(?:[ \t]*\([ \t]*([a-zA-Z_][a-zA-Z0-9_]*)[ \t]*\)|[ \t]+([a-zA-Z_][a-zA-Z0-9_]*))|(d?[^d]*)/gm
 };
 
 // functions to 'consume' text from an input line

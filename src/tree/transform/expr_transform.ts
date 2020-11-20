@@ -150,7 +150,7 @@ function ptBinary(e: pt.BinaryExpression, scope: Scope): CExpression {
  * This is quite complicated because we have to work out what type to give the constant, following the rules set out in
  * the standard
  */
-function ptConstant(e: pt.Constant): CConstant {
+export function ptConstant(e: pt.Constant): CConstant {
     let value = e.value;
     let type: CArithmetic;
 
