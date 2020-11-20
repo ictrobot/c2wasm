@@ -358,6 +358,10 @@ export function getArithmeticType(specifierList: ReadonlyArray<TypeSpecifier & s
         if (remove("unsigned")) return check(CArithmetic.U32);
         remove("signed");
         return check(CArithmetic.S32);
+    } else if (remove("unsigned")) { // support just `unsigned` and `signed`
+        return check(CArithmetic.U32);
+    } else if (remove("signed")) {
+        return check(CArithmetic.S32);
     } else if (remove("bool")) {
         return check(CArithmetic.BOOL);
     }
