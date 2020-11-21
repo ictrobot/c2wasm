@@ -96,9 +96,7 @@ export class CFuncImport {
 export class CFuncDefinition {
     readonly declType = "function";
     readonly body: CCompoundStatement;
-
-    readonly dependencies = new Map<CFunction, boolean>();
-    protected readonly _directDependencies = new Map<CFunction, boolean>();
+    readonly dependencies = new Map<CFunction, boolean>(); // direct dependencies only
 
     constructor(readonly node: FunctionDefinition,
                 readonly name: string,
@@ -114,17 +112,6 @@ export class CFuncDefinition {
 
     equals(t: object): boolean {
         return t === this;
-    }
-
-    addFunctionDependency(f: CFunction): void {
-        const direct = this._directDependencies.get(f);
-        if (direct) return; // prevent infinite recursion when 2 functions depend on each other
-        this._directDependencies.set(f, true);
-        this.dependencies.set(f, true);
-
-        if (f instanceof CFuncDefinition) {
-            for (const dep of f.dependencies.keys()) this.addFunctionDependency(dep);
-        }
     }
 
     getFunction(): CFuncDefinition {

@@ -25,7 +25,7 @@ export function ptExpression(e: pt.Expression, scope: Scope): CExpression {
         } else if (id.value instanceof CFuncDefinition || id.value instanceof CFuncDeclaration) {
             // add function as dependency for current function
             if (!scope.func) throw new ParseTreeValidationError(id.node, "Function referenced outside function?");
-            scope.func.addFunctionDependency(id.value);
+            scope.func.dependencies.set(id.value, true);
         }
         return id;
 
