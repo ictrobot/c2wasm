@@ -25,12 +25,21 @@ constant
     | CONSTANT_CHAR                                                                     -> new t.Constant(@$, yytext, "char")
     ;
 
+string_literal
+    : STRING_LITERAL                                                                    -> yytext
+    ;
+
+concat_string_literals
+    : string_literal                                                                    -> $1
+    | concat_string_literals string_literal                                             -> $1 + $2
+    ;
+
 // start of normal C grammar
 
 primary_expression
     : identifier                                                                        -> new t.Identifier(@$, yytext)
     | constant                                                                          -> $1
-    | STRING_LITERAL                                                                    -> new t.StringLiteral(@$, yytext)
+    | concat_string_literals                                                            -> new t.StringLiteral(@$, $1)
     | '(' expression ')'                                                                -> $expression
     ;
 
