@@ -1,7 +1,7 @@
 import {CVarDefinition} from "../declarations";
 import {CConstant} from "../expressions";
 import {Scope} from "../scope";
-import {CType, getArithmeticType, CPointer, addQualifier, CFuncType, CNotFuncType, CArray, CEnum, CStruct, CUnion, CCompoundMember} from "../types";
+import {CType, getArithmeticType, CPointer, addQualifier, CFuncType, CNotFuncType, CArray, CEnum, CStruct, CUnion, CCompoundMember, CVoid} from "../types";
 import {ParseTreeValidationError, pt} from "../../parsing/";
 import {evalConstant} from "./expr_transform";
 
@@ -59,6 +59,8 @@ export function getDeclaratorType(type: CType, declarator: pt.Declarator | pt.Ab
                     throw new ParseTreeValidationError(param, "Unexpected mix of abstract & non-abstract declarators");
                 }
             }
+
+            if (parameterTypes.length === 1 && parameterTypes[0] instanceof CVoid) parameterTypes.shift();
 
             if (parameterTypes.length === 0) {
                 // ensure parameterNames are always non-null in function definitions
