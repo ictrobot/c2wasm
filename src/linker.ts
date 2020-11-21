@@ -22,7 +22,12 @@ export class Linker {
             const preprocessor = new Preprocessor(path, standardHeaders);
             for (const [p2, c2] of files.entries()) preprocessor.userFiles.set(p2, c2);
             const processed = preprocessor.process(code);
-            this.process_scope(toIR(processed));
+            try {
+                this.process_scope(toIR(processed));
+            } catch (e) {
+                e.message = (e.message ?? "") + "\nIn file: " + path;
+                throw e;
+            }
         }
     }
 
