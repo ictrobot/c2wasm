@@ -8,7 +8,6 @@ export type Token = {
 export const PreProRegex = {
     identifier: /^[a-zA-Z_][a-zA-Z0-9_]*/,
     token: /^(?:"(?:\\"|[^\n"])*"|[^ \t\v\f\na-zA-Z_]+)/,
-    definitionArgument: /^(?:"(?:\\"|[^\n"])*"|[^\n,")])*/, // allowed empty max(,) for max(a,b)
     whitespace: /^[ \t\v\f]+/,
     // used in first pass so is global and multiline
     comments: /(?:\/\*[^]*?\*\/)|(?:\/\/.*?$)/gm,

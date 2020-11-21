@@ -29,7 +29,7 @@ export class Definition {
         // consume args
         const args: string[] = [];
         for (let i = 0; i < this.parameters.length; i++) {
-            const match = this.preprocessor.mustConsume(line, PreProRegex.definitionArgument, "macro argument");
+            const match = this.consumeArgument(line);
             args.push(match.value.trim());
             if (i !== this.parameters.length - 1) {
                 line = this.preprocessor.mustConsume(match.remainingLine, ",").remainingLine;
@@ -51,6 +51,31 @@ export class Definition {
             output += token.value;
         }
         return {output, line};
+    }
+
+    private consumeArgument(line: string): {value: string, remainingLine: string} {
+        const out = {value: "", remainingLine: line};
+        let inQuote = false, bracketDepth = 0;
+
+        while (out.remainingLine.length > 0 && (inQuote || bracketDepth !== 0 || (out.remainingLine[0] !== "," && out.remainingLine[0] !== ")"))) {
+            const char = out.remainingLine[0];
+            let consumed = 1;
+
+            if (inQuote && char === `\\` && out.remainingLine[0] === `"`) {
+                // escaped quote
+                consumed = 2;
+            } else if (char === `"`) {
+                inQuote = !inQuote;
+            } else if (char === `(` && !inQuote) {
+                bracketDepth++;
+            } else if (char === `)` && !inQuote) {
+                bracketDepth--;
+            }
+
+            out.value += out.remainingLine.substring(0, consumed);
+            out.remainingLine = out.remainingLine.substring(consumed);
+        }
+        return out;
     }
 
     equals(t: this): boolean {

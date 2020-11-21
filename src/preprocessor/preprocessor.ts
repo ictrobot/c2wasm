@@ -150,7 +150,9 @@ export class Preprocessor extends PreprocessorBase {
                     }
                 }
                 line = this.mustConsume(line, ")").remainingLine;
-                line = this.mustConsume(line, PreProRegex.whitespace, "whitespace").remainingLine;
+                if (line.length > 0) {
+                    line = this.mustConsume(line, PreProRegex.whitespace, "whitespace").remainingLine;
+                }
 
             } else {
                 // normal definition
