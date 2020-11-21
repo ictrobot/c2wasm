@@ -14,3 +14,8 @@ Also supports the following c99 features:
 - Declarations anywhere inside blocks
 - `_Bool` / `stdbool.h`
 - `stdint.h` 
+
+## License
+[MIT License](/LICENSE).
+
+Files in `src/c_library/impl/libraries` have their own licenses inside each folder.
