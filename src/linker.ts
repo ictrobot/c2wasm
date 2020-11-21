@@ -200,7 +200,7 @@ export class Linker {
             throw new LinkingError("Tried to link function with variable", node.node, result.parseNode);
         } else if (!result.type.equals(node.type)) {
             throw new LinkingError("Tried to link functions with incompatible types", node.node, result.parseNode);
-        } else if ((node instanceof CFuncDefinition ? false : node.fnImport) !== result.declarationArray[0].fnImport) {
+        } else if ((node instanceof CFuncDefinition ? false : node.fnImport) !== (result.definition ? false : result.declarationArray[0].fnImport)) {
             throw new LinkingError("Tried to link mix of functions marked import", node.node, result.parseNode);
         }
         return result;
