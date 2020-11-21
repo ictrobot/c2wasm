@@ -31,11 +31,14 @@ export class WGenerator {
         for (const variable of linker.emitVariables) {
             storageSetupStaticVar(this, variable);
         }
-        for (const funcImport of linker.emitImports) {
-            this.importFunction(funcImport);
+        for (const func of linker.emitImports) {
+            this.importFunction(func);
         }
-        for (const func of linker.emitFunctions) {
-            this.function(func);
+        for (const funcImport of linker.emitNamedFunctions) {
+            this.function(funcImport, funcImport.name);
+        }
+        for (const funcImport of linker.emitFunctions) {
+            this.function(funcImport);
         }
 
         const shadowStackStart = Math.ceil(this.nextStaticAddr / 512) * 512;
@@ -43,12 +46,12 @@ export class WGenerator {
         this.module.setupMemory(Math.ceil((shadowStackStart + SHADOW_STACK_SIZE) / 65536));
     }
 
-    private function(func: CFuncDefinition) {
+    private function(func: CFuncDefinition, name?: string) {
         const wasmFunc = this.module.function(
             func.type.parameterTypes.map(realType),
             returnType(func.type.returnType),
             b => this.functionBody(func, b),
-            func.linkage === "external" ? func.name : undefined);
+            name);
         this.functions.set(func, wasmFunc);
     }
 

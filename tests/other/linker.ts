@@ -1,8 +1,8 @@
 import test from "ava";
-import {compile} from "../../src/compile";
+import {compile, stdLibrary} from "../../src/compile";
+import {Linker} from "../../src/linker";
 
-function standardLibraryTest() {
-    return compile(`
+const standardLibraryTest = `
 #include <stdlib.h>
 #define NUM 21
 
@@ -21,15 +21,14 @@ void main() {
     log(factArray[i]);
   }
   free(factArray);
-}`);
-}
+}`;
 
 test("stdlib linking", async t => {
     const expected: bigint[] = [];
     for (let i = 0; i < 21; i++) expected.push(i < 2 ? 1n : BigInt(i) * expected[i - 1]);
     const values: bigint[] = [];
 
-    const c = await standardLibraryTest().execute({
+    const c = await compile(standardLibraryTest).execute({
         c2wasm: {
             log: (x: bigint) => values.push(x),
             __put_char: () => undefined
@@ -43,13 +42,18 @@ test("stdlib linking", async t => {
 });
 
 test("selective library linking", async t => {
-    const module = standardLibraryTest();
-    t.truthy(module.functions.find(f => f.exportName === "malloc"));
-    t.falsy(module.functions.find(f => f.exportName === "printf"));
+    const map = new Map<string, string>();
+    map.set("main.c", standardLibraryTest);
+    let linker = new Linker(map);
+    linker.link(stdLibrary());
+    t.truthy(linker.emitFunctions.find(f => f.name === "malloc"));
+    t.falsy(linker.emitFunctions.find(f => f.name === "printf"));
 
-    const module2 = compile(`#include <stdio.h>`);
-    t.falsy(module2.functions.find(f => f.exportName === "malloc"));
-    t.truthy(module2.functions.find(f => f.exportName === "printf"));
+    map.set("main.c", `#include <stdio.h>\nvoid test() {&printf;}`);
+    linker = new Linker(map);
+    linker.link(stdLibrary());
+    t.falsy(linker.emitFunctions.find(f => f.name === "malloc"));
+    t.truthy(linker.emitFunctions.find(f => f.name === "printf"));
 });
 
 test("multiple files", async t => {

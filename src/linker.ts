@@ -7,9 +7,10 @@ import {Scope} from "./tree/scope";
 import {CStatement, CCompoundStatement, CForLoop, CIf, CWhileLoop, CDoLoop, CSwitch} from "./tree/statements";
 
 export class Linker {
-    private _emitFunctions: CFuncDefinition[] = []; // all functions to be emitted
-    private _emitImports: CFuncDeclaration[] = []; // all the function imports to be emitted
-    private _emitVariables: CVarDefinition[] = []; // all static-storage variables to be emitted
+    private _emitNamedFunctions: CFuncDefinition[] = [];
+    private _emitFunctions: CFuncDefinition[] = [];
+    private _emitImports: CFuncDeclaration[] = [];
+    private _emitVariables: CVarDefinition[] = [];
 
     private _linkables = new Map<string, ExternalFunction | ExternalVariable>();
     private _linked = false;
@@ -79,7 +80,7 @@ export class Linker {
         for (const linkable of this._linkables.values()) {
             if (linkable.definition === undefined) {
                 throw new LinkingError("Invalid state - declaration has no definition in emit", linkable.parseNode);
-            } else if (linkable.externalType === "function") {
+            } else if (linkable.externalType === "function" && linkable.linker === this) {
                 seenFunctions.set(linkable.definition, true);
                 toEmit.unshift(linkable.definition);
             }
@@ -90,7 +91,11 @@ export class Linker {
             if (dependency instanceof CFuncImport) {
                 this._emitImports.push(dependency.declaration);
             } else {
-                this._emitFunctions.push(dependency);
+                if (dependency.linkage === "external" && this._linkables.get(dependency.name)?.linker === this) {
+                    this._emitNamedFunctions.push(dependency);
+                } else {
+                    this._emitFunctions.push(dependency);
+                }
 
                 for (const dep2 of dependency.dependencies.keys()) {
                     if (dep2 instanceof CFuncDeclaration) {
@@ -112,6 +117,10 @@ export class Linker {
         }
 
         this._linked = true;
+    }
+
+    get emitNamedFunctions(): ReadonlyArray<CFuncDefinition> {
+        return this._emitNamedFunctions;
     }
 
     get emitFunctions(): ReadonlyArray<CFuncDefinition> {
@@ -186,7 +195,7 @@ export class Linker {
     private externalFn(node: CFuncDeclaration | CFuncDefinition): ExternalFunction {
         let result = this._linkables.get(node.name);
         if (result === undefined) {
-            this._linkables.set(node.name, result = new ExternalFunction(node.name, node.type));
+            this._linkables.set(node.name, result = new ExternalFunction(node.name, node.type, this));
         } else if (result instanceof ExternalVariable) {
             throw new LinkingError("Tried to link function with variable", node.node, result.parseNode);
         } else if (!result.type.equals(node.type)) {
@@ -200,7 +209,7 @@ export class Linker {
     private externalVar(node: CVarDeclaration | CVarDefinition): ExternalVariable {
         let result = this._linkables.get(node.name);
         if (result === undefined) {
-            this._linkables.set(node.name, result = new ExternalVariable(node.name, node.type));
+            this._linkables.set(node.name, result = new ExternalVariable(node.name, node.type, this));
         } else if (result instanceof ExternalFunction) {
             throw new LinkingError("Tried to link variable with function", node.node, result.parseNode);
         } else if (!result.type.equals(node.type)) {
@@ -214,7 +223,7 @@ class Linkable<Decl extends CVarDeclaration | CFuncDeclaration> {
     protected readonly declarations: Decl[] = [];
     protected _definition?: Decl["definition"];
 
-    constructor(readonly id: string, readonly type: Decl["type"]) {
+    constructor(readonly id: string, readonly type: Decl["type"], readonly linker: Linker) {
 
     }
 

@@ -33,7 +33,7 @@ export function compileSnippet(source: string): ModuleBuilder {
 }
 
 let _standardLibrary: Linker | undefined;
-function stdLibrary() {
+export function stdLibrary(): Linker {
     if (!_standardLibrary) {
         _standardLibrary = new Linker(STANDARD_LIBRARY);
         _standardLibrary.link();
