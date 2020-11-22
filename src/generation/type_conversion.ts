@@ -1,10 +1,10 @@
-import {CType, CArithmetic, CCompound, CPointer, CArray, CVoid, CFuncType, CStruct, CUnion, CEnum} from "../tree/types";
+import {CType, CArithmetic, CPointer, CArray, CVoid, CFuncType, CStruct, CUnion} from "../tree/types";
 import {Instructions, ValueType, f32Type, f64Type, i64Type, i32Type} from "../wasm";
 import {WExpression} from "../wasm/instructions";
 import {ResultType} from "../wasm/wtypes";
 
 // CType - CArithmetic + wasm.ValueType
-export type ImplementationType = CCompound | CPointer | CArray | CVoid | CFuncType | ValueType;
+export type ImplementationType = CPointer | CArray | CStruct | CUnion | CVoid | CFuncType | ValueType;
 
 /**
  * Types used when computing the type of WebAssembly expressions.
@@ -21,7 +21,7 @@ export function implType(type: CType): ImplementationType {
  */
 export function realType(type: CType): ValueType {
     if (type instanceof CArithmetic) return valueType(type);
-    if (type instanceof CPointer || type instanceof CEnum) return i32Type;
+    if (type instanceof CPointer) return i32Type;
     if (type instanceof CStruct || type instanceof CUnion) {
         // passed around as pointer
         return i32Type;
@@ -41,12 +41,6 @@ export function conversion(inType: CType, outType: CType): WExpression {
     } else if (outType instanceof CArithmetic && outType.type !== "float" && inType instanceof CPointer) {
         // convert pointer to int
         return [];
-    } else if (outType instanceof CEnum && inType instanceof CArithmetic) {
-        // convert arithmetic to enum
-        return arithmeticConversion(inType, CArithmetic.S32);
-    } else if (outType instanceof CArithmetic && inType instanceof CEnum) {
-        // convert enum to arithmetic
-        return arithmeticConversion(CArithmetic.S32, outType);
     } else if (outType instanceof CPointer && inType instanceof CPointer) {
         // pointer.type change
         return [];

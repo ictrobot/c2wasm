@@ -2,7 +2,7 @@ import {ParseNode} from "../parsing";
 import {CConstant, CInitializer, CArrayPointer, CStringLiteral, CExpression, CValue, CCast, CAddressOf, CIdentifier, CAddSub, CDereference} from "../tree/expressions";
 import {constExpression, normalizeValueType} from "../tree/transform/constant_expressions";
 import {ExpressionTypeError} from "../tree/type_checking";
-import {CEnum, CArithmetic, CArray, CUnion, CStruct, CSizeT, CPointer, CType} from "../tree/types";
+import {CArithmetic, CArray, CUnion, CStruct, CSizeT, CPointer, CType} from "../tree/types";
 import {byte} from "../wasm/base_types";
 import {GenError} from "./gen_error";
 import {WGenerator} from "./generator";
@@ -79,7 +79,7 @@ function constant(c: CValue, node?: ParseNode): byte[] {
         return encode(8, d => d.setBigInt64(0, BigInt(c.value), true));
     } else if (CArithmetic.U64.equals(c.type)) {
         return encode(8, d => d.setBigUint64(0, BigInt(c.value), true));
-    } else if (CArithmetic.S32.equals(c.type) || c.type instanceof CEnum) {
+    } else if (CArithmetic.S32.equals(c.type)) {
         return encode(4, d => d.setInt32(0, Number(c.value), true));
     } else if (CArithmetic.U32.equals(c.type) || c.type instanceof CPointer) {
         return encode(4, d => d.setUint32(0, Number(c.value), true));

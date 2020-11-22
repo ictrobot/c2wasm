@@ -13,11 +13,7 @@ import {internalFunctions} from "./wasm_functions";
 function constant(ctx: WFnGenerator, e: c.CConstant, discard: boolean): WExpression {
     if (discard) return []; // no possible side effects
 
-    if (e.type instanceof CArithmetic) {
-        return [gInstr(valueType(e.type), "const", e.value)];
-    }
-    // e.type should not be CEnum as they all become static initializers
-    throw new GenError("Invalid constant", ctx, e.node);
+    return [gInstr(valueType(e.type), "const", e.value)];
 }
 
 function identifier(ctx: WFnGenerator, e: c.CIdentifier, discard: boolean): WExpression {

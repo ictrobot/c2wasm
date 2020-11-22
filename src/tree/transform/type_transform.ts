@@ -1,7 +1,7 @@
 import {CVarDefinition} from "../declarations";
 import {CConstant} from "../expressions";
 import {Scope} from "../scope";
-import {CType, getArithmeticType, CPointer, addQualifier, CFuncType, CNotFuncType, CArray, CEnum, CStruct, CUnion, CCompoundMember, CVoid} from "../types";
+import {CType, getArithmeticType, CPointer, addQualifier, CFuncType, CNotFuncType, CArray, CEnum, CStruct, CUnion, CCompoundMember, CVoid, CArithmetic} from "../types";
 import {ParseTreeValidationError, pt} from "../../parsing/";
 import {evalIntegerConstant} from "./expr_transform";
 
@@ -129,7 +129,7 @@ function getSpecifierType(d: pt.SpecifierQualifiers | pt.DeclarationSpecifiers, 
                 scope.addTag(cEnum);
             }
         }
-        if (!singleSpecifier.body) return cEnum;
+        if (!singleSpecifier.body) return CArithmetic.S32;
 
         // enum members either provide their own value or use the last value + 1, starting at 0
         let nextValue = 0n;
@@ -137,15 +137,16 @@ function getSpecifierType(d: pt.SpecifierQualifiers | pt.DeclarationSpecifiers, 
         for (const e of singleSpecifier.body) { // populate enum
             if (e.value) nextValue = evalIntegerConstant(e.value, scope).value;
 
-            const enumConstant = new CVarDefinition(e, e.id, addQualifier(cEnum, "const"), "static", "internal");
-            enumConstant.staticValue = new CConstant(e, cEnum, nextValue);
-            scope.addIdentifier(enumConstant); // add the enum member as a constant to the scope
+            // enum constants are `int`s!!!
+            const enumConstant = new CVarDefinition(e, e.id, addQualifier(CArithmetic.S32, "const"), "static", "internal");
+            enumConstant.staticValue = new CConstant(e, CArithmetic.S32, nextValue);
 
+            scope.addIdentifier(enumConstant); // add the enum member as a constant to the scope
             values.push({name: e.id, value: nextValue++});
         }
         cEnum.values = values;
         cEnum.node = singleSpecifier;
-        return cEnum;
+        return CArithmetic.S32;
 
     } else if (specifiers.every(x => typeof x === 'string')) {
         // arithmetic or void

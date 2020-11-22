@@ -3,7 +3,7 @@ import type {TypeSpecifier, TypeQualifier, ParseNode} from "../parsing/parsetree
 
 // types for expressions and declarations in the IR
 export type CType = CNotFuncType | CFuncType;
-export type CNotFuncType = CCompound | CArithmetic | CPointer | CArray | CVoid;
+export type CNotFuncType = CArithmetic | CPointer | CArray | CStruct | CUnion | CVoid;
 export type CQualifiedType<T extends CType> = T & {qualifier?: TypeQualifier};
 
 export class CFuncType {

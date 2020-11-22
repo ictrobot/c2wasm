@@ -3,7 +3,7 @@ import type {CDeclaration, CVariable, CArgument} from "./declarations";
 import * as checks from "./type_checking";
 import {
     CArithmetic, CType, CArray, CPointer, CUnion, CStruct,
-    CSizeT, usualArithmeticConversion, integerPromotion, CFuncType, CVoid, CEnum, checkTypeComplete, getQualifier
+    CSizeT, usualArithmeticConversion, integerPromotion, CFuncType, CVoid, checkTypeComplete, getQualifier
 } from "./types";
 
 // Classes to represent all the possible expression types in the IR
@@ -19,12 +19,12 @@ export type CExpression =
     CConditional | CAssignment | CComma;
 
 // evaluated expression, value and type pair
-export type CValue = {readonly value: number | bigint, readonly type: CArithmetic | CEnum | CPointer};
+export type CValue = {readonly value: number | bigint, readonly type: CArithmetic | CPointer};
 
 export class CConstant {
     readonly lvalue = false;
 
-    constructor(readonly node: ParseNode, readonly type: CArithmetic | CEnum, readonly value: bigint | number) {
+    constructor(readonly node: ParseNode, readonly type: CArithmetic, readonly value: bigint | number) {
     }
 
     changeType(type: CArithmetic): CConstant {
@@ -510,7 +510,7 @@ export class CAssignment {
 
     private static _checkAssignmentTypeValid(node: ParseNode, varType: CType, valueType: CType): void {
         if (varType.equals(valueType)) return;
-        if (varType instanceof CArithmetic && (valueType instanceof CArithmetic || valueType instanceof CEnum)) {
+        if (varType instanceof CArithmetic && valueType instanceof CArithmetic) {
             return; // arithmetic types always assignable
         }
         if (varType instanceof CPointer && valueType instanceof CPointer) {

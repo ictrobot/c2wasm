@@ -1,8 +1,8 @@
-import {CArgument, CDeclaration, CVarDefinition, CVarDeclaration, CFuncDeclaration} from "../tree/declarations";
+import {CArgument, CDeclaration, CVarDefinition, CVarDeclaration} from "../tree/declarations";
 import {CExpression} from "../tree/expressions";
 import * as e from "../tree/expressions";
 import {Scope} from "../tree/scope";
-import {CType, CArithmetic, CPointer, CEnum, CStruct, CUnion, CArray, CVoid, CFuncType} from "../tree/types";
+import {CType, CArithmetic, CPointer, CStruct, CUnion, CArray, CVoid, CFuncType} from "../tree/types";
 import {Instructions, i32Type} from "../wasm";
 import {localidx} from "../wasm/base_types";
 import {WExpression, WInstruction} from "../wasm/instructions";
@@ -74,7 +74,7 @@ export function storageSetupScope(ctx: WFnGenerator, s: Scope): WExpression {
 
         if (declaration instanceof CVarDefinition) {
             if (declaration.storage === "local") {
-                if (declaration.addressUsed || !(declaration.type instanceof CArithmetic || declaration.type instanceof CEnum || declaration.type instanceof CPointer)) {
+                if (declaration.addressUsed || !(declaration.type instanceof CArithmetic || declaration.type instanceof CPointer)) {
                     // have to place on shadow stack
                     setStorageLocation(declaration, {
                         type: "shadow",
@@ -349,7 +349,7 @@ function getStorageLocation(s: CDeclaration): StorageLocation | undefined {
 // helpers returning the instructions to read/write a type from memory
 
 function load(type: CType, offset: number): WInstruction {
-    if (type instanceof CPointer || type instanceof CEnum) {
+    if (type instanceof CPointer) {
         return Instructions.i32.load(2, offset);
     }
     if (type instanceof CStruct || type instanceof CUnion || type instanceof CArray) {
@@ -390,7 +390,7 @@ function load(type: CType, offset: number): WInstruction {
 }
 
 function store(type: CType, offset: number): WInstruction {
-    if (type instanceof CPointer || type instanceof CEnum) {
+    if (type instanceof CPointer) {
         return Instructions.i32.store(2, offset);
     }
     if (type instanceof CStruct || type instanceof CUnion || type instanceof CArray) {

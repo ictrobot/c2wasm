@@ -1,7 +1,7 @@
 import {CVarDefinition} from "../declarations";
 import {CExpression, CConstant, CIdentifier, CSizeof, CBitwiseNot, CLogicalNot, CCast, CMulDiv, CMod, CAddSub, CShift, CRelational, CEquality, CBitwiseAndOr, CLogicalAndOr, CConditional, CUnaryPlusMinus, CValue, CInitializer} from "../expressions";
 import {ExpressionTypeError} from "../type_checking";
-import {CArithmetic, CEnum, CSizeT, CPointer} from "../types";
+import {CArithmetic, CSizeT, CPointer} from "../types";
 
 type ExtraFn = (e: CExpression) => CValue;
 
@@ -27,7 +27,7 @@ export function constExpression(e: CExpression, extra?: ExtraFn): CValue {
         // eslint-disable-next-line eqeqeq
         return {value: v.value == 0 ? 1n : 0n, type: CArithmetic.S32};
 
-    } else if (e instanceof CCast && (e.type instanceof CArithmetic || e.type instanceof CEnum || e.type instanceof CPointer)) {
+    } else if (e instanceof CCast && (e.type instanceof CArithmetic || e.type instanceof CPointer)) {
         const v = constExpression(e.body, extra);
         return normalizeType({value: v.value, type: e.type});
 
@@ -118,7 +118,7 @@ export function constExpression(e: CExpression, extra?: ExtraFn): CValue {
             return {value: 0n, type: CArithmetic.S32};
         }
 
-    } else if (e instanceof CConditional && (e.type instanceof CArithmetic || e.type instanceof CEnum || e.type instanceof CPointer)) {
+    } else if (e instanceof CConditional && (e.type instanceof CArithmetic || e.type instanceof CPointer)) {
         const test = constExpression(e.test, extra);
         let value: CValue;
         // eslint-disable-next-line eqeqeq
@@ -161,12 +161,11 @@ function normalizeType(v: CValue): CValue {
             value %= max;
             return {value, type: v.type};
         }
-    } else if (v.type instanceof CPointer) {
+    } else { // instanceof CPointer
         // normalize as if U32
         const value = normalizeType({value: v.value, type: CArithmetic.U32}).value;
         return {value: value, type: v.type};
     }
-    return v;
 }
 
 export const normalizeValueType = normalizeType;
