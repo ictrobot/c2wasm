@@ -28,9 +28,12 @@ export class WGenerator {
         this.module = new ModuleBuilder();
         this.shadowStackPtr = this.module.global(i32Type, true, 0n);
 
+        const staticInitializers = [];
         for (const variable of linker.emitVariables) {
-            storageSetupStaticVar(this, variable);
+            const initializer = storageSetupStaticVar(this, variable);
+            if (initializer) staticInitializers.push(initializer);
         }
+
         for (const func of linker.emitImports) {
             this.importFunction(func);
         }
@@ -40,6 +43,8 @@ export class WGenerator {
         for (const funcImport of linker.emitFunctions) {
             this.function(funcImport);
         }
+
+        for (const initializer of staticInitializers) initializer();
 
         const shadowStackStart = Math.ceil(this.nextStaticAddr / 512) * 512;
         this.shadowStackPtr.initialValue = BigInt(shadowStackStart);
@@ -98,7 +103,7 @@ export class WGenerator {
         return {
             getIndex: () => {
                 const wasmFunc = this.functions.get(fn);
-                if (wasmFunc === undefined) throw new GenError(`Function ${fn.name} not found in scope`, undefined, fn.node);
+                if (wasmFunc === undefined) throw new GenError(`Function '${fn.name}' not emitted`, undefined, fn.node);
                 return wasmFunc.getIndex();
             }
         };
@@ -112,7 +117,7 @@ export class WGenerator {
         if (fn instanceof CFuncDeclaration && fn.definition !== undefined) fn = fn.definition.getFunction();
 
         const wasmFunc = this.functions.get(fn);
-        if (wasmFunc === undefined) throw new GenError(`Function ${fn.name} not found in scope`, undefined, fn.node);
+        if (wasmFunc === undefined) throw new GenError(`Function '${fn.name}' not emitted`, undefined, fn.node);
         return wasmFunc.getTableIndex();
     }
 }

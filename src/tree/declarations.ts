@@ -45,6 +45,7 @@ export class CVarDefinition {
     readonly declType = "variable";
     staticValue?: CExpression | CInitializer;
     addressUsed: boolean = false;
+    readonly dependencies = new Map<CDeclaration, boolean>(); // direct dependencies of initializer only
 
     constructor(readonly node: ParseNode,
                 readonly name: string,
@@ -95,7 +96,7 @@ export class CFuncImport {
 export class CFuncDefinition {
     readonly declType = "function";
     readonly body: CCompoundStatement;
-    readonly dependencies = new Map<CFunction, boolean>(); // direct dependencies only
+    readonly dependencies = new Map<CDeclaration, boolean>(); // direct dependencies only
 
     constructor(readonly node: FunctionDefinition,
                 readonly name: string,

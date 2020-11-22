@@ -1,5 +1,5 @@
 import {CVarDefinition} from "../declarations";
-import {CExpression, CConstant, CIdentifier, CSizeof, CBitwiseNot, CLogicalNot, CCast, CMulDiv, CMod, CAddSub, CShift, CRelational, CEquality, CBitwiseAndOr, CLogicalAndOr, CConditional, CUnaryPlusMinus, CValue} from "../expressions";
+import {CExpression, CConstant, CIdentifier, CSizeof, CBitwiseNot, CLogicalNot, CCast, CMulDiv, CMod, CAddSub, CShift, CRelational, CEquality, CBitwiseAndOr, CLogicalAndOr, CConditional, CUnaryPlusMinus, CValue, CInitializer} from "../expressions";
 import {ExpressionTypeError} from "../type_checking";
 import {CArithmetic, CEnum, CSizeT, CPointer} from "../types";
 
@@ -134,7 +134,7 @@ export function constExpression(e: CExpression, extra?: ExtraFn): CValue {
     // for adding addressof support etc for static initializers
     if (extra !== undefined) return extra(e);
 
-    throw new ExpressionTypeError(e.node, "constant expression", e.type.typeName);
+    throw new ExpressionTypeError(e.node, "constant expression");
 }
 
 export function constInteger(e: CExpression, extra?: ExtraFn): CValue & {readonly value: bigint} {

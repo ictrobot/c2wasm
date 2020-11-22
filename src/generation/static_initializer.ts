@@ -1,4 +1,6 @@
 import {ParseNode} from "../parsing";
+import {Identifier} from "../parsing/parsetree";
+import {CVarDefinition} from "../tree/declarations";
 import {CConstant, CInitializer, CArrayPointer, CStringLiteral, CExpression, CValue, CCast, CAddressOf, CIdentifier, CAddSub, CDereference} from "../tree/expressions";
 import {constExpression, normalizeValueType} from "../tree/transform/constant_expressions";
 import {ExpressionTypeError} from "../tree/type_checking";
@@ -7,6 +9,7 @@ import {byte} from "../wasm/base_types";
 import {GenError} from "./gen_error";
 import {WGenerator} from "./generator";
 import {getStaticAddress} from "./storage";
+import instantiate = WebAssembly.instantiate;
 
 export function staticInitializer(ctx: WGenerator, init: CExpression | CInitializer, targetType?: CType, nested = false): byte[] {
     if (init instanceof CInitializer) {
@@ -32,15 +35,19 @@ function staticExpressions(ctx: WGenerator): (e: CExpression) => CValue {
             }
             if (addr !== undefined) return normalizeValueType({value: addr, type: e.type});
 
-        } else if (e instanceof CAddressOf && e.body instanceof CDereference) {
-            const v = constExpression(e.body.body);
+        } else if (e instanceof CAddressOf && e.body instanceof CDereference) { // &x[3] turns into &*(x + 3)
+            const v = constExpression(e.body.body, extra);
             return normalizeValueType({value: v.value, type: e.type});
 
-        } else if (e instanceof CIdentifier && e.value.declType === "function") {
+        } else if (e instanceof CIdentifier && e.value.declType === "function") { // implicit function to pointer conversion
             const addr = ctx.indirectIndex(e.value);
             return normalizeValueType({value: addr, type: new CPointer(e.node, e.type)});
 
-        } else if (e instanceof CAddSub && e.type instanceof CPointer) {
+        } else if (e instanceof CArrayPointer && e.arrayIdentifier instanceof CIdentifier) { // implicit array to pointer conversion
+            const addr = getStaticAddress(e.arrayIdentifier.value);
+            if (addr !== undefined) return normalizeValueType({value: addr, type: new CPointer(e.node, e.type)});
+
+        } else if (e instanceof CAddSub && e.type instanceof CPointer) { // pointer arithmetic
             const lhs = constExpression(e.lhs, extra), rhs = constExpression(e.rhs, extra);
             const lhsValue = lhs.type instanceof CPointer ? BigInt(lhs.value) : BigInt(e.type.type.bytes) * BigInt(lhs.value);
             const rhsValue = rhs.type instanceof CPointer ? BigInt(rhs.value) : BigInt(e.type.type.bytes) * BigInt(rhs.value);
@@ -48,7 +55,7 @@ function staticExpressions(ctx: WGenerator): (e: CExpression) => CValue {
 
         }
 
-        throw new ExpressionTypeError(e.node, "constant expression", e.type.typeName);
+        throw new ExpressionTypeError(e.node, "constant expression");
     };
     return extra;
 }

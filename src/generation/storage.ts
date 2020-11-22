@@ -1,4 +1,4 @@
-import {CArgument, CDeclaration, CVarDefinition, CVarDeclaration} from "../tree/declarations";
+import {CArgument, CDeclaration, CVarDefinition, CVarDeclaration, CFuncDeclaration} from "../tree/declarations";
 import {CExpression} from "../tree/expressions";
 import * as e from "../tree/expressions";
 import {Scope} from "../tree/scope";
@@ -17,7 +17,10 @@ export type StorageLocation =
     {type: "shadow", "shadowOffset": number} | // offset from shadow pointer
     {type: "pointer"}; // address on stack
 
-export function storageSetupStaticVar(ctx: WGenerator, d: CVarDefinition): void {
+/** Setup the static storage location for a variable and if it has a static initializer return a function to set the
+ * value AFTER all the functions have been created. This allows static initializer values to refer to each other
+ * and to functions. Whilst creating functions only the location of the static variable is needed, not it's value. */
+export function storageSetupStaticVar(ctx: WGenerator, d: CVarDefinition): (() => void) | undefined {
     const addr = ctx.nextStaticAddr;
     ctx.nextStaticAddr += Math.ceil(d.type.bytes / 4) * 4; // 4 byte align
 
@@ -25,8 +28,10 @@ export function storageSetupStaticVar(ctx: WGenerator, d: CVarDefinition): void 
         type: "static",
         address: addr
     });
+
     if (d.staticValue) {
-        ctx.module.dataSegment(addr, staticInitializer(ctx, d.staticValue, d.type));
+        const value = d.staticValue;
+        return () => ctx.module.dataSegment(addr, staticInitializer(ctx, value, d.type));
     }
 }
 
@@ -82,8 +87,8 @@ export function storageSetupScope(ctx: WFnGenerator, s: Scope): WExpression {
                         index: ctx.builder.addLocal(realType(declaration.type))
                     });
                 }
-            } else if (declaration.storage === "static") {
-                storageSetupStaticVar(ctx.gen, declaration);
+            } else if (declaration.storage === "static" && getStorageLocation(declaration) === undefined) { // storage should have already been setup
+                throw new GenError("In function static variable is not setup");
             }
         }
     }
@@ -325,6 +330,7 @@ function fromExpression(ctx: WFnGenerator, s: e.CExpression): [WExpression, Stor
 }
 
 export function getStaticAddress(s: CDeclaration): number | undefined {
+    if (s instanceof CVarDeclaration && s.definition) s = s.definition;
     const loc = getStorageLocation(s);
     return loc?.type === "static" ? loc.address : undefined;
 }

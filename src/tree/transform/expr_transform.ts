@@ -21,12 +21,10 @@ export function ptExpression(e: pt.Expression, scope: Scope): CExpression {
 
     } else if (e instanceof pt.Identifier) {
         const id = new CIdentifier(e, scope.lookupIdentifier(e.name, e));
+        if (scope.func) scope.func.dependencies.set(id.value, true);
+
         if (id.type instanceof CArray) {
             return new CArrayPointer(e, id);
-        } else if (id.value instanceof CFuncDefinition || id.value instanceof CFuncDeclaration) {
-            // add function as dependency for current function
-            if (!scope.func) throw new ParseTreeValidationError(id.node, "Function referenced outside function?");
-            scope.func.dependencies.set(id.value, true);
         }
         return id;
 
