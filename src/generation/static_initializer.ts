@@ -48,6 +48,14 @@ function staticExpressions(ctx: WGenerator): (e: CExpression) => CValue {
             const addr = getStaticAddress(e.arrayIdentifier.value);
             if (addr !== undefined) return normalizeValueType({value: addr, type: new CPointer(e.node, e.type)});
 
+        } else if (e instanceof CArrayPointer && e.arrayIdentifier instanceof CStringLiteral) {
+            // allocate a new string literal and return pointer
+            const addr = ctx.nextStaticAddr;
+            const stringBytes = stringLiteral(e.arrayIdentifier);
+            ctx.module.dataSegment(addr, stringBytes);
+            ctx.nextStaticAddr += Math.ceil(stringBytes.length / 4) * 4;
+            return normalizeValueType({value: addr, type: e.type});
+
         } else if (e instanceof CAddSub && e.type instanceof CPointer) { // pointer arithmetic
             const lhs = constExpression(e.lhs, extra), rhs = constExpression(e.rhs, extra);
             const lhsValue = lhs.type instanceof CPointer ? BigInt(lhs.value) : BigInt(e.type.type.bytes) * BigInt(lhs.value);
