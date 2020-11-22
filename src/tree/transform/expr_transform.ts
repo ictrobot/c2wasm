@@ -87,7 +87,7 @@ export function ptExpression(e: pt.Expression, scope: Scope): CExpression {
 /** Evaluate an expression at compile time to an integer constant */
 export function evalIntegerConstant(c: pt.ConstantExpression, scope: Scope): CValue & {value: bigint} {
     const expr = ptExpression(c.expr, scope);
-    return constInteger(expr, scope);
+    return constInteger(expr);
 }
 
 function ptUnary(e: pt.UnaryExpression, scope: Scope): CExpression {

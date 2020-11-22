@@ -90,12 +90,6 @@ export class CStringLiteral {
         }
         this.type = new CArray(node, CArithmetic.U8, value.length);
     }
-
-    toInitializer(): CInitializer {
-        // convert to an array of chars
-        const constants: CConstant[] = this.value.map(x => new CConstant(this.node, CArithmetic.U8, x));
-        return new CInitializer(this.node, constants, this.type);
-    }
 }
 
 export class CFunctionCall {
@@ -446,14 +440,10 @@ export class CInitializer {
     constructor(readonly node: ParseNode, readonly body: (CExpression | CInitializer)[], type?: CType) {
         // default to a void* array which isn't the true type but lets the array size be used when declaring arrays
         this._type = type ?? new CArray(undefined, new CPointer(undefined, new CVoid()), body.length);
+    }
 
-        // convert string literals to list initializers
-        for (let i = 0; i < body.length; i++) {
-            const value = body[i];
-            if (value instanceof CArrayPointer && value.arrayIdentifier instanceof CStringLiteral) {
-                this.body[i] = value.arrayIdentifier.toInitializer();
-            }
-        }
+    get memberTypes(): ReadonlyArray<CType> {
+        return this._memberTypes;
     }
 
     get type(): CType {

@@ -17,7 +17,7 @@ export type StorageLocation =
     {type: "shadow", "shadowOffset": number} | // offset from shadow pointer
     {type: "pointer"}; // address on stack
 
-export function storageSetupStaticVar(ctx: WGenerator, d: CVarDefinition, s: Scope): void {
+export function storageSetupStaticVar(ctx: WGenerator, d: CVarDefinition): void {
     const addr = ctx.nextStaticAddr;
     ctx.nextStaticAddr += Math.ceil(d.type.bytes / 4) * 4; // 4 byte align
 
@@ -26,7 +26,7 @@ export function storageSetupStaticVar(ctx: WGenerator, d: CVarDefinition, s: Sco
         address: addr
     });
     if (d.staticValue) {
-        ctx.module.dataSegment(addr, staticInitializer(ctx, d.staticValue, s));
+        ctx.module.dataSegment(addr, staticInitializer(ctx, d.staticValue, d.type));
     }
 }
 
@@ -83,7 +83,7 @@ export function storageSetupScope(ctx: WFnGenerator, s: Scope): WExpression {
                     });
                 }
             } else if (declaration.storage === "static") {
-                storageSetupStaticVar(ctx.gen, declaration, s);
+                storageSetupStaticVar(ctx.gen, declaration);
             }
         }
     }
@@ -322,6 +322,11 @@ function fromExpression(ctx: WFnGenerator, s: e.CExpression): [WExpression, Stor
     }
 
     throw new GenError("Invalid location expression", ctx, s.node);
+}
+
+export function getStaticAddress(s: CDeclaration): number | undefined {
+    const loc = getStorageLocation(s);
+    return loc?.type === "static" ? loc.address : undefined;
 }
 
 // helpers for storing storage location on variables using a Symbol

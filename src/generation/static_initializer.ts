@@ -1,21 +1,56 @@
 import {ParseNode} from "../parsing";
-import {CConstant, CInitializer, CArrayPointer, CStringLiteral, CExpression, CValue} from "../tree/expressions";
-import {Scope} from "../tree/scope";
-import {constExpression} from "../tree/transform/constant_expressions";
-import {CEnum, CArithmetic, CArray, CUnion, CStruct, CSizeT, CPointer} from "../tree/types";
+import {CConstant, CInitializer, CArrayPointer, CStringLiteral, CExpression, CValue, CCast, CAddressOf, CIdentifier, CAddSub, CDereference} from "../tree/expressions";
+import {constExpression, normalizeValueType} from "../tree/transform/constant_expressions";
+import {ExpressionTypeError} from "../tree/type_checking";
+import {CEnum, CArithmetic, CArray, CUnion, CStruct, CSizeT, CPointer, CType} from "../tree/types";
 import {byte} from "../wasm/base_types";
 import {GenError} from "./gen_error";
 import {WGenerator} from "./generator";
+import {getStaticAddress} from "./storage";
 
-export function staticInitializer(ctx: WGenerator, init: CExpression | CInitializer, scope: Scope, nested = false): byte[] {
+export function staticInitializer(ctx: WGenerator, init: CExpression | CInitializer, targetType?: CType, nested = false): byte[] {
     if (init instanceof CInitializer) {
-        return initializer(ctx, init, scope, nested);
+        if (targetType && !init.type.equals(targetType)) throw new GenError("Static initializer type mismatch", undefined, init.node);
+        return initializer(ctx, init, nested);
     } else if (init instanceof CArrayPointer && init.arrayIdentifier instanceof CStringLiteral) {
         return stringLiteral(ctx, init);
     } else {
-        const value = constExpression(init, scope);
+        if (targetType && !init.type.equals(targetType)) init = new CCast(init.node, targetType, init);
+        const value = constExpression(init, staticExpressions(ctx));
         return constant(value, init.node);
     }
+}
+
+function staticExpressions(ctx: WGenerator): (e: CExpression) => CValue {
+    const extra = (e: CExpression) => {
+        if (e instanceof CAddressOf && e.body instanceof CIdentifier) {
+            let addr: number | bigint | undefined;
+            if (e.body.value.declType === "variable") {
+                addr = getStaticAddress(e.body.value);
+            } else {
+                addr = ctx.indirectIndex(e.body.value);
+            }
+            if (addr !== undefined) return normalizeValueType({value: addr, type: e.type});
+
+        } else if (e instanceof CAddressOf && e.body instanceof CDereference) {
+            const v = constExpression(e.body.body);
+            return normalizeValueType({value: v.value, type: e.type});
+
+        } else if (e instanceof CIdentifier && e.value.declType === "function") {
+            const addr = ctx.indirectIndex(e.value);
+            return normalizeValueType({value: addr, type: new CPointer(e.node, e.type)});
+
+        } else if (e instanceof CAddSub && e.type instanceof CPointer) {
+            const lhs = constExpression(e.lhs, extra), rhs = constExpression(e.rhs, extra);
+            const lhsValue = lhs.type instanceof CPointer ? BigInt(lhs.value) : BigInt(e.type.type.bytes) * BigInt(lhs.value);
+            const rhsValue = rhs.type instanceof CPointer ? BigInt(rhs.value) : BigInt(e.type.type.bytes) * BigInt(rhs.value);
+            return normalizeValueType({value: lhsValue + rhsValue, type: e.type});
+
+        }
+
+        throw new ExpressionTypeError(e.node, "constant expression", e.type.typeName);
+    };
+    return extra;
 }
 
 function encode(bytes: number, method: (d: DataView) => void): byte[] {
@@ -63,18 +98,18 @@ function stringLiteral(ctx: WGenerator, init: CArrayPointer): byte[] {
     return constant(new CConstant(init.node, CSizeT, BigInt(addr)));
 }
 
-function initializer(ctx: WGenerator, init: CInitializer, scope: Scope, nested: boolean): byte[] {
+function initializer(ctx: WGenerator, init: CInitializer, nested: boolean): byte[] {
     let bytes: byte[];
 
     if (init.type instanceof CArray) {
         if (init.type.length === undefined) throw new GenError("Array length still unknown?", undefined, init.node);
-        bytes = init.body.flatMap((x) => staticInitializer(ctx, x, scope, true));
+        bytes = init.body.flatMap((x, i) => staticInitializer(ctx, x, init.memberTypes[i], true));
 
     } else if (init.type instanceof CUnion) {
-        bytes = staticInitializer(ctx, init.body[0], scope, true);
+        bytes = staticInitializer(ctx, init.body[0], init.memberTypes[0], true);
 
     } else if (init.type instanceof CStruct) {
-        bytes = init.body.flatMap((x) => staticInitializer(ctx, x, scope, true));
+        bytes = init.body.flatMap((x, i) => staticInitializer(ctx, x, init.memberTypes[i],true));
 
     } else {
         throw new GenError("Invalid initializer", undefined, init.node);
