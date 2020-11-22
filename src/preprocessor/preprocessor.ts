@@ -21,12 +21,14 @@ export class Preprocessor extends PreprocessorBase {
     }
 
     process(text: string, filename: string = this.filename): string {
+        // replace crlf with lf
+        text = text.replace(/\r\n/g, "\n");
         // remove comments
         text = text.replace(PreProRegex.comments, " ");
-
-        let output = "";
+        // remove line continuations
         const lines = text.replace(/\\\n/g, "").split("\n");
 
+        let output = "";
         while (lines.length > 0) {
             const line = lines.shift() as string;
 
