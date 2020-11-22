@@ -1,6 +1,5 @@
 import type {FunctionDefinition, ParseNode} from "../parsing/parsetree";
-import type {CInitializer, CArrayPointer} from "./expressions";
-import type {CConstant} from "./expressions";
+import type {CInitializer, CExpression} from "./expressions";
 import type {Scope} from "./scope";
 import {CCompoundStatement} from "./statements";
 import type {CFuncType, CNotFuncType, CQualifiedType} from "./types";
@@ -44,7 +43,7 @@ export class CVarDeclaration {
 
 export class CVarDefinition {
     readonly declType = "variable";
-    staticValue?: CConstant | CInitializer | CArrayPointer;
+    staticValue?: CExpression | CInitializer;
     addressUsed: boolean = false;
 
     constructor(readonly node: ParseNode,

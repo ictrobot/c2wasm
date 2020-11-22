@@ -1,4 +1,4 @@
-import {CArgument, CVariable, CDeclaration, CVarDefinition, CVarDeclaration} from "../tree/declarations";
+import {CArgument, CDeclaration, CVarDefinition, CVarDeclaration} from "../tree/declarations";
 import {CExpression} from "../tree/expressions";
 import * as e from "../tree/expressions";
 import {Scope} from "../tree/scope";
@@ -17,7 +17,7 @@ export type StorageLocation =
     {type: "shadow", "shadowOffset": number} | // offset from shadow pointer
     {type: "pointer"}; // address on stack
 
-export function storageSetupStaticVar(ctx: WGenerator, d: CVarDefinition): void {
+export function storageSetupStaticVar(ctx: WGenerator, d: CVarDefinition, s: Scope): void {
     const addr = ctx.nextStaticAddr;
     ctx.nextStaticAddr += Math.ceil(d.type.bytes / 4) * 4; // 4 byte align
 
@@ -26,7 +26,7 @@ export function storageSetupStaticVar(ctx: WGenerator, d: CVarDefinition): void 
         address: addr
     });
     if (d.staticValue) {
-        ctx.module.dataSegment(addr, staticInitializer(ctx, d.staticValue));
+        ctx.module.dataSegment(addr, staticInitializer(ctx, d.staticValue, s));
     }
 }
 
@@ -83,7 +83,7 @@ export function storageSetupScope(ctx: WFnGenerator, s: Scope): WExpression {
                     });
                 }
             } else if (declaration.storage === "static") {
-                storageSetupStaticVar(ctx.gen, declaration);
+                storageSetupStaticVar(ctx.gen, declaration, s);
             }
         }
     }

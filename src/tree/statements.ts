@@ -1,6 +1,6 @@
 import type * as pt from "../parsing/parsetree";
 import {CFuncDefinition} from "./declarations";
-import {CExpression, CConstant, CAssignment} from "./expressions";
+import {CExpression, CAssignment, CValue} from "./expressions";
 import {Scope} from "./scope";
 import {ExpressionTypeError, asArithmeticOrPointer} from "./type_checking";
 
@@ -88,7 +88,7 @@ export class CDoLoop {
 }
 
 export class CSwitch {
-    children: {cases: CConstant[], body: CCompoundStatement, default: boolean}[] = [];
+    children: {cases: CValue[], body: CCompoundStatement, default: boolean}[] = [];
 
     constructor(readonly node: pt.SwitchStatement, readonly expression: CExpression, readonly parent: CStatement) {
     }

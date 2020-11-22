@@ -1,6 +1,7 @@
 import {CFuncDefinition} from "../tree/declarations";
+import {CConstant} from "../tree/expressions";
 import * as c from "../tree/statements";
-import {CArithmetic} from "../tree/types";
+import {CArithmetic, CPointer} from "../tree/types";
 import {Instructions, i32Type} from "../wasm";
 import {labelidx} from "../wasm/base_types";
 import {WExpression, WInstruction} from "../wasm/instructions";
@@ -120,7 +121,9 @@ function _switch(ctx: WFnGenerator, s: c.CSwitch): WExpression {
                 instr.push(Instructions.local.get(matched)); // TODO short circuit
 
                 for (const sCase of child.cases) {
-                    instr.push(Instructions.local.get(value), ...subExpr(ctx, sCase, s.expression.type), gInstr(type, "eq"));
+                    if (sCase.type instanceof CPointer) throw new GenError("Invalid switch case", ctx, s.node);
+                    const constant = new CConstant(s.node, sCase.type, sCase.value);
+                    instr.push(Instructions.local.get(value), ...subExpr(ctx, constant, s.expression.type), gInstr(type, "eq"));
                     instr.push(Instructions.i32.or());
                 }
             }

@@ -3,7 +3,7 @@ import {CConstant} from "../expressions";
 import {Scope} from "../scope";
 import {CType, getArithmeticType, CPointer, addQualifier, CFuncType, CNotFuncType, CArray, CEnum, CStruct, CUnion, CCompoundMember, CVoid} from "../types";
 import {ParseTreeValidationError, pt} from "../../parsing/";
-import {evalConstant} from "./expr_transform";
+import {evalIntegerConstant} from "./expr_transform";
 
 type GeneralTypeDecl = {
     typeInfo: pt.SpecifierQualifiers | pt.DeclarationSpecifiers,
@@ -34,7 +34,7 @@ export function getDeclaratorType(type: CType, declarator: pt.Declarator | pt.Ab
         } else if (d instanceof pt.ArrayDeclarator || d instanceof pt.AbstractArrayDeclarator) {
             type = new CArray(d, type);
             if (d.length) {
-                type.length = Number(evalConstant(d.length).value);
+                type.length = Number(evalIntegerConstant(d.length, scope).value);
                 if (type.length <= 0) throw new ParseTreeValidationError(d.length, "Invalid array length");
             }
 
@@ -132,10 +132,10 @@ function getSpecifierType(d: pt.SpecifierQualifiers | pt.DeclarationSpecifiers, 
         if (!singleSpecifier.body) return cEnum;
 
         // enum members either provide their own value or use the last value + 1, starting at 0
-        let nextValue = 0;
+        let nextValue = 0n;
         const values = [];
         for (const e of singleSpecifier.body) { // populate enum
-            if (e.value) nextValue = Number(evalConstant(e.value).value);
+            if (e.value) nextValue = evalIntegerConstant(e.value, scope).value;
 
             const enumConstant = new CVarDefinition(e, e.id, addQualifier(cEnum, "const"), "static", "internal");
             enumConstant.staticValue = new CConstant(e, cEnum, nextValue);

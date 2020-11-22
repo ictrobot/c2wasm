@@ -1,12 +1,13 @@
 import {ParseNode, ParseTreeValidationError, pt} from "../../parsing";
 import {CFuncDefinition, CFuncDeclaration} from "../declarations";
 import {
-    CExpression, CConstant, CEvaluable, CIdentifier, CFunctionCall, CMemberAccess, CDereference, CConditional,
+    CExpression, CConstant, CIdentifier, CFunctionCall, CMemberAccess, CDereference, CConditional,
     CAssignment, CStringLiteral, CIncrDecr, CAddressOf, CUnaryPlusMinus, CBitwiseNot, CLogicalNot, CSizeof, CAddSub,
-    CCast, CComma, CMulDiv, CMod, CShift, CRelational, CEquality, CBitwiseAndOr, CLogicalAndOr, CArrayPointer
+    CCast, CComma, CMulDiv, CMod, CShift, CRelational, CEquality, CBitwiseAndOr, CLogicalAndOr, CArrayPointer, CValue
 } from "../expressions";
 import {Scope} from "../scope";
 import {CArithmetic, CArray} from "../types";
+import {constInteger} from "./constant_expressions";
 import {getType} from "./type_transform";
 
 /** Transform expressions from the parse tree */
@@ -83,15 +84,10 @@ export function ptExpression(e: pt.Expression, scope: Scope): CExpression {
     throw new ParseTreeValidationError(e, "Invalid expression");
 }
 
-/** Evaluate an expression at compile time to a constant */
-export function evalConstant(c: pt.ConstantExpression): CConstant {
-    const expr = ptExpression(c.expr, new Scope());
-    if (expr instanceof CEvaluable) {
-        // TODO implement CEvaluable on more types of expressions
-        const v = expr.evaluate();
-        if (v !== undefined) return v;
-    }
-    throw new ParseTreeValidationError(c, "Invalid constant expression");
+/** Evaluate an expression at compile time to an integer constant */
+export function evalIntegerConstant(c: pt.ConstantExpression, scope: Scope): CValue & {value: bigint} {
+    const expr = ptExpression(c.expr, scope);
+    return constInteger(expr, scope);
 }
 
 function ptUnary(e: pt.UnaryExpression, scope: Scope): CExpression {

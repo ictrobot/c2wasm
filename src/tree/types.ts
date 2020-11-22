@@ -165,7 +165,7 @@ export class CUnion {
     }
 }
 
-export type CEnumValue = {name: string, value: number};
+export type CEnumValue = {name: string, value: bigint};
 export class CEnum {
     readonly typeName = "enum";
     readonly bytes = 4;

@@ -1,6 +1,7 @@
 import type {Linker} from "../linker";
 import {CFuncDefinition, CFuncDeclaration} from "../tree/declarations";
 import type {CExpression} from "../tree/expressions";
+import {Scope} from "../tree/scope";
 import type {CStatement} from "../tree/statements";
 import type {CFuncType} from "../tree/types";
 import {ModuleBuilder, WFunctionBuilder, WFunction, Instructions, WImportedFunction, ValueType, i32Type} from "../wasm";
@@ -29,7 +30,7 @@ export class WGenerator {
         this.shadowStackPtr = this.module.global(i32Type, true, 0n);
 
         for (const variable of linker.emitVariables) {
-            storageSetupStaticVar(this, variable);
+            storageSetupStaticVar(this, variable, new Scope()); // TODO fixme
         }
         for (const func of linker.emitImports) {
             this.importFunction(func);

@@ -1,5 +1,4 @@
 import type {ParseNode, pt} from "../parsing";
-import {CVarDefinition} from "./declarations";
 import type {CDeclaration, CVariable, CArgument} from "./declarations";
 import * as checks from "./type_checking";
 import {
@@ -19,17 +18,13 @@ export type CExpression =
     CBitwiseAndOr | CLogicalAndOr |
     CConditional | CAssignment | CComma;
 
-/** if the expression can be evaluated to a constant at compile time, extend this class.
- * Used for integer constants for enum values, switch statements, static initializers, etc */
-export abstract class CEvaluable {
-    abstract evaluate(): CConstant | undefined;
-}
+// evaluated expression, value and type pair
+export type CValue = {readonly value: number | bigint, readonly type: CArithmetic | CEnum | CPointer};
 
-export class CConstant extends CEvaluable {
+export class CConstant {
     readonly lvalue = false;
 
     constructor(readonly node: ParseNode, readonly type: CArithmetic | CEnum, readonly value: bigint | number) {
-        super();
     }
 
     changeType(type: CArithmetic): CConstant {
@@ -55,24 +50,15 @@ export class CConstant extends CEvaluable {
     }
 }
 
-export class CIdentifier extends CEvaluable {
+export class CIdentifier {
     readonly lvalue: boolean;
 
     constructor(readonly node: ParseNode, readonly value: CDeclaration) {
-        super();
         this.lvalue = !(value.type instanceof CFuncType);
     }
 
     get type(): CType {
         return this.value.type;
-    }
-
-    evaluate(): CConstant | undefined {
-        // only constant if points to an enum identifier
-        if (this.value.type.typeName === "enum" && (this.value as CVarDefinition).staticValue instanceof CConstant) {
-            return (this.value as CVarDefinition).staticValue as CConstant;
-        }
-        return undefined;
     }
 }
 
@@ -142,7 +128,9 @@ export class CMemberAccess {
     constructor(readonly node: ParseNode, readonly body: CExpression, readonly member: string) {
         const pointerType = checks.asPointer(body.node, body.type);
         this.structUnion = checks.asStructOrUnion(body.node, pointerType.type);
-        this.type = this.structUnion.memberType(member);
+
+        const type = this.structUnion.memberType(member);
+        this.type = type instanceof CArray ? new CPointer(type.node, type.type) : type;
         this.lvalue = !(this.type instanceof CArray);
     }
 }
@@ -160,19 +148,14 @@ export class CIncrDecr {
     }
 }
 
-export class CSizeof extends CEvaluable {
+export class CSizeof {
     readonly lvalue = false;
     readonly type = CSizeT;
 
     constructor(readonly node: ParseNode, readonly body: CType) {
-        super();
         if (body.incomplete || body.bytes === 0 || body instanceof CFuncType) {
             throw new checks.ExpressionTypeError(node, "Complete non-function type", body.typeName);
         }
-    }
-
-    evaluate(): CConstant {
-        return new CConstant(this.node, CSizeT, this.body.bytes);
     }
 }
 
@@ -203,21 +186,14 @@ export class CDereference { // * or 'indirection'
     }
 }
 
-export class CUnaryPlusMinus extends CEvaluable {
+export class CUnaryPlusMinus {
     readonly lvalue = false;
     readonly type: CArithmetic;
     readonly bodyType: CArithmetic;
 
     constructor(readonly node: ParseNode, readonly body: CExpression, readonly op: "+" | "-") {
-        super();
         this.bodyType = checks.asArithmetic(body.node, body.type);
         this.type = integerPromotion(this.bodyType);
-    }
-
-    evaluate(): CConstant | undefined {
-        const body = (this.body as CEvaluable)?.evaluate();
-        if (body && this.bodyType.type !== "unsigned") return new CConstant(this.node, this.bodyType, -body.value);
-        return undefined;
     }
 }
 
@@ -518,23 +494,6 @@ export class CInitializer {
             error();
         }
         this._type = value;
-    }
-
-    /** If this is a static initializer, recursively check that the body is evaluable at compile time */
-    asStatic(): this {
-        for (let i = 0; i < this.body.length; i++) {
-            const child = this.body[i];
-            if (child instanceof CInitializer) {
-                child.asStatic();
-            } else if (child instanceof CEvaluable) {
-                const value = child.evaluate();
-                if (value === undefined) throw new checks.ExpressionTypeError(child.node, "constant expression");
-                this.body[i] = value.changeType(this._memberTypes[i] as CArithmetic);
-            } else {
-                throw new checks.ExpressionTypeError(child.node, "constant expression");
-            }
-        }
-        return this;
     }
 
     private static typeCheck(desiredType: CType, expr: CExpression | CInitializer): CExpression | CInitializer {

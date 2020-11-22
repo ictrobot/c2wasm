@@ -1,12 +1,12 @@
 import {CFuncDefinition, CArgument, CFuncDeclaration, CVarDefinition, CVarDeclaration} from "../declarations";
-import {CAssignment, CIdentifier, CExpression, CEvaluable, CInitializer, CStringLiteral, CConstant, CArrayPointer} from "../expressions";
+import {CAssignment, CIdentifier, CExpression, CInitializer, CStringLiteral, CConstant, CArrayPointer} from "../expressions";
 import {INTERNAL_SCOPE} from "../internal_scope";
 import {Scope} from "../scope";
 import {CStatement, CCompoundStatement, CExpressionStatement, CNop, CIf, CForLoop, CWhileLoop, CDoLoop, CSwitch, CBreak, CContinue, CReturn} from "../statements";
 import {ExpressionTypeError} from "../type_checking";
 import {CFuncType, CVoid, CArray, CArithmetic, CPointer} from "../types";
 import {ParseTreeValidationError, pt} from "../../parsing";
-import {ptExpression, evalConstant} from "./expr_transform";
+import {ptExpression, evalIntegerConstant} from "./expr_transform";
 import {getDeclaratorName, getDeclaratorType, getType} from "./type_transform";
 
 /** Main function, transform a parse tree translation unit into a root scope */
@@ -100,22 +100,24 @@ function ptDeclaration(declaration: pt.Declaration, scope: Scope, inFunction: bo
                     assignments.push(new CAssignment(entry, id, initialValue, undefined, true));
                 } else {
                     // static initialization, must be constant and evaluated at compile time
-                    if (initialValue instanceof CEvaluable) {
-                        const value = initialValue.evaluate();
-                        if (value === undefined) throw new ExpressionTypeError(initialValue.node, "constant expression");
-                        cvar.staticValue = value;
-                    } else if (initialValue instanceof CInitializer) {
-                        cvar.staticValue = initialValue.asStatic();
-                    } else if (initialValue instanceof CStringLiteral) {
-                        // string literal being used as array
-                        cvar.staticValue = initialValue.toInitializer();
-                    } else if (initialValue instanceof CArrayPointer && initialValue.arrayIdentifier instanceof CStringLiteral) {
-                        // string literal being used as pointer
-                        cvar.staticValue = initialValue;
-                    } else {
-                        throw new ExpressionTypeError(initialValue.node, "constant expression");
-                    }
+                    cvar.staticValue = initialValue;
                     CAssignment.checkAssignmentValid(entry, type, cvar.staticValue);
+
+                    // if (initialValue instanceof CEvaluable) {
+                    //     const value = initialValue.evaluate();
+                    //     if (value === undefined) throw new ExpressionTypeError(initialValue.node, "constant expression");
+                    //     cvar.staticValue = value;
+                    // } else if (initialValue instanceof CInitializer) {
+                    //     cvar.staticValue = initialValue.asStatic();
+                    // } else if (initialValue instanceof CStringLiteral) {
+                    //     // string literal being used as array
+                    //     cvar.staticValue = initialValue.toInitializer();
+                    // } else if (initialValue instanceof CArrayPointer && initialValue.arrayIdentifier instanceof CStringLiteral) {
+                    //     // string literal being used as pointer
+                    //     cvar.staticValue = initialValue;
+                    // } else {
+                    //     throw new ExpressionTypeError(initialValue.node, "constant expression");
+                    // }
                 }
             }
         }
@@ -265,7 +267,7 @@ function ptStatement(node: pt.Statement, parent: CStatement): CStatement {
 
     } else if (node instanceof pt.SwitchStatement) {
         const s = new CSwitch(node, ptExpression(node.expression, parent.scope), parent);
-        ptSwitchBody(s, node);
+        ptSwitchBody(s, node, parent.scope);
         return s;
 
     } else if (node instanceof pt.ReturnStatement) {
@@ -313,7 +315,7 @@ function _compoundBody(child: pt.Declaration | pt.Statement, c: CCompoundStateme
  * Furthermore, these statements are limited to being used at the top level inside the switch statement, whereas in C
  * you can place them inside other statements inside the switch block, creating arbitrary goto which is out of scope.
  */
-function ptSwitchBody(s: CSwitch, node: pt.SwitchStatement) {
+function ptSwitchBody(s: CSwitch, node: pt.SwitchStatement, scope: Scope) {
     if (!(node.body instanceof pt.CompoundStatement)) {
         throw new ParseTreeValidationError(node, "Expected switch statement to have a compound statement body");
     }
@@ -332,7 +334,7 @@ function ptSwitchBody(s: CSwitch, node: pt.SwitchStatement) {
             }
 
             if (child instanceof pt.CaseStatement) { // add the case or mark this block as accepting default
-                block.cases.push(evalConstant(child.value));
+                block.cases.push(evalIntegerConstant(child.value, scope));
             } else {
                 block.default = true;
             }
