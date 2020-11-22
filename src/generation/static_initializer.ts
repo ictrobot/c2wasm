@@ -1,6 +1,4 @@
 import {ParseNode} from "../parsing";
-import {Identifier} from "../parsing/parsetree";
-import {CVarDefinition} from "../tree/declarations";
 import {CConstant, CInitializer, CArrayPointer, CStringLiteral, CExpression, CValue, CCast, CAddressOf, CIdentifier, CAddSub, CDereference} from "../tree/expressions";
 import {constExpression, normalizeValueType} from "../tree/transform/constant_expressions";
 import {ExpressionTypeError} from "../tree/type_checking";
@@ -9,14 +7,17 @@ import {byte} from "../wasm/base_types";
 import {GenError} from "./gen_error";
 import {WGenerator} from "./generator";
 import {getStaticAddress} from "./storage";
-import instantiate = WebAssembly.instantiate;
 
 export function staticInitializer(ctx: WGenerator, init: CExpression | CInitializer, targetType?: CType, nested = false): byte[] {
     if (init instanceof CInitializer) {
         if (targetType && !init.type.equals(targetType)) throw new GenError("Static initializer type mismatch", undefined, init.node);
         return initializer(ctx, init, nested);
     } else if (init instanceof CArrayPointer && init.arrayIdentifier instanceof CStringLiteral) {
-        return stringLiteral(ctx, init);
+        // string literal being used as pointer
+        return stringLiteralPtr(ctx, init);
+    } else if (init instanceof CStringLiteral) {
+        // string literal being used as array
+        return stringLiteral(init);
     } else {
         if (targetType && !init.type.equals(targetType)) init = new CCast(init.node, targetType, init);
         const value = constExpression(init, staticExpressions(ctx));
@@ -52,7 +53,6 @@ function staticExpressions(ctx: WGenerator): (e: CExpression) => CValue {
             const lhsValue = lhs.type instanceof CPointer ? BigInt(lhs.value) : BigInt(e.type.type.bytes) * BigInt(lhs.value);
             const rhsValue = rhs.type instanceof CPointer ? BigInt(rhs.value) : BigInt(e.type.type.bytes) * BigInt(rhs.value);
             return normalizeValueType({value: lhsValue + rhsValue, type: e.type});
-
         }
 
         throw new ExpressionTypeError(e.node, "constant expression");
@@ -94,15 +94,19 @@ function constant(c: CValue, node?: ParseNode): byte[] {
     throw new GenError("Unknown value type?", undefined, node);
 }
 
-function stringLiteral(ctx: WGenerator, init: CArrayPointer): byte[] {
-    // very similar code to generation/expressions.ts stringLiteral(...)
+function stringLiteralPtr(ctx: WGenerator, init: CArrayPointer): byte[] {
     if (!(init.arrayIdentifier instanceof CStringLiteral)) throw new GenError("Invalid initializer", undefined, init.node);
 
     const addr = ctx.nextStaticAddr;
-    ctx.nextStaticAddr += Math.ceil(init.arrayIdentifier.value.length / 4) * 4;
+    const stringBytes = stringLiteral(init.arrayIdentifier);
+    ctx.module.dataSegment(addr, stringBytes);
 
-    ctx.module.dataSegment(addr, init.arrayIdentifier.value.map(Number));
+    ctx.nextStaticAddr += Math.ceil(stringBytes.length / 4) * 4;
     return constant(new CConstant(init.node, CSizeT, BigInt(addr)));
+}
+
+function stringLiteral(s: CStringLiteral): byte[] {
+    return s.value.map(Number) as byte[];
 }
 
 function initializer(ctx: WGenerator, init: CInitializer, nested: boolean): byte[] {

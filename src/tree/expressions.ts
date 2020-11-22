@@ -45,8 +45,9 @@ export class CConstant {
         return new CConstant(this.node, type, newValue);
     }
 
-    evaluate(): CConstant {
-        return this;
+    // for analyzing expression dependencies
+    *identifiers(): IterableIterator<CIdentifier> {
+        // no identifier children
     }
 }
 
@@ -59,6 +60,10 @@ export class CIdentifier {
 
     get type(): CType {
         return this.value.type;
+    }
+
+    *identifiers(): IterableIterator<CIdentifier> {
+        yield this;
     }
 }
 
@@ -77,6 +82,10 @@ export class CArrayPointer {
         }
         this.type = new CPointer(this.node, arrayIdentifier.type.type);
     }
+
+    *identifiers(): IterableIterator<CIdentifier> {
+        if (this.arrayIdentifier instanceof CIdentifier) yield this.arrayIdentifier;
+    }
 }
 
 export class CStringLiteral {
@@ -89,6 +98,10 @@ export class CStringLiteral {
             throw new checks.ExpressionTypeError(node, "null terminated char[]", "char[]");
         }
         this.type = new CArray(node, CArithmetic.U8, value.length);
+    }
+
+    *identifiers(): IterableIterator<CIdentifier> {
+        // no identifier children
     }
 }
 
@@ -111,6 +124,11 @@ export class CFunctionCall {
             CAssignment.checkAssignmentValid(args[i].node, this.fnType.parameterTypes[i], args[i]);
         }
     }
+
+    *identifiers(): IterableIterator<CIdentifier> {
+        yield* this.body.identifiers();
+        for (const a of this.args) yield* a.identifiers();
+    }
 }
 
 export class CMemberAccess {
@@ -127,6 +145,10 @@ export class CMemberAccess {
         this.type = type instanceof CArray ? new CPointer(type.node, type.type) : type;
         this.lvalue = !(this.type instanceof CArray);
     }
+
+    *identifiers(): IterableIterator<CIdentifier> {
+        yield* this.body.identifiers();
+    }
 }
 
 export class CIncrDecr {
@@ -140,6 +162,10 @@ export class CIncrDecr {
         this.type = checks.asNonFunctionPointer(body.node, checks.asArithmeticOrPointer(body.node, body.type));
         if (this.type instanceof CPointer) checkTypeComplete(this.type.type);
     }
+
+    *identifiers(): IterableIterator<CIdentifier> {
+        yield* this.body.identifiers();
+    }
 }
 
 export class CSizeof {
@@ -150,6 +176,10 @@ export class CSizeof {
         if (body.incomplete || body.bytes === 0 || body instanceof CFuncType) {
             throw new checks.ExpressionTypeError(node, "Complete non-function type", body.typeName);
         }
+    }
+
+    *identifiers(): IterableIterator<CIdentifier> {
+        // no identifier children
     }
 }
 
@@ -169,6 +199,10 @@ export class CAddressOf { // &
         }
         this.body = body;
     }
+
+    *identifiers(): IterableIterator<CIdentifier> {
+        yield* this.body.identifiers();
+    }
 }
 
 export class CDereference { // * or 'indirection'
@@ -177,6 +211,10 @@ export class CDereference { // * or 'indirection'
 
     constructor(readonly node: ParseNode, readonly body: CExpression) {
         this.type = checks.asPointer(node, body.type).type;
+    }
+
+    *identifiers(): IterableIterator<CIdentifier> {
+        yield* this.body.identifiers();
     }
 }
 
@@ -189,6 +227,10 @@ export class CUnaryPlusMinus {
         this.bodyType = checks.asArithmetic(body.node, body.type);
         this.type = integerPromotion(this.bodyType);
     }
+
+    *identifiers(): IterableIterator<CIdentifier> {
+        yield* this.body.identifiers();
+    }
 }
 
 export class CBitwiseNot {
@@ -200,6 +242,10 @@ export class CBitwiseNot {
         this.bodyType = checks.asInteger(body.node, body.type);
         this.type = this.bodyType.bytes < CArithmetic.S32.bytes ? CArithmetic.S32 : this.bodyType;
     }
+
+    *identifiers(): IterableIterator<CIdentifier> {
+        yield* this.body.identifiers();
+    }
 }
 
 export class CLogicalNot {
@@ -209,12 +255,20 @@ export class CLogicalNot {
     constructor(readonly node: ParseNode, readonly body: CExpression) {
         checks.asArithmeticOrPointer(body.node, body.type);
     }
+
+    *identifiers(): IterableIterator<CIdentifier> {
+        yield* this.body.identifiers();
+    }
 }
 
 export class CCast {
     readonly lvalue = false;
 
     constructor(readonly node: ParseNode, readonly type: CType, readonly body: CExpression) {
+    }
+
+    *identifiers(): IterableIterator<CIdentifier> {
+        yield* this.body.identifiers();
     }
 }
 
@@ -227,6 +281,11 @@ export class CMulDiv {
             checks.asArithmetic(lhs.node, lhs.type),
             checks.asArithmetic(rhs.node, rhs.type));
     }
+
+    *identifiers(): IterableIterator<CIdentifier> {
+        yield* this.lhs.identifiers();
+        yield* this.rhs.identifiers();
+    }
 }
 
 export class CMod {
@@ -237,6 +296,11 @@ export class CMod {
         this.type = usualArithmeticConversion(
             checks.asInteger(lhs.node, lhs.type),
             checks.asInteger(rhs.node, rhs.type));
+    }
+
+    *identifiers(): IterableIterator<CIdentifier> {
+        yield* this.lhs.identifiers();
+        yield* this.rhs.identifiers();
     }
 }
 
@@ -266,6 +330,11 @@ export class CAddSub {
             this.type = usualArithmeticConversion(checks.asArithmetic(lhs.node, lhs.type), checks.asArithmetic(rhs.node, rhs.type));
         }
     }
+
+    *identifiers(): IterableIterator<CIdentifier> {
+        yield* this.lhs.identifiers();
+        yield* this.rhs.identifiers();
+    }
 }
 
 export class CShift {
@@ -275,6 +344,11 @@ export class CShift {
     constructor(readonly node: ParseNode, readonly lhs: CExpression, readonly rhs: CExpression, readonly dir: "left" | "right") {
         this.type = integerPromotion(checks.asInteger(lhs.node, lhs.type));
         checks.asInteger(rhs.node, rhs.type);
+    }
+
+    *identifiers(): IterableIterator<CIdentifier> {
+        yield* this.lhs.identifiers();
+        yield* this.rhs.identifiers();
     }
 }
 
@@ -291,6 +365,11 @@ export class CRelational {
             lhs.type instanceof CArithmetic ? lhs.type : CSizeT,
             rhs.type instanceof CArithmetic ? rhs.type : CSizeT);
     }
+
+    *identifiers(): IterableIterator<CIdentifier> {
+        yield* this.lhs.identifiers();
+        yield* this.rhs.identifiers();
+    }
 }
 
 export class CEquality {
@@ -306,6 +385,11 @@ export class CEquality {
             lhs.type instanceof CArithmetic ? lhs.type : CSizeT,
             rhs.type instanceof CArithmetic ? rhs.type : CSizeT);
     }
+
+    *identifiers(): IterableIterator<CIdentifier> {
+        yield* this.lhs.identifiers();
+        yield* this.rhs.identifiers();
+    }
 }
 
 export class CBitwiseAndOr {
@@ -317,6 +401,11 @@ export class CBitwiseAndOr {
             checks.asInteger(lhs.node, lhs.type),
             checks.asInteger(rhs.node, rhs.type));
     }
+
+    *identifiers(): IterableIterator<CIdentifier> {
+        yield* this.lhs.identifiers();
+        yield* this.rhs.identifiers();
+    }
 }
 
 export class CLogicalAndOr {
@@ -326,6 +415,11 @@ export class CLogicalAndOr {
     constructor(readonly node: ParseNode, readonly lhs: CExpression, readonly rhs: CExpression, readonly op: "and" | "or") {
         checks.asArithmeticOrPointer(lhs.node, lhs.type);
         checks.asArithmeticOrPointer(rhs.node, rhs.type);
+    }
+
+    *identifiers(): IterableIterator<CIdentifier> {
+        yield* this.lhs.identifiers();
+        yield* this.rhs.identifiers();
     }
 }
 
@@ -343,6 +437,12 @@ export class CConditional { // [test] ? [trueValue] : [falseValue]
             // TODO implement full type rules for conditional expressions
             throw new checks.ExpressionTypeError(node, "both branches to have the same type", "different types");
         }
+    }
+
+    *identifiers(): IterableIterator<CIdentifier> {
+        yield* this.test.identifiers();
+        yield* this.trueValue.identifiers();
+        yield* this.falseValue.identifiers();
     }
 }
 
@@ -395,6 +495,11 @@ export class CAssignment {
         }
     }
 
+    *identifiers(): IterableIterator<CIdentifier> {
+        yield* this.lhs.identifiers();
+        yield* this.rhs.identifiers();
+    }
+
     static checkAssignmentValid(node: ParseNode, varType: CType, value: CExpression | CInitializer): void {
         // also allow constant 0 to be assigned to a pointer
         if (varType instanceof CPointer && value instanceof CConstant) {
@@ -429,6 +534,11 @@ export class CComma {
 
     constructor(readonly node: ParseNode, readonly lhs: CExpression, readonly rhs: CExpression) {
         this.type = rhs.type;
+    }
+
+    *identifiers(): IterableIterator<CIdentifier> {
+        yield* this.lhs.identifiers();
+        yield* this.rhs.identifiers();
     }
 }
 
@@ -484,6 +594,10 @@ export class CInitializer {
             error();
         }
         this._type = value;
+    }
+
+    *identifiers(): IterableIterator<CIdentifier> {
+        for (const c of this.body) yield* c.identifiers();
     }
 
     private static typeCheck(desiredType: CType, expr: CExpression | CInitializer): CExpression | CInitializer {

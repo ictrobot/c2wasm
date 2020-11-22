@@ -103,21 +103,10 @@ function ptDeclaration(declaration: pt.Declaration, scope: Scope, inFunction: bo
                     cvar.staticValue = initialValue;
                     CAssignment.checkAssignmentValid(entry, type, cvar.staticValue);
 
-                    // if (initialValue instanceof CEvaluable) {
-                    //     const value = initialValue.evaluate();
-                    //     if (value === undefined) throw new ExpressionTypeError(initialValue.node, "constant expression");
-                    //     cvar.staticValue = value;
-                    // } else if (initialValue instanceof CInitializer) {
-                    //     cvar.staticValue = initialValue.asStatic();
-                    // } else if (initialValue instanceof CStringLiteral) {
-                    //     // string literal being used as array
-                    //     cvar.staticValue = initialValue.toInitializer();
-                    // } else if (initialValue instanceof CArrayPointer && initialValue.arrayIdentifier instanceof CStringLiteral) {
-                    //     // string literal being used as pointer
-                    //     cvar.staticValue = initialValue;
-                    // } else {
-                    //     throw new ExpressionTypeError(initialValue.node, "constant expression");
-                    // }
+                    // setup variable dependencies
+                    for (const identifier of initialValue.identifiers()) {
+                        cvar.dependencies.set(identifier.value, true);
+                    }
                 }
             }
         }
