@@ -19,3 +19,5 @@ Also supports the following c99 features:
 [MIT License](/LICENSE).
 
 Files in `src/c_library/impl/libraries` have their own licenses inside each folder.
+
+Files in `tests/benchmark/*/` also have their own licenses.

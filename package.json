@@ -45,7 +45,8 @@
   },
   "ava": {
     "files": [
-      "tests/**/*"
+      "tests/**/*",
+      "!tests/benchmark"
     ],
     "extensions": [
       "ts"
