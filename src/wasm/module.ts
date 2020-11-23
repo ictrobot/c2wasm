@@ -14,6 +14,7 @@ export class ModuleBuilder {
     private _memory?: MemoryType;
     private _dataSegments: [offset: number, contents: byte[]][] = [];
     startFunction?: WFunction;
+    emitCallback?: () => void;
 
     function(params: ResultType, returnValue: ResultType, bodyFn: (b: WFunctionBuilder) => WExpression, exportName?: string): WFunction {
         const builder = new WFunctionBuilder(this, params, bodyFn);
@@ -57,6 +58,7 @@ export class ModuleBuilder {
         const imports = this._encodeImports();
         const funcTypes = this._functions.map(x => encodeU32(this.typeIndex(x.type)));
         const code = this._functions.map(x => x.toBytes());
+        if (this.emitCallback) this.emitCallback();
 
         const startSection: byte[] = [];
         if (this.startFunction) {

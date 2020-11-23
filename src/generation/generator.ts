@@ -46,9 +46,11 @@ export class WGenerator {
 
         for (const initializer of staticInitializers) initializer();
 
-        const shadowStackStart = Math.ceil(this.nextStaticAddr / 512) * 512;
-        this.shadowStackPtr.initialValue = BigInt(shadowStackStart);
-        this.module.setupMemory(Math.ceil((shadowStackStart + SHADOW_STACK_SIZE) / 65536));
+        this.module.emitCallback = () => {
+            const shadowStackStart = Math.ceil(this.nextStaticAddr / 1024) * 1024;
+            this.shadowStackPtr.initialValue = BigInt(shadowStackStart);
+            this.module.setupMemory(Math.ceil((shadowStackStart + SHADOW_STACK_SIZE) / 65536));
+        };
     }
 
     private function(func: CFuncDefinition, name?: string) {
