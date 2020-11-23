@@ -46,7 +46,7 @@ void test() {
 }
 `);
 
-pointerTest("shadow stack", [512, 516, 520, 524, 528], `
+pointerTest("shadow stack", [1024, 1028, 1032, 1036, 1040], `
     void fn(int i) {
       int x = i;
       log((int) &x);
