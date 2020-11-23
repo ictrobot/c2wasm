@@ -9,6 +9,7 @@ export type CQualifiedType<T extends CType> = T & {qualifier?: TypeQualifier};
 export class CFuncType {
     readonly typeName = "function";
     readonly bytes = 0;
+    readonly alignment = 1;
     readonly incomplete = false;
 
     constructor(readonly node: ParseNode | undefined,
@@ -33,6 +34,7 @@ export class CFuncType {
 export class CPointer {
     readonly typeName = "pointer";
     readonly bytes = 4;
+    readonly alignment = 4;
     readonly incomplete = false;
     readonly qualifier?: TypeQualifier;
 
@@ -48,9 +50,11 @@ export class CPointer {
 
 export class CArray {
     readonly typeName = "array";
+    readonly alignment: number;
 
     constructor(readonly node: ParseNode | undefined, readonly type: CType, public length?: number) {
         checkTypeComplete(type);
+        this.alignment = type.alignment;
     }
 
     get bytes(): number {
@@ -93,7 +97,15 @@ export class CStruct {
 
     get bytes(): number {
         if (this.incomplete) throw new Error("Tried to get size of incomplete type");
-        return this.members.reduce((total, x) => total + (Math.ceil(x.type.bytes / 4) * 4), 0);
+        return this.members.reduce((total, x) => {
+            // align member type
+            total = Math.ceil(total / x.type.alignment) * x.type.alignment;
+            return total + x.type.bytes;
+        }, 0);
+    }
+
+    get alignment(): number {
+        return Math.max(...this.members.map(x => x.type.alignment));
     }
 
     get incomplete(): boolean {
@@ -143,6 +155,10 @@ export class CUnion {
         return this.members.reduce((total, x) => Math.max(total, x.type.bytes), 0);
     }
 
+    get alignment(): number {
+        return Math.max(...this.members.map(x => x.type.alignment));
+    }
+
     get incomplete(): boolean {
         return this._members === undefined;
     }
@@ -168,7 +184,6 @@ export class CUnion {
 export type CEnumValue = {name: string, value: bigint};
 export class CEnum {
     readonly typeName = "enum";
-    readonly bytes = 4;
     private _values: ReadonlyArray<CEnumValue> | undefined;
 
     constructor(public node: ParseNode | undefined, readonly name: string | undefined) {
@@ -198,6 +213,7 @@ export class CEnum {
 export class CVoid {
     readonly typeName = "void";
     readonly bytes = 0;
+    readonly alignment = 1;
     readonly incomplete = true;
     readonly node = undefined;
 
@@ -210,8 +226,10 @@ export class CArithmetic {
     readonly typeName = "arithmetic";
     readonly incomplete = false;
     readonly node = undefined;
+    readonly alignment: number;
 
     private constructor(readonly name: string, readonly bytes: number, readonly type: "float" | "signed" | "unsigned") {
+        this.alignment = bytes;
     }
 
     equals(t: object): boolean {

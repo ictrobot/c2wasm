@@ -21,8 +21,8 @@ export type StorageLocation =
  * value AFTER all the functions have been created. This allows static initializer values to refer to each other
  * and to functions. Whilst creating functions only the location of the static variable is needed, not it's value. */
 export function storageSetupStaticVar(ctx: WGenerator, d: CVarDefinition): (() => void) | undefined {
-    const addr = ctx.nextStaticAddr;
-    ctx.nextStaticAddr += Math.ceil(d.type.bytes / 4) * 4; // 4 byte align
+    const addr = Math.ceil(ctx.nextStaticAddr / d.type.alignment) * d.type.alignment;
+    ctx.nextStaticAddr = addr + d.type.bytes;
 
     setStorageLocation(d, {
         type: "static",
@@ -42,6 +42,10 @@ export function storageSetupScope(ctx: WFnGenerator, s: Scope): WExpression {
         if (declaration instanceof CArgument) {
             if (declaration.type instanceof CStruct || declaration.type instanceof CUnion) {
                 // argument is effectively a pointer to a struct/union to copy
+
+                // align
+                ctx.shadowStackUsage = Math.ceil(ctx.shadowStackUsage / declaration.type.alignment) * declaration.type.alignment;
+
                 setStorageLocation(declaration, {
                     type: "shadow",
                     shadowOffset: ctx.shadowStackUsage
@@ -52,8 +56,10 @@ export function storageSetupScope(ctx: WFnGenerator, s: Scope): WExpression {
                     [Instructions.global.get(ctx.gen.shadowStackPtr), Instructions.i32.const(ctx.shadowStackUsage), Instructions.i32.add()],
                     declaration.type.bytes
                 ));
+                ctx.shadowStackUsage += declaration.type.bytes;
 
             } else if (declaration.addressUsed) {
+                ctx.shadowStackUsage = Math.ceil(ctx.shadowStackUsage / declaration.type.alignment) * declaration.type.alignment;
                 setStorageLocation(declaration, {
                     type: "shadow",
                     shadowOffset: ctx.shadowStackUsage
@@ -63,7 +69,7 @@ export function storageSetupScope(ctx: WFnGenerator, s: Scope): WExpression {
                 instr.push(Instructions.local.get(ctx.builder.args[declaration.index]));
                 instr.push(store(declaration.type, ctx.shadowStackUsage));
 
-                ctx.shadowStackUsage += Math.ceil(declaration.type.bytes / 4) * 4; // 4 byte align
+                ctx.shadowStackUsage += declaration.type.bytes; // 4 byte align
             } else {
                 setStorageLocation(declaration, {
                     type: "local",
@@ -76,11 +82,12 @@ export function storageSetupScope(ctx: WFnGenerator, s: Scope): WExpression {
             if (declaration.storage === "local") {
                 if (declaration.addressUsed || !(declaration.type instanceof CArithmetic || declaration.type instanceof CPointer)) {
                     // have to place on shadow stack
+                    ctx.shadowStackUsage = Math.ceil(ctx.shadowStackUsage / declaration.type.alignment) * declaration.type.alignment;
                     setStorageLocation(declaration, {
                         type: "shadow",
                         shadowOffset: ctx.shadowStackUsage
                     });
-                    ctx.shadowStackUsage += Math.ceil(declaration.type.bytes / 4) * 4; // 4 byte align
+                    ctx.shadowStackUsage += declaration.type.bytes;
                 } else {
                     setStorageLocation(declaration, {
                         type: "local",
@@ -316,8 +323,9 @@ function fromExpression(ctx: WFnGenerator, s: e.CExpression): [WExpression, Stor
         if (s.structUnion instanceof CStruct) {
             let offset = 0;
             for (const member of s.structUnion.members) {
+                offset = Math.ceil(offset / member.type.alignment) * member.type.alignment;
                 if (member.name === s.member) break;
-                offset += Math.ceil(member.type.bytes / 4) * 4;
+                offset += member.type.bytes;
             }
             return [[...address, Instructions.i32.const(offset), Instructions.i32.add()], {type: "pointer"}];
         }
@@ -362,13 +370,13 @@ function load(type: CType, offset: number): WInstruction {
     // must be arithmetic
     if (type.type === "float") {
         if (type.bytes === 8) {
-            return Instructions.f64.load(2, offset);
+            return Instructions.f64.load(3, offset);
         } else {
             return Instructions.f32.load(2, offset);
         }
 
     } else if (type.bytes === 8) {
-        return Instructions.i64.load(2, offset);
+        return Instructions.i64.load(3, offset);
 
     } else if (type.bytes === 4) {
         return Instructions.i32.load(2, offset);
@@ -402,13 +410,13 @@ function store(type: CType, offset: number): WInstruction {
 
     if (type.type === "float") {
         if (type.bytes === 8) {
-            return Instructions.f64.store(2, offset);
+            return Instructions.f64.store(3, offset);
         } else {
             return Instructions.f32.store(2, offset);
         }
 
     } else if (type.bytes === 8) {
-        return Instructions.i64.store(2, offset);
+        return Instructions.i64.store(3, offset);
     } else if (type.bytes === 4) {
         return Instructions.i32.store(2, offset);
     } else if (type.bytes === 2) {

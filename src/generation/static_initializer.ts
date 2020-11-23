@@ -8,10 +8,10 @@ import {GenError} from "./gen_error";
 import {WGenerator} from "./generator";
 import {getStaticAddress} from "./storage";
 
-export function staticInitializer(ctx: WGenerator, init: CExpression | CInitializer, targetType?: CType, nested = false): byte[] {
+export function staticInitializer(ctx: WGenerator, init: CExpression | CInitializer, targetType?: CType): byte[] {
     if (init instanceof CInitializer) {
         if (targetType && !init.type.equals(targetType)) throw new GenError("Static initializer type mismatch", undefined, init.node);
-        return initializer(ctx, init, nested);
+        return initializer(ctx, init);
     } else if (init instanceof CArrayPointer && init.arrayIdentifier instanceof CStringLiteral) {
         // string literal being used as pointer
         return stringLiteralPtr(ctx, init);
@@ -50,10 +50,10 @@ function staticExpressions(ctx: WGenerator): (e: CExpression) => CValue {
 
         } else if (e instanceof CArrayPointer && e.arrayIdentifier instanceof CStringLiteral) {
             // allocate a new string literal and return pointer
-            const addr = ctx.nextStaticAddr;
+            const addr = ctx.nextStaticAddr; // chars 1 byte aligned
             const stringBytes = stringLiteral(e.arrayIdentifier);
             ctx.module.dataSegment(addr, stringBytes);
-            ctx.nextStaticAddr += Math.ceil(stringBytes.length / 4) * 4;
+            ctx.nextStaticAddr += stringBytes.length;
             return normalizeValueType({value: addr, type: e.type});
 
         } else if (e instanceof CAddSub && e.type instanceof CPointer) { // pointer arithmetic
@@ -105,11 +105,11 @@ function constant(c: CValue, node?: ParseNode): byte[] {
 function stringLiteralPtr(ctx: WGenerator, init: CArrayPointer): byte[] {
     if (!(init.arrayIdentifier instanceof CStringLiteral)) throw new GenError("Invalid initializer", undefined, init.node);
 
-    const addr = ctx.nextStaticAddr;
+    const addr = ctx.nextStaticAddr; // char is any byte aligned
     const stringBytes = stringLiteral(init.arrayIdentifier);
     ctx.module.dataSegment(addr, stringBytes);
 
-    ctx.nextStaticAddr += Math.ceil(stringBytes.length / 4) * 4;
+    ctx.nextStaticAddr += stringBytes.length;
     return constant(new CConstant(init.node, CSizeT, BigInt(addr)));
 }
 
@@ -117,26 +117,40 @@ function stringLiteral(s: CStringLiteral): byte[] {
     return s.value.map(Number) as byte[];
 }
 
-function initializer(ctx: WGenerator, init: CInitializer, nested: boolean): byte[] {
+function initializer(ctx: WGenerator, init: CInitializer): byte[] {
     let bytes: byte[];
 
     if (init.type instanceof CArray) {
         if (init.type.length === undefined) throw new GenError("Array length still unknown?", undefined, init.node);
-        bytes = init.body.flatMap((x, i) => staticInitializer(ctx, x, init.memberTypes[i], true));
+        bytes = init.body.flatMap((x, i) => {
+            const element = staticInitializer(ctx, x, init.memberTypes[i]);
+            return pad(element, init.memberTypes[i].bytes);
+        });
 
     } else if (init.type instanceof CUnion) {
-        bytes = staticInitializer(ctx, init.body[0], init.memberTypes[0], true);
+        bytes = staticInitializer(ctx, init.body[0], init.memberTypes[0]);
 
     } else if (init.type instanceof CStruct) {
-        bytes = init.body.flatMap((x, i) => staticInitializer(ctx, x, init.memberTypes[i],true));
+        bytes = [];
+        for (let i = 0; i < init.body.length; i++) {
+            alignPad(bytes, init.memberTypes[i].alignment);
+            const member = staticInitializer(ctx, init.body[i], init.memberTypes[i]);
+            pad(member, init.memberTypes[i].bytes);
+            bytes.push(...member);
+        }
 
     } else {
         throw new GenError("Invalid initializer", undefined, init.node);
     }
+    return bytes;
+}
 
-    if (nested) {
-        const zeros = Array(init.type.bytes - bytes.length).fill(0);
-        bytes.push(...zeros);
-    }
+function pad(bytes: byte[], n: number) {
+    while (bytes.length < n) bytes.push(0 as byte);
+    return bytes;
+}
+
+function alignPad(bytes: byte[], n: number) {
+    while (bytes.length % n !== 0) bytes.push(0 as byte);
     return bytes;
 }

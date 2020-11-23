@@ -36,8 +36,8 @@ function arrayPointer(ctx: WFnGenerator, e: c.CArrayPointer, discard: boolean): 
 
 function stringLiteral(ctx: WFnGenerator, e: c.CStringLiteral, discard: boolean): WExpression {
     if (discard) return []; // no possible side effects
-    const stringAddress = ctx.gen.nextStaticAddr;
-    ctx.gen.nextStaticAddr += Math.ceil(e.value.length / 4) * 4;
+    const stringAddress = ctx.gen.nextStaticAddr; // chars allowed to be 1-byte aligned
+    ctx.gen.nextStaticAddr += e.value.length;
 
     ctx.gen.module.dataSegment(stringAddress, e.value.map(Number));
     return [Instructions.i32.const(stringAddress)];
@@ -94,7 +94,7 @@ function functionCall(ctx: WFnGenerator, e: c.CFunctionCall, discard: boolean): 
 
         shadowUsage += 16; // empty region to help prevent overruns
         for (const type of types) {
-            instr.push(gInstr(type, "store", 2, shadowUsage));
+            instr.push(gInstr(type, "store", type === i64Type || type === f64Type ? 3 : 2, shadowUsage));
             shadowUsage += 8;
         }
     }
