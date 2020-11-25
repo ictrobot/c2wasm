@@ -99,47 +99,43 @@ function _doLoop(ctx: WFnGenerator, s: c.CDoLoop): WExpression {
 }
 
 function _switch(ctx: WFnGenerator, s: c.CSwitch): WExpression {
-    const defaultIndex = s.children.findIndex(x => x.default);
-    if (defaultIndex !== -1 && defaultIndex !== s.children.length - 1) {
-        throw new GenError("Only switch statements were the default block is the last block are supported");
-    }
-
     const type = valueType(s.expression.type as CArithmetic);
-    const body: WExpression = ctx.withTemporaryLocal(type, value => ctx.withTemporaryLocal(i32Type, matched => {
-        const instr: WExpression = [
+    return ctx.withTemporaryLocal(type, value => {
+        const initInstr: WExpression = [
             ...expressionGeneration(ctx, s.expression, false),
-            Instructions.local.set(value),
-            Instructions.i32.const(0),
-            Instructions.local.set(matched) // ALWAYS remember to reset temporary variables before use
+            Instructions.local.set(value)
         ];
 
+        // build up jump table
+        const checks: WExpression = [];
+        let depth = 0;
         for (const child of s.children) {
-            // condition
-            if (child.default) {
-                instr.push(Instructions.i32.const(1));
-            } else {
-                instr.push(Instructions.local.get(matched)); // TODO short circuit
-
-                for (const sCase of child.cases) {
-                    if (sCase.type instanceof CPointer) throw new GenError("Invalid switch case", ctx, s.node);
-                    const constant = new CConstant(s.node, sCase.type, sCase.value);
-                    instr.push(Instructions.local.get(value), ...subExpr(ctx, constant, s.expression.type), gInstr(type, "eq"));
-                    instr.push(Instructions.i32.or());
-                }
+            for (const sCase of child.cases) {
+                if (sCase.type instanceof CPointer) throw new GenError("Invalid switch case", ctx, s.node);
+                const constant = new CConstant(s.node, sCase.type, sCase.value);
+                checks.push(Instructions.local.get(value), ...subExpr(ctx, constant, s.expression.type), gInstr(type, "eq"));
+                checks.push(Instructions.br_if(depth));
             }
+            depth++;
+        }
+        // add default
+        const defaultIndex = s.children.findIndex(x => x.default);
+        checks.push(Instructions.br(defaultIndex === -1 ? depth : defaultIndex));
 
-            // body
-            instr.push(Instructions.if(null, [
-                Instructions.i32.const(1),
-                Instructions.local.set(matched),
-                ...ctx.statement(child.body)
-            ]));
+        // case bodies
+        let block = Instructions.block(null, checks);
+        for (let i = 0; i < s.children.length; i++) {
+            block = Instructions.block(null, [
+                // final case body is also break target
+                i === s.children.length - 1 ? storeBreakDepth(s) : () => [],
+
+                block,
+                ...ctx.statement(s.children[i].body)
+            ]);
         }
 
-        return instr;
-    }));
-
-    return [Instructions.block(null, [storeBreakDepth(s), ...body])];
+        return [...initInstr, block];
+    });
 }
 
 function _continue(ctx: WFnGenerator, s: c.CContinue): WExpression {
@@ -204,7 +200,7 @@ function storeBreakDepth<T extends c.CForLoop | c.CWhileLoop | c.CDoLoop | c.CSw
     };
 }
 
-function storeContinueDepth<T extends c.CForLoop | c.CWhileLoop | c.CDoLoop | c.CSwitch>(s: T): WInstruction {
+function storeContinueDepth<T extends c.CForLoop | c.CWhileLoop | c.CDoLoop>(s: T): WInstruction {
     const statement = s as Record<typeof continueDepthSymbol, any>;
     return (d : number) => {
         statement[continueDepthSymbol] = d;
