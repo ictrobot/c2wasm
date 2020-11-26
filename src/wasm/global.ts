@@ -1,10 +1,11 @@
 import {byte, globalidx} from "./base_types";
 import {WInstruction, Instructions} from "./instructions";
+import {ModuleBuilder} from "./module";
 import {ValueType, i32Type, i64Type, f32Type, f64Type} from "./wtypes";
 
 export class WGlobal {
 
-    constructor(private readonly idxFn: (x: WGlobal) => globalidx,
+    constructor(readonly module: ModuleBuilder,
                 readonly type: ValueType,
                 readonly mutable: boolean,
                 public initialValue: number | bigint,
@@ -12,7 +13,7 @@ export class WGlobal {
     }
 
     getIndex(): globalidx {
-        return this.idxFn(this);
+        return this.module._globalIndex(this);
     }
 
     toBytes(): byte[] {

@@ -19,7 +19,7 @@ test("call_indirect", async t => {
         Instructions.local.get(b.args[1]),
         Instructions.local.get(b.args[2]),
         Instructions.local.get(b.args[0]),
-        Instructions.call_indirect(b.parent.typeIndex([[f64Type, f64Type], [f64Type]]))
+        Instructions.call_indirect(b.fn.parent._typeIndex([[f64Type, f64Type], [f64Type]]))
     ], "math");
 
     const {math} = await m.execute({}) as {math: (op: number, v1: number, v2: number) => number};

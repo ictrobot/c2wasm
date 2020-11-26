@@ -16,24 +16,22 @@ export class ModuleBuilder {
     startFunction?: WFunction;
     emitCallback?: () => void;
 
-    function(params: ResultType, returnValue: ResultType, bodyFn: (b: WFunctionBuilder) => WExpression, exportName?: string): WFunction {
-        const builder = new WFunctionBuilder(this, params, bodyFn);
+    function(params: ResultType, returnValue: ResultType, bodyFn?: (b: WFunctionBuilder) => WExpression, exportName?: string): WFunction {
         const type: FunctionType = [params, returnValue];
-
-        const fn = new WFunction(this._funcIndex.bind(this), this._tableIndex.bind(this), type, builder, exportName);
-        builder._getIndex = fn.getIndex.bind(fn); // enable recursive calls in builder
+        const fn = new WFunction(this, type, exportName);
+        if (bodyFn) fn.define(bodyFn);
         this._functions.push(fn);
         return fn;
     }
 
     importFunction(param: ResultType, returnValue: ResultType, module: string, name: string): WImportedFunction {
-        const fn = new WImportedFunction(this._funcIndex.bind(this), this._tableIndex.bind(this), [param, returnValue], module, name);
+        const fn = new WImportedFunction(this, [param, returnValue], module, name);
         this._importedFunctions.push(fn);
         return fn;
     }
 
     global(type: ValueType, mutable: boolean, initialValue: number | bigint, exportName?: string): WGlobal {
-        const g = new WGlobal(this._globalIndex.bind(this), type, mutable, initialValue, exportName);
+        const g = new WGlobal(this, type, mutable, initialValue, exportName);
         this._globals.push(g);
         return g;
     }
@@ -56,7 +54,7 @@ export class ModuleBuilder {
 
     private byteList(): byte[] {
         const imports = this._encodeImports();
-        const funcTypes = this._functions.map(x => encodeU32(this.typeIndex(x.type)));
+        const funcTypes = this._functions.map(x => encodeU32(this._typeIndex(x.type)));
         const code = this._functions.map(x => x.toBytes());
         if (this.emitCallback) this.emitCallback();
 
@@ -98,7 +96,7 @@ export class ModuleBuilder {
         const imports: byte[][] = [];
 
         for (const i of this._importedFunctions) {
-            imports.push([...encodeUtf8(i.module), ...encodeUtf8(i.name), 0x00 as byte, ...encodeU32(this.typeIndex(i.type))]);
+            imports.push([...encodeUtf8(i.module), ...encodeUtf8(i.name), 0x00 as byte, ...encodeU32(this._typeIndex(i.type))]);
         }
 
         return imports;
@@ -145,7 +143,7 @@ export class ModuleBuilder {
             ...encodeU32(BigInt(contents.length)), ...contents]); // byte vector
     }
 
-    private _funcIndex(fn: WFunction | WImportedFunction): funcidx {
+    _funcIndex(fn: WFunction | WImportedFunction): funcidx {
         let idx: number;
         if (fn instanceof WImportedFunction) {
             idx = this._importedFunctions.indexOf(fn);
@@ -157,7 +155,7 @@ export class ModuleBuilder {
         return BigInt(idx) as funcidx;
     }
 
-    private _tableIndex(fn: WFunction | WImportedFunction): tableidx {
+    _tableIndex(fn: WFunction | WImportedFunction): tableidx {
         let idx = this._functionTable.indexOf(fn);
         if (idx < 0) {
             idx = this._functionTable.push(fn) - 1;
@@ -165,7 +163,7 @@ export class ModuleBuilder {
         return BigInt(idx) as tableidx;
     }
 
-    typeIndex(x: FunctionType): typeidx {
+    _typeIndex(x: FunctionType): typeidx {
         const encoded = encodeFunctionType(x);
         for (let i = 0; i < this._functionTypes.length; i++) {
             if (this._functionTypes[i].length === encoded.length && this._functionTypes[i].every((v, i) => v === encoded[i])) {
@@ -175,7 +173,7 @@ export class ModuleBuilder {
         return BigInt(this._functionTypes.push(encoded) - 1) as typeidx;
     }
 
-    private _globalIndex(g: WGlobal): globalidx {
+    _globalIndex(g: WGlobal): globalidx {
         const idx = this._globals.indexOf(g);
         if (idx < 0) throw new Error("Global not found?");
         return BigInt(idx) as globalidx;

@@ -112,7 +112,7 @@ export class WGenerator {
     }
 
     typeIndex(fnType: CFuncType): typeidx {
-        return this.module.typeIndex([fnType.parameterTypes.map(realType), returnType(fnType.returnType)]);
+        return this.module._typeIndex([fnType.parameterTypes.map(realType), returnType(fnType.returnType)]);
     }
 
     indirectIndex(fn: CFuncDeclaration | CFuncDefinition): tableidx {

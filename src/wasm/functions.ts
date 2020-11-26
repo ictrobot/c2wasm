@@ -2,55 +2,55 @@ import {funcidx, localidx, byte, tableidx} from "./base_types";
 import {encodeU32} from "./encoding";
 import {WExpression} from "./instructions";
 import {ModuleBuilder} from "./module";
-import {ValueType, ResultType, FunctionType, encodeVec} from "./wtypes";
+import {ValueType, FunctionType, encodeVec} from "./wtypes";
 
 
 export class WImportedFunction {
-    constructor(private readonly idxFn: (x: WImportedFunction) => funcidx,
-                private readonly tableFn: (x: WImportedFunction) => tableidx,
-                readonly type: FunctionType,
-                readonly module: string,
-                readonly name: string) {
+    constructor(readonly parent: ModuleBuilder, readonly type: FunctionType, readonly module: string, readonly name: string) {
     }
 
     getIndex(): funcidx {
-        return this.idxFn(this);
+        return this.parent._funcIndex(this);
     }
 
     getTableIndex(): tableidx {
-        return this.tableFn(this);
+        return this.parent._tableIndex(this);
     }
 }
 
 export class WFunction {
-    constructor(private readonly idxFn: (x: WFunction) => funcidx,
-                private readonly tableFn: (x: WFunction) => tableidx,
-                readonly type: FunctionType,
-                private readonly builder: WFunctionBuilder,
-                readonly exportName?: string) {
+    private body?: WExpression;
+    private locals: ValueType[] = [];
+
+    constructor(readonly parent: ModuleBuilder, readonly type: FunctionType, readonly exportName?: string) {
     }
 
     getIndex(): funcidx {
-        return this.idxFn(this);
+        return this.parent._funcIndex(this);
     }
 
     getTableIndex(): tableidx {
-        return this.tableFn(this);
+        return this.parent._tableIndex(this);
+    }
+
+    define(bodyFn: (b: WFunctionBuilder) => WExpression): void {
+        if (this.body !== undefined) throw new Error(`Wasm function already defined`);
+        [this.body, this.locals] = WFunctionBuilder.build(this, bodyFn);
     }
 
     toBytes(): byte[] {
-        this.builder.build();
+        if (this.body === undefined) throw new Error(`Wasm function body not defined`);
 
         // RLE is used to compress locals
         const locals: [count: bigint, type: ValueType][] = [];
         let lastType: ValueType | null = null;
         let count = 0n;
-        for (const local of this.builder.locals) {
-            if (local.type === lastType) {
+        for (const localType of this.locals) {
+            if (localType === lastType) {
                 count++;
             } else {
                 if (lastType) locals.push([count, lastType]);
-                lastType = local.type;
+                lastType = localType;
                 count = 1n;
             }
         }
@@ -58,7 +58,7 @@ export class WFunction {
 
         // encode function body
         const code: byte[] = encodeVec(locals.map(x => [...encodeU32(x[0]), x[1]])); // locals
-        code.push(...this.builder.instructions.map(x => x(0)).flat(), 0x0B as byte); // expression
+        code.push(...this.body.map(x => x(0)).flat(), 0x0B as byte); // expression
         code.unshift(...encodeU32(BigInt(code.length)));
         return code;
     }
@@ -67,26 +67,16 @@ export class WFunction {
 export class WFunctionBuilder {
     private readonly _arguments: WLocal[];
     private readonly _locals: WLocal[] = [];
-    private readonly _instructions: WExpression = [];
-    private _bodyFn: undefined | ((b: WFunctionBuilder) => WExpression);
-    _getIndex?: () => funcidx;
 
-    constructor(readonly parent: ModuleBuilder, args: ResultType, bodyFn: (b: WFunctionBuilder) => WExpression) {
-        this._arguments = args.map(t => new WLocal(this._localidx.bind(this), t));
-        this._bodyFn = bodyFn;
+    private constructor(readonly fn: WFunction) {
+        this._arguments = fn.type[0].map(t => new WLocal(this._localidx.bind(this), t));
     }
 
     get locals(): ReadonlyArray<WLocal> {
         return this._locals;
     }
 
-    get localTypes(): ValueType[] {
-        return this._locals.map(x => x.type);
-    }
-
     addLocal(t: ValueType): WLocal {
-        if (this._bodyFn === undefined) throw new Error("Function already built, cannot add locals");
-
         const local = new WLocal(this._localidx.bind(this), t);
         this._locals.push(local);
         return local;
@@ -97,28 +87,7 @@ export class WFunctionBuilder {
     }
 
     get self(): {getIndex(): funcidx} {
-        return {
-            getIndex: () => {
-                if (this._getIndex) return this._getIndex();
-                throw "Function still in construction";
-            }
-        };
-    }
-
-    build(): this {
-        if (this._bodyFn !== undefined) {
-            this._instructions.push(...this._bodyFn(this));
-            this._bodyFn = undefined;
-        } else {
-            // function has already been built
-        }
-        return this;
-    }
-
-    get instructions(): WExpression {
-        if (this._bodyFn !== undefined) throw new Error("Cannot get instructions before built");
-
-        return this._instructions;
+        return {getIndex: this.fn.getIndex.bind(this.fn)};
     }
 
     private _localidx(l: WLocal) {
@@ -128,8 +97,13 @@ export class WFunctionBuilder {
         if (idx >= 0) return BigInt(this._arguments.length + idx) as localidx;
         throw "Local not found?";
     }
-}
 
+    static build(fn: WFunction, bodyFn: (b: WFunctionBuilder) => WExpression): [WExpression, ValueType[]] {
+        const builder = new WFunctionBuilder(fn);
+        const instructions = bodyFn(builder);
+        return [instructions, builder.locals.map(x => x.type)];
+    }
+}
 
 export class WLocal {
     constructor(private readonly lookup: (l: WLocal) => localidx, readonly type: ValueType) {
