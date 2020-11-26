@@ -19,8 +19,8 @@ export class ModuleBuilder {
     function(params: ResultType, returnValue: ResultType, bodyFn?: (b: WFunctionBuilder) => WExpression, exportName?: string): WFunction {
         const type: FunctionType = [params, returnValue];
         const fn = new WFunction(this, type, exportName);
-        if (bodyFn) fn.define(bodyFn);
         this._functions.push(fn);
+        if (bodyFn) fn.define(bodyFn); // have to add to list before defining to enable recursive calls
         return fn;
     }
 
