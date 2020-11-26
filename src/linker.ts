@@ -9,7 +9,7 @@ import {CStatement, CCompoundStatement, CForLoop, CIf, CWhileLoop, CDoLoop, CSwi
 type Emitable = CFuncDefinition | CFuncImport | CVarDefinition;
 
 export class Linker {
-    private _emitNamedFunctions: CFuncDefinition[] = [];
+    private _emitExportedFunctions: CFuncDefinition[] = [];
     private _emitFunctions: CFuncDefinition[] = [];
     private _emitImports: CFuncDeclaration[] = [];
     private _emitVariables: CVarDefinition[] = [];
@@ -95,7 +95,7 @@ export class Linker {
                 if (dependency.declType === "variable") {
                     if (dependency.storage === "static") this._emitVariables.push(dependency);
                 } else if (dependency.linkage === "external" && this._linkables.get(dependency.name)?.linker === this) {
-                    this._emitNamedFunctions.push(dependency);
+                    this._emitExportedFunctions.push(dependency);
                 } else {
                     this._emitFunctions.push(dependency);
                 }
@@ -121,8 +121,8 @@ export class Linker {
         this._linked = true;
     }
 
-    get emitNamedFunctions(): ReadonlyArray<CFuncDefinition> {
-        return this._emitNamedFunctions;
+    get emitExportedFunctions(): ReadonlyArray<CFuncDefinition> {
+        return this._emitExportedFunctions;
     }
 
     get emitFunctions(): ReadonlyArray<CFuncDefinition> {

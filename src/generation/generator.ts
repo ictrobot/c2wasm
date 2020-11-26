@@ -34,14 +34,16 @@ export class WGenerator {
             if (initializer) staticInitializers.push(initializer);
         }
 
-        for (const func of linker.emitImports) {
-            this.importFunction(func);
-        }
-        for (const funcImport of linker.emitNamedFunctions) {
-            this.function(funcImport, funcImport.name);
-        }
-        for (const funcImport of linker.emitFunctions) {
-            this.function(funcImport);
+        // add all functions
+        for (const funcImport of linker.emitImports) this.importFunction(funcImport);
+        for (const func of linker.emitExportedFunctions) this.function(func, func.name);
+        for (const func of linker.emitFunctions) this.function(func);
+
+        // define non-imported functions
+        for (const [cfunc, wfunc] of this.functions.entries()) {
+            if (cfunc instanceof CFuncDefinition && wfunc instanceof WFunction) {
+                wfunc.define(b => this.functionBody(cfunc, b));
+            }
         }
 
         for (const initializer of staticInitializers) initializer();
@@ -57,7 +59,7 @@ export class WGenerator {
         const wasmFunc = this.module.function(
             func.type.parameterTypes.map(realType),
             returnType(func.type.returnType),
-            b => this.functionBody(func, b),
+            undefined,
             name);
         this.functions.set(func, wasmFunc);
     }

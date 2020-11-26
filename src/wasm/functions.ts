@@ -19,7 +19,7 @@ export class WImportedFunction {
 }
 
 export class WFunction {
-    private body?: WExpression;
+    private body?: byte[];
     private locals: ValueType[] = [];
 
     constructor(readonly parent: ModuleBuilder, readonly type: FunctionType, readonly exportName?: string) {
@@ -58,7 +58,7 @@ export class WFunction {
 
         // encode function body
         const code: byte[] = encodeVec(locals.map(x => [...encodeU32(x[0]), x[1]])); // locals
-        code.push(...this.body.map(x => x(0)).flat(), 0x0B as byte); // expression
+        code.push(...this.body, 0x0B as byte); // expression
         code.unshift(...encodeU32(BigInt(code.length)));
         return code;
     }
@@ -98,10 +98,11 @@ export class WFunctionBuilder {
         throw "Local not found?";
     }
 
-    static build(fn: WFunction, bodyFn: (b: WFunctionBuilder) => WExpression): [WExpression, ValueType[]] {
+    static build(fn: WFunction, bodyFn: (b: WFunctionBuilder) => WExpression): [byte[], ValueType[]] {
         const builder = new WFunctionBuilder(fn);
         const instructions = bodyFn(builder);
-        return [instructions, builder.locals.map(x => x.type)];
+        const bytes = instructions.map(x => x(0)).flat();
+        return [bytes, builder.locals.map(x => x.type)];
     }
 }
 
