@@ -151,7 +151,7 @@ test("widening signed value", async t => {
     t.is(c.l(), -125);
     t.is(c.m(), 125n);
     t.is(c.n(), 125n);
-    t.is(c.o(), 4294967171n);
+    t.is(c.o(), -125n); // js treats all values as signed
     t.is(c.p(), -125n);
 });
 

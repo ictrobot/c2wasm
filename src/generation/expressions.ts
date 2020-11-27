@@ -1,6 +1,7 @@
 import {CFuncDefinition, CFuncDeclaration} from "../tree/declarations";
 import {CIdentifier} from "../tree/expressions";
 import * as c from "../tree/expressions";
+import {constExpression} from "../tree/transform/constant_expressions";
 import {CType, CArithmetic, CPointer, CArray, CSizeT, CUnion, CStruct, CFuncType, integerPromotion} from "../tree/types";
 import {i32Type, Instructions, i64Type, f32Type, f64Type, ValueType} from "../wasm";
 import {WExpression, WInstruction} from "../wasm/instructions";
@@ -428,6 +429,16 @@ function comma(ctx: WFnGenerator, e: c.CComma, discard: boolean): WExpression {
 }
 
 export function expressionGeneration(ctx: WFnGenerator, e: c.CExpression, discard: boolean): WExpression {
+    if (!discard && e.type instanceof CArithmetic && !(e instanceof c.CConstant)) {
+        // try to evaluate as constant expression
+        try {
+            const value = constExpression(e);
+            return constant(ctx, new c.CConstant(e.node, e.type, value.value), false);
+        } catch (e) {
+            // failed - not a constant expression
+        }
+    }
+
     if (e instanceof c.CConstant) return constant(ctx, e, discard);
     else if (e instanceof c.CIdentifier) return identifier(ctx, e, discard);
     else if (e instanceof c.CArrayPointer) return arrayPointer(ctx, e, discard);
@@ -458,7 +469,8 @@ export function expressionGeneration(ctx: WFnGenerator, e: c.CExpression, discar
 // helpers
 /** expressionGeneration + casting */
 export function subExpr(ctx: WFnGenerator, e: c.CExpression, desiredType: CType, discard: boolean = false): WExpression {
-    return [...expressionGeneration(ctx, e, discard), ...conversion(e.type, desiredType)];
+    const fakeCast = new c.CCast(e.node, desiredType, e);
+    return expressionGeneration(ctx, fakeCast, discard);
 }
 
 export function condition(ctx: WFnGenerator, e: c.CExpression, anyNonZeroI32 = true): WExpression {

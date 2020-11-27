@@ -39,7 +39,7 @@ test("from float", async t => {
     };
 
     t.is(c.a(), 0);
-    t.is(c.b(), -57);
+    t.is(c.b(), -128);
     t.is(c.c(), 0);
     t.is(c.d(), -12345);
     t.is(c.e(), 0);
@@ -86,7 +86,7 @@ test("from double", async t => {
     };
 
     t.is(c.a(), 0);
-    t.is(c.b(), -57);
+    t.is(c.b(), -128);
     t.is(c.c(), 0);
     t.is(c.d(), -12345);
     t.is(c.e(), 0);
@@ -138,7 +138,7 @@ test("to float", async t => {
     t.is(c.d(), -3);
     t.is(c.e(), 4294967296);
     t.is(c.f(), -3);
-    t.is(c.g(), 4294967296);
+    t.is(c.g(), 18446744073709552000);
     t.is(c.h(), -3);
 });
 
@@ -185,6 +185,6 @@ test("to double", async t => {
     t.is(c.d(), -3);
     t.is(c.e(), 4294967293);
     t.is(c.f(), -3);
-    t.is(c.g(), 4294967293);
+    t.is(c.g(), 18446744073709552000);
     t.is(c.h(), -3);
 });

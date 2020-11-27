@@ -53,8 +53,12 @@ export function conversion(inType: CType, outType: CType): WExpression {
 }
 
 /**
- * Behaves normally, following either the standard or what MSVC does, apart from:
- * - float -> unsigned integer conversion, uses the saturating truncation instructions to avoid traps
+ * Follows the standard. For float -> int conversion it uses saturating truncation instructions to avoid runtime traps.
+ *
+ * > 3.2.1.3 Floating and integral
+ * >
+ * > When a value of floating type is converted to integral type, the fractional part is discarded.
+ * > If the value of the integral part cannot be represented by the integral type, the behavior is undefined.
  */
 function arithmeticConversion(inType: CArithmetic, outType: CArithmetic): WExpression {
     if (CArithmetic.BOOL.equals(outType)) {
@@ -98,8 +102,8 @@ function arithmeticConversion(inType: CArithmetic, outType: CArithmetic): WExpre
         return [];
 
     } else if (CArithmetic.S32.equals(outType)) {
-        if (CArithmetic.Fp64.equals(inType)) return [Instructions.i32.trunc_f64_s()];
-        if (CArithmetic.Fp32.equals(inType)) return [Instructions.i32.trunc_f32_s()];
+        if (CArithmetic.Fp64.equals(inType)) return [Instructions.i32.trunc_sat_f64_s()];
+        if (CArithmetic.Fp32.equals(inType)) return [Instructions.i32.trunc_sat_f32_s()];
         if (inType.bytes === 8) return [Instructions.i32.wrap_i64()];
         return [];
 
