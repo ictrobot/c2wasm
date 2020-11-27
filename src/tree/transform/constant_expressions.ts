@@ -145,20 +145,36 @@ export function constInteger(e: CExpression, extra?: ExtraFn): CValue & {readonl
 
 function normalizeType(v: CValue): CValue {
     if (v.type instanceof CArithmetic) {
-        if (CArithmetic.BOOL.equals(v)) {
+        if (CArithmetic.BOOL.equals(v.type)) {
             // eslint-disable-next-line eqeqeq
             return {value: v.value == 0 ? 0n : 1n, type: CArithmetic.BOOL};
         } else if (v.type.type === "float") {
             return {value: typeof v.value === "number" ? v.value : Number(v.value), type: v.type};
         } else {
-            let value = typeof v.value === "bigint" ? v.value : BigInt(Math.trunc(v.value));
-
-            // ensure fits in type
-            const max = BigInt(v.type.maxValue);
-            if (v.type.type === "unsigned") {
-                while (value < 0) value += max;
+            let value: bigint;
+            if (typeof v.value === "number") {
+                // need to emulate runtime behaviour - i.e. the use of the trunc_sat instructions
+                if (isNaN(v.value)) {
+                    value = 0n;
+                } else if (v.value > v.type.maxValue) {
+                    value = BigInt(v.type.maxValue);
+                } else if (v.value < v.type.minValue) {
+                    value = BigInt(v.type.minValue);
+                } else {
+                    value = BigInt(v.value);
+                }
+            } else {
+                value = v.value;
             }
-            value %= max;
+
+            const bitmask = 2n ** BigInt(8 * v.type.bytes) - 1n;
+            if (v.type.type === "unsigned") {
+                value &= bitmask;
+            } else { // signed
+                const minValue = BigInt(v.type.minValue);
+                value = ((value - minValue) & bitmask) + minValue;
+            }
+
             return {value, type: v.type};
         }
     } else { // instanceof CPointer
