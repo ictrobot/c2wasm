@@ -1,13 +1,14 @@
 #include <stdlib.h>
 
 #define PAGE_SIZE 65536
-#define ALLOC_OFFSET 12
+#define ALLOC_OFFSET (sizeof(struct node))
+#define BLOCK_START(b) ((char*) (b) + ALLOC_OFFSET)
 
 static struct node {
     struct node *prev;
     struct node *next;
     size_t size;
-    char blockStart;
+    int padding; // pad to 16 bytes
 } alloc_list;
 
 // inspired by https://github.com/embeddedartistry/embedded-resources/blob/master/examples/c/malloc_freelist.c
@@ -44,9 +45,9 @@ void* malloc(size_t size) {
             if (block->size >= size) {
                 // found large enough block
 
-                if (block->size - size > 48) {
+                if (block->size - size >= 48) {
                     // split the block
-                    struct node *new_block = (struct node*) (&block->blockStart + size);
+                    struct node *new_block = (struct node*) (BLOCK_START(block) + size);
                     new_block->size = block->size - size - ALLOC_OFFSET;
                     new_block->prev = block;
                     new_block->next = block->next;
@@ -65,7 +66,7 @@ void* malloc(size_t size) {
                 block->next = (struct node *) -1;
                 block->prev = (struct node *) 7;
 
-                return &block->blockStart;
+                return BLOCK_START(block);
             }
 
             last = block;
@@ -94,7 +95,7 @@ void* malloc(size_t size) {
 
 void free(void* ptr) {
     if (ptr) {
-        struct node* block = (struct node*) ((char*)ptr - 12);
+        struct node* block = (struct node*) ((char*)ptr - ALLOC_OFFSET);
 
         if ((int) block->next != -1 || (int) block->prev != 7) {
             // not an allocated block!
@@ -125,7 +126,7 @@ void free(void* ptr) {
 
 void* realloc(void* ptr, size_t size) {
     if (ptr) {
-        struct node* block = (struct node*) ((char*)ptr - 12);
+        struct node* block = (struct node*) ((char*)ptr - ALLOC_OFFSET);
 
         if ((int) block->next != -1 || (int) block->prev != 7) {
             // not an allocated block!
