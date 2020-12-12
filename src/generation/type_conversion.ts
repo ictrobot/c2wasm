@@ -37,6 +37,7 @@ export function conversion(inType: CType, outType: CType): WExpression {
         return arithmeticConversion(inType, outType);
     } else if (inType instanceof CArithmetic && inType.type !== "float" && outType instanceof CPointer) {
         // convert int to pointer
+        if (inType.bytes > 4) return [Instructions.i32.wrap_i64()]; // check for converting 8 byte int
         return [];
     } else if (outType instanceof CArithmetic && outType.type !== "float" && inType instanceof CPointer) {
         // convert pointer to int
