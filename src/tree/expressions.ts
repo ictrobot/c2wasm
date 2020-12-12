@@ -429,14 +429,32 @@ export class CConditional { // [test] ? [trueValue] : [falseValue]
 
     constructor(readonly node: ParseNode, readonly test: CExpression, readonly trueValue: CExpression, readonly falseValue: CExpression) {
         checks.asArithmeticOrPointer(test.node, test.type);
+
         if (trueValue.type instanceof CArithmetic && falseValue.type instanceof CArithmetic) {
             this.type = usualArithmeticConversion(trueValue.type, falseValue.type);
-        } else if (this.trueValue.type.equals(this.falseValue.type)) {
-            this.type = this.trueValue.type;
-        } else {
-            // TODO implement full type rules for conditional expressions
-            throw new checks.ExpressionTypeError(node, "both branches to have the same type", "different types");
+            return;
+        } else if (trueValue.type.equals(falseValue.type)) {
+            this.type = trueValue.type;
+            return;
+        } else if (trueValue.type instanceof CPointer && falseValue.type instanceof CPointer) {
+            // both pointers - check if either is void* pointer
+            if (trueValue.type.type instanceof CVoid) {
+                this.type = falseValue.type;
+                return;
+            } else if (falseValue.type.type instanceof CVoid) {
+                this.type = trueValue.type;
+                return;
+            }
+        } else if (trueValue.type instanceof CPointer || falseValue.type instanceof CPointer) {
+            // one pointer - check if other null constant
+            const otherValue = trueValue.type instanceof CPointer ? falseValue : trueValue;
+            // eslint-disable-next-line eqeqeq
+            if (otherValue instanceof CConstant && otherValue.value == 0) {
+                this.type = trueValue.type instanceof CPointer ? trueValue.type : falseValue.type;
+                return;
+            }
         }
+        throw new checks.ExpressionTypeError(node, "both conditional branches to have the same type", "different types");
     }
 
     *identifiers(): IterableIterator<CIdentifier> {
