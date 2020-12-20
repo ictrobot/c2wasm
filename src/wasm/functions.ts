@@ -1,4 +1,3 @@
-import exp from "constants";
 import {funcidx, localidx, byte, tableidx} from "./base_types";
 import {encodeU32} from "./encoding";
 import {WExpression, WInstruction} from "./instructions";
@@ -59,7 +58,7 @@ export class WFunction {
 
         // encode function body
         const code: byte[] = encodeVec(locals.map(x => [...encodeU32(x[0]), x[1]])); // locals
-        code.push(...this.body, 0x0B as byte); // expression
+        code.push(...this.body); // expression
         code.unshift(...encodeU32(BigInt(code.length)));
         return code;
     }
