@@ -4,38 +4,37 @@ import * as c from "../tree/expressions";
 import {constExpression} from "../tree/transform/constant_expressions";
 import {CType, CArithmetic, CPointer, CArray, CSizeT, CUnion, CStruct, CFuncType, integerPromotion} from "../tree/types";
 import {i32Type, Instructions, i64Type, f32Type, f64Type, ValueType} from "../wasm";
-import {WExpression, WInstruction} from "../wasm/instructions";
+import {WInstruction} from "../wasm/instructions";
 import {GenError} from "./gen_error";
 import {WFnGenerator} from "./generator";
 import {storageGet, storageSet, storageUpdate, storageGetThenUpdate, getAddress} from "./storage";
 import {ImplementationType, implType, conversion, valueType, realType} from "./type_conversion";
 import {internalFunctions} from "./wasm_functions";
 
-function constant(ctx: WFnGenerator, e: c.CConstant, discard: boolean): WExpression {
+function constant(ctx: WFnGenerator, e: c.CConstant, discard: boolean): WInstruction[] {
     if (discard) return []; // no possible side effects
 
     return [gInstr(valueType(e.type), "const", e.value)];
 }
 
-function identifier(ctx: WFnGenerator, e: c.CIdentifier, discard: boolean): WExpression {
+function identifier(ctx: WFnGenerator, e: c.CIdentifier, discard: boolean): WInstruction[] {
     if (discard) return []; // no possible side effects
 
     if (e.value instanceof CFuncDefinition || e.value instanceof CFuncDeclaration) {
         // get function pointer
-        const fn = e.value;
-        return [() => Instructions.i32.const(ctx.gen.indirectIndex(fn))()];
+        return [Instructions.i32.const(ctx.gen.indirectIndex(e.value))];
     }
     return storageGet(ctx, e.type, e);
 }
 
-function arrayPointer(ctx: WFnGenerator, e: c.CArrayPointer, discard: boolean): WExpression {
+function arrayPointer(ctx: WFnGenerator, e: c.CArrayPointer, discard: boolean): WInstruction[] {
     if (discard) return []; // no possible side effects
     if (e.arrayIdentifier instanceof c.CStringLiteral) return stringLiteral(ctx, e.arrayIdentifier, discard);
 
     return getAddress(ctx, e.arrayIdentifier);
 }
 
-function stringLiteral(ctx: WFnGenerator, e: c.CStringLiteral, discard: boolean): WExpression {
+function stringLiteral(ctx: WFnGenerator, e: c.CStringLiteral, discard: boolean): WInstruction[] {
     if (discard) return []; // no possible side effects
     const stringAddress = ctx.gen.nextStaticAddr; // chars allowed to be 1-byte aligned
     ctx.gen.nextStaticAddr += e.value.length;
@@ -56,8 +55,8 @@ function stringLiteral(ctx: WFnGenerator, e: c.CStringLiteral, discard: boolean)
  * - call function (and cleanup)
  * - decrement shadow stack pointer
  */
-function functionCall(ctx: WFnGenerator, e: c.CFunctionCall, discard: boolean): WExpression {
-    const indirectValue: WExpression = [];
+function functionCall(ctx: WFnGenerator, e: c.CFunctionCall, discard: boolean): WInstruction[] {
+    const indirectValue: WInstruction[] = [];
     if (e.body instanceof c.CIdentifier && (e.body.value instanceof CFuncDefinition || e.body.value instanceof CFuncDeclaration)) {
         // normal function call
     } else if (e.body.type instanceof CFuncType || (e.body.type instanceof CPointer && e.body.type.type instanceof CFuncType)) {
@@ -130,13 +129,13 @@ function functionCall(ctx: WFnGenerator, e: c.CFunctionCall, discard: boolean): 
     return instr;
 }
 
-function memberAccess(ctx: WFnGenerator, e: c.CMemberAccess, discard: boolean): WExpression {
+function memberAccess(ctx: WFnGenerator, e: c.CMemberAccess, discard: boolean): WInstruction[] {
     if (discard) return expressionGeneration(ctx, e.body, true);
 
     return storageGet(ctx, e.type, e);
 }
 
-function incrDecr(ctx: WFnGenerator, e: c.CIncrDecr, discard: boolean): WExpression {
+function incrDecr(ctx: WFnGenerator, e: c.CIncrDecr, discard: boolean): WInstruction[] {
     const amount = e.type instanceof CPointer ? e.type.type.bytes : 1;
     const type = realType(e.type);
 
@@ -155,18 +154,17 @@ function incrDecr(ctx: WFnGenerator, e: c.CIncrDecr, discard: boolean): WExpress
     }
 }
 
-function addressOf(ctx: WFnGenerator, e: c.CAddressOf, discard: boolean): WExpression {
+function addressOf(ctx: WFnGenerator, e: c.CAddressOf, discard: boolean): WInstruction[] {
     if (discard) return expressionGeneration(ctx, e.body, true); // get any side effects
 
     if (e.body instanceof CIdentifier && (e.body.value instanceof CFuncDefinition || e.body.value instanceof CFuncDeclaration)) {
         // get function pointer
-        const fn = e.body.value;
-        return [() => Instructions.i32.const(ctx.gen.indirectIndex(fn))()];
+        return [Instructions.i32.const(ctx.gen.indirectIndex(e.body.value))];
     }
     return getAddress(ctx, e.body);
 }
 
-function dereference(ctx: WFnGenerator, e: c.CDereference, discard: boolean): WExpression {
+function dereference(ctx: WFnGenerator, e: c.CDereference, discard: boolean): WInstruction[] {
     if (discard) return expressionGeneration(ctx, e.body, true); // get any side effects
 
     if (e.type instanceof CFuncType) {
@@ -176,7 +174,7 @@ function dereference(ctx: WFnGenerator, e: c.CDereference, discard: boolean): WE
     return storageGet(ctx, e.type, e);
 }
 
-function unaryPlusMinus(ctx: WFnGenerator, e: c.CUnaryPlusMinus, discard: boolean): WExpression {
+function unaryPlusMinus(ctx: WFnGenerator, e: c.CUnaryPlusMinus, discard: boolean): WInstruction[] {
     if (discard) return expressionGeneration(ctx, e.body, true); // get any side effects
 
     const instr = expressionGeneration(ctx, e.body, false);
@@ -187,14 +185,14 @@ function unaryPlusMinus(ctx: WFnGenerator, e: c.CUnaryPlusMinus, discard: boolea
     return instr;
 }
 
-function bitwiseNot(ctx: WFnGenerator, e: c.CBitwiseNot, discard: boolean): WExpression {
+function bitwiseNot(ctx: WFnGenerator, e: c.CBitwiseNot, discard: boolean): WInstruction[] {
     if (discard) return expressionGeneration(ctx, e.body, true); // get any side effects
 
     const wType = valueType(e.type);
     return [...subExpr(ctx, e.body, e.type), iInstr(wType, "const", -1n), iInstr(wType, "xor")];
 }
 
-function logicalNot(ctx: WFnGenerator, e: c.CLogicalNot, discard: boolean): WExpression {
+function logicalNot(ctx: WFnGenerator, e: c.CLogicalNot, discard: boolean): WInstruction[] {
     if (discard) return expressionGeneration(ctx, e.body, true); // get any side effects
 
     const instr = expressionGeneration(ctx, e.body, false);
@@ -207,19 +205,19 @@ function logicalNot(ctx: WFnGenerator, e: c.CLogicalNot, discard: boolean): WExp
     }
 }
 
-function sizeof(ctx: WFnGenerator, e: c.CSizeof, discard: boolean): WExpression {
+function sizeof(ctx: WFnGenerator, e: c.CSizeof, discard: boolean): WInstruction[] {
     if (discard) return []; // no possible side effects
 
     return [Instructions.i32.const(e.body.bytes)];
 }
 
-function cast(ctx: WFnGenerator, e: c.CCast, discard: boolean): WExpression {
+function cast(ctx: WFnGenerator, e: c.CCast, discard: boolean): WInstruction[] {
     if (discard) return expressionGeneration(ctx, e.body, true); // get any side effects
 
     return [...expressionGeneration(ctx, e.body, false), ...conversion(e.body.type, e.type)];
 }
 
-function mulDiv(ctx: WFnGenerator, e: c.CMulDiv, discard: boolean): WExpression {
+function mulDiv(ctx: WFnGenerator, e: c.CMulDiv, discard: boolean): WInstruction[] {
     if (discard) return [...expressionGeneration(ctx, e.lhs, true), ...expressionGeneration(ctx, e.rhs, true)];
 
     const instr = [...subExpr(ctx, e.lhs, e.type), ...subExpr(ctx, e.rhs, e.type)];
@@ -234,7 +232,7 @@ function mulDiv(ctx: WFnGenerator, e: c.CMulDiv, discard: boolean): WExpression 
     return instr;
 }
 
-function mod(ctx: WFnGenerator, e: c.CMod, discard: boolean): WExpression {
+function mod(ctx: WFnGenerator, e: c.CMod, discard: boolean): WInstruction[] {
     if (discard) return [...expressionGeneration(ctx, e.lhs, true), ...expressionGeneration(ctx, e.rhs, true)];
 
     const wType = valueType(e.type);
@@ -245,7 +243,7 @@ function mod(ctx: WFnGenerator, e: c.CMod, discard: boolean): WExpression {
     }
 }
 
-function addSub(ctx: WFnGenerator, e: c.CAddSub, discard: boolean): WExpression {
+function addSub(ctx: WFnGenerator, e: c.CAddSub, discard: boolean): WInstruction[] {
     if (discard) return [...expressionGeneration(ctx, e.lhs, true), ...expressionGeneration(ctx, e.rhs, true)];
 
     if (e.type instanceof CArithmetic) {
@@ -270,7 +268,7 @@ function addSub(ctx: WFnGenerator, e: c.CAddSub, discard: boolean): WExpression 
     }
 }
 
-function shift(ctx: WFnGenerator, e: c.CShift, discard: boolean): WExpression {
+function shift(ctx: WFnGenerator, e: c.CShift, discard: boolean): WInstruction[] {
     if (discard) return [...expressionGeneration(ctx, e.lhs, true), ...expressionGeneration(ctx, e.rhs, true)];
 
     const wType = valueType(e.type);
@@ -283,7 +281,7 @@ function shift(ctx: WFnGenerator, e: c.CShift, discard: boolean): WExpression {
     }
 }
 
-function relational(ctx: WFnGenerator, e: c.CRelational, discard: boolean): WExpression {
+function relational(ctx: WFnGenerator, e: c.CRelational, discard: boolean): WInstruction[] {
     if (discard) return [...expressionGeneration(ctx, e.lhs, true), ...expressionGeneration(ctx, e.rhs, true)];
 
     const wType = valueType(e.commonType);
@@ -305,7 +303,7 @@ function relational(ctx: WFnGenerator, e: c.CRelational, discard: boolean): WExp
     }
 }
 
-function equality(ctx: WFnGenerator, e: c.CEquality, discard: boolean): WExpression {
+function equality(ctx: WFnGenerator, e: c.CEquality, discard: boolean): WInstruction[] {
     if (discard) return [...expressionGeneration(ctx, e.lhs, true), ...expressionGeneration(ctx, e.rhs, true)];
 
     return [
@@ -314,13 +312,13 @@ function equality(ctx: WFnGenerator, e: c.CEquality, discard: boolean): WExpress
         gInstr(valueType(e.commonType), e.op === "==" ? "eq" : "ne")];
 }
 
-function bitwiseAndOr(ctx: WFnGenerator, e: c.CBitwiseAndOr, discard: boolean): WExpression {
+function bitwiseAndOr(ctx: WFnGenerator, e: c.CBitwiseAndOr, discard: boolean): WInstruction[] {
     if (discard) return [...expressionGeneration(ctx, e.lhs, true), ...expressionGeneration(ctx, e.rhs, true)];
 
     return [...subExpr(ctx, e.lhs, e.type), ...subExpr(ctx, e.rhs, e.type), iInstr(valueType(e.type), e.op)];
 }
 
-function logicalAndOr(ctx: WFnGenerator, e: c.CLogicalAndOr, discard: boolean): WExpression {
+function logicalAndOr(ctx: WFnGenerator, e: c.CLogicalAndOr, discard: boolean): WInstruction[] {
     if (discard) return [...expressionGeneration(ctx, e.lhs, true), ...expressionGeneration(ctx, e.rhs, true)];
 
     if (e.op === "and") {
@@ -334,7 +332,7 @@ function logicalAndOr(ctx: WFnGenerator, e: c.CLogicalAndOr, discard: boolean): 
     }
 }
 
-function conditional(ctx: WFnGenerator, e: c.CConditional, discard: boolean): WExpression {
+function conditional(ctx: WFnGenerator, e: c.CConditional, discard: boolean): WInstruction[] {
     const test = condition(ctx, e.test);
     if (discard) {
         const trueSideEffects = expressionGeneration(ctx, e.trueValue, true);
@@ -349,7 +347,7 @@ function conditional(ctx: WFnGenerator, e: c.CConditional, discard: boolean): WE
     }
 }
 
-function assignment(ctx: WFnGenerator, e: c.CAssignment, discard: boolean): WExpression {
+function assignment(ctx: WFnGenerator, e: c.CAssignment, discard: boolean): WInstruction[] {
     if (e.assignmentType !== undefined && !(e.rhs instanceof c.CInitializer)) {
         let body: c.CExpression;
         if (e.assignmentType === "mul") {
@@ -378,8 +376,8 @@ function assignment(ctx: WFnGenerator, e: c.CAssignment, discard: boolean): WExp
         const transform = expressionGeneration(ctx, body, false);
         const lhs = expressionGeneration(ctx, e.lhs, false);
         while (lhs.length > 0) {
-            const bytesToRemove = (lhs.shift() as WInstruction)(0);
-            const transformBytes = (transform.shift() as WInstruction)(0);
+            const bytesToRemove = (lhs.shift() as WInstruction)({} as any).encoded;
+            const transformBytes = (transform.shift() as WInstruction)({} as any).encoded;
 
             if (bytesToRemove.length !== transformBytes.length || bytesToRemove.find((v, i) => v !== transformBytes[i])) {
                 throw new GenError("Failed to construct op=", ctx, e.node);
@@ -388,7 +386,7 @@ function assignment(ctx: WFnGenerator, e: c.CAssignment, discard: boolean): WExp
 
         return storageUpdate(ctx, e.lhs.type, e.lhs, transform, !discard);
     } else if (e.rhs instanceof c.CInitializer) {
-        const instr: WExpression = [];
+        const instr: WInstruction[] = [];
 
         if (e.rhs.type instanceof CArray) {
             const lhs = e.lhs instanceof c.CIdentifier ? new c.CArrayPointer(e.lhs.node, e.lhs) : e.lhs;
@@ -424,11 +422,11 @@ function assignment(ctx: WFnGenerator, e: c.CAssignment, discard: boolean): WExp
     }
 }
 
-function comma(ctx: WFnGenerator, e: c.CComma, discard: boolean): WExpression {
+function comma(ctx: WFnGenerator, e: c.CComma, discard: boolean): WInstruction[] {
     return [...expressionGeneration(ctx, e.lhs, true), ...expressionGeneration(ctx, e.rhs, discard)];
 }
 
-export function expressionGeneration(ctx: WFnGenerator, e: c.CExpression, discard: boolean): WExpression {
+export function expressionGeneration(ctx: WFnGenerator, e: c.CExpression, discard: boolean): WInstruction[] {
     if (!discard && e.type instanceof CArithmetic && !(e instanceof c.CConstant)) {
         // try to evaluate as constant expression
         try {
@@ -468,12 +466,12 @@ export function expressionGeneration(ctx: WFnGenerator, e: c.CExpression, discar
 
 // helpers
 /** expressionGeneration + casting */
-export function subExpr(ctx: WFnGenerator, e: c.CExpression, desiredType: CType, discard: boolean = false): WExpression {
+export function subExpr(ctx: WFnGenerator, e: c.CExpression, desiredType: CType, discard: boolean = false): WInstruction[] {
     const fakeCast = new c.CCast(e.node, desiredType, e);
     return expressionGeneration(ctx, fakeCast, discard);
 }
 
-export function condition(ctx: WFnGenerator, e: c.CExpression, anyNonZeroI32 = true): WExpression {
+export function condition(ctx: WFnGenerator, e: c.CExpression, anyNonZeroI32 = true): WInstruction[] {
     const wType = implType(e.type);
     if (wType === i32Type || wType instanceof CPointer) {
         if (anyNonZeroI32) {

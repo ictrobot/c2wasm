@@ -2,11 +2,11 @@ import {CFunctionCall, CIdentifier, CConstant} from "../tree/expressions";
 import {INTERNAL_FNS} from "../tree/internal_scope";
 import {CArithmetic, CStruct, CUnion, CPointer} from "../tree/types";
 import {byte} from "../wasm/base_types";
-import {WExpression, Instructions} from "../wasm/instructions";
+import {WInstruction, Instructions} from "../wasm/instructions";
 import {GenError} from "./gen_error";
 import {WFnGenerator} from "./generator";
 
-export function internalFunctions(ctx: WFnGenerator, e: CFunctionCall, discard: boolean): WExpression | undefined {
+export function internalFunctions(ctx: WFnGenerator, e: CFunctionCall, discard: boolean): WInstruction[] | undefined {
     if (!(e.body instanceof CIdentifier)) return undefined; // indirect call
 
     switch (e.body.value) {

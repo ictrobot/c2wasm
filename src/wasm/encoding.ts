@@ -1,4 +1,5 @@
 import type {byte} from "./base_types";
+import {ValueType, i32Type, i64Type, f32Type, f64Type} from "./wtypes";
 
 export function encodeF32(n: number): byte[] {
     const buffer = new ArrayBuffer(4);
@@ -41,6 +42,20 @@ export function encodeInt64Constant(n: bigint): byte[] {
         throw new Error(`Value ${n} outside of range for 64bit uninterpreted int`);
     }
     return signedLeb128(n) as byte[];
+}
+
+export function encodeConstantInstr(n: number | bigint, type: ValueType): byte[] {
+    if (type === i32Type) {
+        return [0x41 as byte, ...encodeInt32Constant(n)];
+    } else if (type === i64Type && typeof n === "bigint") {
+        return [0x42 as byte, ...encodeInt64Constant(n)];
+    } else if (type === f32Type && typeof n === "number") {
+        return [0x43 as byte, ...encodeF32(n)];
+    } else if (type === f64Type && typeof n === "number") {
+        return [0x44 as byte, ...encodeF64(n)];
+    } else {
+        throw new Error(`Invalid value type (${type.toString(16)}) or initial value (${n})`);
+    }
 }
 
 export function encodeUtf8(str: string): byte[] {

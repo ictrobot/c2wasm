@@ -1,305 +1,284 @@
-import {byte, labelidx, funcidx, typeidx, localidx, globalidx} from "./base_types";
-import {encodeU32, encodeF32, encodeF64, encodeInt64Constant, encodeInt32Constant} from "./encoding";
-import {ValueType} from "./wtypes";
+import {labelidx, funcidx, typeidx, localidx, globalidx} from "./base_types";
+import {encodeF32, encodeF64, encodeInt64Constant, encodeInt32Constant} from "./encoding";
+import {zeroArgs, blockLoopInstr, ifInstr, idxArg, zeroArgsSpecial, memArg, constantArg, PartialInstr} from "./instr_helpers";
+import {i32Type, i64Type, f32Type, f64Type} from "./wtypes";
 
-export type WInstruction = ((depth: number) => byte[]);
-export type WExpression = WInstruction[];
+export type WInstruction = PartialInstr;
+export {WExpression} from "./instr_helpers";
 
 export const Instructions = {
     // control instructions
-    unreachable: zeroArgs(0x00),
-    nop: zeroArgs(0x01),
-    block: (type: ValueType | null, body: WExpression) => (d: number) => {
-        return [0x02 as byte, ...encodeBlockType(type), ...body.map(x => x(d + 1)).flat(), 0x0B as byte];
-    },
-    loop: (type: ValueType | null, body: WExpression) => (d: number) => {
-        return [0x03 as byte, ...encodeBlockType(type), ...body.map(x => x(d + 1)).flat(), 0x0B as byte];
-    },
-    if: (type: ValueType | null, body: WExpression, elseBody?: WExpression) => (d: number) => {
-        const instr = [0x04 as byte, ...encodeBlockType(type), ...body.map(x => x(d + 1)).flat()];
-        if (elseBody) {
-            instr.push(0x05 as byte, ...elseBody.map(x => x(d + 1)).flat());
-        }
-        instr.push(0x0B as byte);
-        return instr;
-    },
-    br: indexArg<labelidx>(0x0C),
-    br_if: indexArg<labelidx>(0x0D),
+    unreachable: zeroArgs("unreachable", [0x00], [], null),
+    nop: zeroArgs("nop", [0x01], [], null),
+    block: blockLoopInstr(0x02, "block"),
+    loop: blockLoopInstr(0x03, "loop"),
+    if: ifInstr(0x04, 0x05),
+    br: idxArg<labelidx>("br", [0x0C], [], () => ({
+        /** TODO: if jumping forward out of block which produces result, br consumes result.
+         *  However this is not used in c2wasm. */
+        parameters: [], result: null,
+        reads: [], writes: []
+    })),
+    br_if: idxArg<labelidx>("br_if",[0x0D], [], () => ({
+        parameters: [], result: null,
+        reads: [], writes: []
+    })),
     // br_table: {...},
-    return: zeroArgs(0x0F),
-    call: indexArg<funcidx>(0x10),
-    call_indirect: indexArg<typeidx>(0x11, 0x00),
+    return: zeroArgsSpecial("return", [0x0F], ({builder}) => ({
+        parameters: builder.type[1], result: null,
+        reads: [], writes: []
+    })),
+    call: idxArg<funcidx>("call", [0x10], [], ({builder, value}) => {
+        const func = builder.fn.parent._functionLookup(value);
+        return {parameters: func.type[0], result: func.type[1][0] ?? null, reads: [], writes: ["functionCall"]};
+    }),
+    call_indirect: idxArg<typeidx>("call_indirect", [0x11, 0x00], [], ({builder, value}) => {
+        const type = builder.fn.parent._typeLookup(value);
+        return {parameters: type[0], result: type[1][0] ?? null, reads: [], writes: ["functionCall"]};
+    }),
 
 
     // parametric instructions
-    drop: zeroArgs(0x1A),
-    select: zeroArgs(0x1B),
+    drop: zeroArgsSpecial("drop", [0x1A], ({stack}) => ({
+        parameters: [stack[stack.length - 1]], result: null,
+        reads: [], writes: []
+    })),
+    // select: zeroArgsSpecial("select", ...),
 
 
     // variable instructions
     local: {
-        get: indexArg<localidx>(0x20),
-        set: indexArg<localidx>(0x21),
-        tee: indexArg<localidx>(0x22),
+        get: idxArg<localidx>("local.get", [0x20], [], ({builder, value}) => {
+            const local = builder.getLocal(value);
+            return {parameters: [], result: local.type, reads: [local], writes: []};
+        }),
+        set: idxArg<localidx>("local.set", [0x21], [], ({builder, value}) => {
+            const local = builder.getLocal(value);
+            return {parameters: [local.type], result: null, reads: [], writes: [local]};
+        }),
+        tee: idxArg<localidx>("local.tee", [0x22], [], ({builder, value}) => {
+            const local = builder.getLocal(value);
+            return {parameters: [local.type], result: local.type, reads: [], writes: [local]};
+        }),
     } as const,
     global: {
-        get: indexArg<globalidx>(0x23),
-        set: indexArg<globalidx>(0x24),
+        get: idxArg<globalidx>("global.get", [0x23], [], ({builder, value}) => {
+            const global = builder.fn.parent._globalLookup(value);
+            return {parameters: [], result: global.type, reads: [global], writes: []};
+        }),
+        set: idxArg<globalidx>("global.set", [0x24], [], ({builder, value}) => {
+            const global = builder.fn.parent._globalLookup(value);
+            return {parameters: [global.type], result: null, reads: [], writes: [global]};
+        }),
     } as const,
 
 
     // memory instructions
     memory: {
-        size: zeroArgs(0x3F, 0x00),
-        grow: zeroArgs(0x40, 0x00),
-        copy: zeroArgs(0xFC, 0x0A, 0x00, 0x00),
-        fill: zeroArgs(0xFC, 0x0B, 0x00)
+        size: zeroArgs("memory.size",[0x3F, 0x00], [], i32Type, ["memory"], []),
+        grow: zeroArgs("memory.grow", [0x40, 0x00], [i32Type], i32Type, ["memory"], ["memory"]),
+        copy: zeroArgs("memory.copy", [0xFC, 0x0A, 0x00, 0x00], [i32Type, i32Type, i32Type], null, ["memory"], ["memory"]),
+        fill: zeroArgs("memory.fill", [0xFC, 0x0B, 0x00], [i32Type, i32Type, i32Type], null, [], ["memory"])
     } as const,
 
 
     i32: {
-        load: memArg(0x28),
-        load8_s: memArg(0x2C),
-        load8_u: memArg(0x2D),
-        load16_s: memArg(0x2E),
-        load16_u: memArg(0x2F),
-        store: memArg(0x36),
-        store8: memArg(0x3A),
-        store16: memArg(0x3B),
+        load: memArg("i32.load", [0x28],"load", i32Type),
+        load8_s: memArg("i32.load8_s", [0x2C], "load", i32Type),
+        load8_u: memArg("i32.load8_u", [0x2D], "load", i32Type),
+        load16_s: memArg("i32.load16_s", [0x2E], "load", i32Type),
+        load16_u: memArg("i32.load16_u", [0x2F], "load", i32Type),
+        store: memArg("i32.store", [0x36], "store", i32Type),
+        store8: memArg("i32.store8", [0x3A], "store", i32Type),
+        store16: memArg("i32.store16", [0x3B], "store", i32Type),
 
+        const: constantArg("i32.const", [0x41], encodeInt32Constant, i32Type),
 
-        const: (x: number | bigint) => () => [0x41 as byte, ...encodeInt32Constant(x)],
+        eqz: zeroArgs("i32.eqz", [0x45], [i32Type, i32Type], i32Type),
+        eq: zeroArgs("i32.eq", [0x46], [i32Type, i32Type], i32Type),
+        ne: zeroArgs("i32.ne", [0x47], [i32Type, i32Type], i32Type),
+        lt_s: zeroArgs("i32.lt_s", [0x48], [i32Type, i32Type], i32Type),
+        lt_u: zeroArgs("i32.lt_u", [0x49], [i32Type, i32Type], i32Type),
+        gt_s: zeroArgs("i32.gt_s", [0x4A], [i32Type, i32Type], i32Type),
+        gt_u: zeroArgs("i32.gt_u", [0x4B], [i32Type, i32Type], i32Type),
+        le_s: zeroArgs("i32.le_s", [0x4C], [i32Type, i32Type], i32Type),
+        le_u: zeroArgs("i32.le_u", [0x4D], [i32Type, i32Type], i32Type),
+        ge_s: zeroArgs("i32.ge_s", [0x4E], [i32Type, i32Type], i32Type),
+        ge_u: zeroArgs("i32.ge_u", [0x4F], [i32Type, i32Type], i32Type),
 
-        eqz: zeroArgs(0x45),
-        eq: zeroArgs(0x46),
-        ne: zeroArgs(0x47),
-        lt_s: zeroArgs(0x48),
-        lt_u: zeroArgs(0x49),
-        gt_s: zeroArgs(0x4A),
-        gt_u: zeroArgs(0x4B),
-        le_s: zeroArgs(0x4C),
-        le_u: zeroArgs(0x4D),
-        ge_s: zeroArgs(0x4E),
-        ge_u: zeroArgs(0x4F),
+        clz: zeroArgs("i32.clz", [0x67], [i32Type], i32Type),
+        ctz: zeroArgs("i32.ctz", [0x68], [i32Type], i32Type),
+        popcnt: zeroArgs("i32.popcnt", [0x69], [i32Type], i32Type),
+        add: zeroArgs("i32.add", [0x6A], [i32Type, i32Type], i32Type),
+        sub: zeroArgs("i32.sub", [0x6B], [i32Type, i32Type], i32Type),
+        mul: zeroArgs("i32.mul", [0x6C], [i32Type, i32Type], i32Type),
+        div_s: zeroArgs("i32.div_s", [0x6D], [i32Type, i32Type], i32Type),
+        div_u: zeroArgs("i32.div_u", [0x6E], [i32Type, i32Type], i32Type),
+        rem_s: zeroArgs("i32.rem_s", [0x6F], [i32Type, i32Type], i32Type),
+        rem_u: zeroArgs("i32.rem_u", [0x70], [i32Type, i32Type], i32Type),
+        and: zeroArgs("i32.and", [0x71], [i32Type, i32Type], i32Type),
+        or: zeroArgs("i32.or", [0x72], [i32Type, i32Type], i32Type),
+        xor: zeroArgs("i32.xor", [0x73], [i32Type, i32Type], i32Type),
+        shl: zeroArgs("i32.shl", [0x74], [i32Type, i32Type], i32Type),
+        shr_s: zeroArgs("i32.shr_s", [0x75], [i32Type, i32Type], i32Type),
+        shr_u: zeroArgs("i32.shr_u", [0x76], [i32Type, i32Type], i32Type),
+        rotl: zeroArgs("i32.rotl", [0x77], [i32Type, i32Type], i32Type),
+        rotr: zeroArgs("i32.rotr", [0x78], [i32Type, i32Type], i32Type),
 
-        clz: zeroArgs(0x67),
-        ctz: zeroArgs(0x68),
-        popcnt: zeroArgs(0x69),
-        add: zeroArgs(0x6A),
-        sub: zeroArgs(0x6B),
-        mul: zeroArgs(0x6C),
-        div_s: zeroArgs(0x6D),
-        div_u: zeroArgs(0x6E),
-        rem_s: zeroArgs(0x6F),
-        rem_u: zeroArgs(0x70),
-        and: zeroArgs(0x71),
-        or: zeroArgs(0x72),
-        xor: zeroArgs(0x73),
-        shl: zeroArgs(0x74),
-        shr_s: zeroArgs(0x75),
-        shr_u: zeroArgs(0x76),
-        rotl: zeroArgs(0x77),
-        rotr: zeroArgs(0x78),
+        wrap_i64: zeroArgs("i32.wrap_i64", [0xA7], [i64Type], i32Type),
+        trunc_f32_s: zeroArgs("i32.trunc_f32_s", [0xA8], [f32Type], i32Type),
+        trunc_f32_u: zeroArgs("i32.trunc_f32_u", [0xA9], [f32Type], i32Type),
+        trunc_f64_s: zeroArgs("i32.trunc_f64_s", [0xAA], [f64Type], i32Type),
+        trunc_f64_u: zeroArgs("i32.trunc_f64_u", [0xAB], [f64Type], i32Type),
 
-        wrap_i64: zeroArgs(0xA7),
-        trunc_f32_s: zeroArgs(0xA8),
-        trunc_f32_u: zeroArgs(0xA9),
-        trunc_f64_s: zeroArgs(0xAA),
-        trunc_f64_u: zeroArgs(0xAB),
-
-        reinterpret_f32: zeroArgs(0xBC),
-        extend8_s: zeroArgs(0xC0),
-        extend16_s: zeroArgs(0xC1),
+        reinterpret_f32: zeroArgs("i32.reinterpret_f32", [0xBC], [f32Type], i32Type),
+        extend8_s: zeroArgs("i32.extend8_s", [0xC0], [i32Type], i32Type),
+        extend16_s: zeroArgs("i32.extend16_s", [0xC1], [i32Type], i32Type),
 
         // Non-trapping Float-to-int Conversions
-        trunc_sat_f32_s: zeroArgs(0xFC, 0),
-        trunc_sat_f32_u: zeroArgs(0xFC, 1),
-        trunc_sat_f64_s: zeroArgs(0xFC, 2),
-        trunc_sat_f64_u: zeroArgs(0xFC, 3),
+        trunc_sat_f32_s: zeroArgs("i32.trunc_sat_f32_s", [0xFC, 0], [f32Type], i32Type),
+        trunc_sat_f32_u: zeroArgs("i32.trunc_sat_f32_u", [0xFC, 1], [f32Type], i32Type),
+        trunc_sat_f64_s: zeroArgs("i32.trunc_sat_f64_s", [0xFC, 2], [f64Type], i32Type),
+        trunc_sat_f64_u: zeroArgs("i32.trunc_sat_f64_u", [0xFC, 3], [f64Type], i32Type),
     } as const,
 
     i64: {
-        load: memArg(0x29),
-        load8_s: memArg(0x30),
-        load8_u: memArg(0x31),
-        load16_s: memArg(0x32),
-        load16_u: memArg(0x33),
-        load32_s: memArg(0x34),
-        load32_u: memArg(0x35),
-        store: memArg(0x37),
-        store8: memArg(0x3C),
-        store16: memArg(0x3D),
-        store32: memArg(0x3E),
+        load: memArg("i64.load", [0x29], "load", i64Type),
+        load8_s: memArg("i64.load8_s", [0x30], "load", i64Type),
+        load8_u: memArg("i64.load8_u", [0x31], "load", i64Type),
+        load16_s: memArg("i64.load16_s", [0x32], "load", i64Type),
+        load16_u: memArg("i64.load16_u", [0x33], "load", i64Type),
+        load32_s: memArg("i64.load32_s", [0x34], "load", i64Type),
+        load32_u: memArg("i64.load32_u", [0x35], "load", i64Type),
+        store: memArg("i64.store", [0x37], "store", i64Type),
+        store8: memArg("i64.store8", [0x3C], "store", i64Type),
+        store16: memArg("i64.store16", [0x3D], "store", i64Type),
+        store32: memArg("i64.store32", [0x3E], "store", i64Type),
 
+        const: constantArg("i64.const", [0x42], encodeInt64Constant, i64Type),
 
-        const: (x: bigint) => () => [0x42 as byte, ...encodeInt64Constant(x)],
+        eqz: zeroArgs("i64.eqz", [0x50], [i64Type, i64Type], i32Type),
+        eq: zeroArgs("i64.eq", [0x51], [i64Type, i64Type], i32Type),
+        ne: zeroArgs("i64.ne", [0x52], [i64Type, i64Type], i32Type),
+        lt_s: zeroArgs("i64.lt_s", [0x53], [i64Type, i64Type], i32Type),
+        lt_u: zeroArgs("i64.lt_u", [0x54], [i64Type, i64Type], i32Type),
+        gt_s: zeroArgs("i64.gt_s", [0x55], [i64Type, i64Type], i32Type),
+        gt_u: zeroArgs("i64.gt_u", [0x56], [i64Type, i64Type], i32Type),
+        le_s: zeroArgs("i64.le_s", [0x57], [i64Type, i64Type], i32Type),
+        le_u: zeroArgs("i64.le_u", [0x58], [i64Type, i64Type], i32Type),
+        ge_s: zeroArgs("i64.ge_s", [0x59], [i64Type, i64Type], i32Type),
+        ge_u: zeroArgs("i64.ge_u", [0x5A], [i64Type, i64Type], i32Type),
 
-        eqz: zeroArgs(0x50),
-        eq: zeroArgs(0x51),
-        ne: zeroArgs(0x52),
-        lt_s: zeroArgs(0x53),
-        lt_u: zeroArgs(0x54),
-        gt_s: zeroArgs(0x55),
-        gt_u: zeroArgs(0x56),
-        le_s: zeroArgs(0x57),
-        le_u: zeroArgs(0x58),
-        ge_s: zeroArgs(0x59),
-        ge_u: zeroArgs(0x5A),
+        clz: zeroArgs("i64.clz", [0x79], [i64Type], i64Type),
+        ctz: zeroArgs("i64.ctz", [0x7A], [i64Type], i64Type),
+        popcnt: zeroArgs("i64.popcnt", [0x7B], [i64Type], i64Type),
+        add: zeroArgs("i64.add", [0x7C], [i64Type, i64Type], i64Type),
+        sub: zeroArgs("i64.sub", [0x7D], [i64Type, i64Type], i64Type),
+        mul: zeroArgs("i64.mul", [0x7E], [i64Type, i64Type], i64Type),
+        div_s: zeroArgs("i64.div_s", [0x7F], [i64Type, i64Type], i64Type),
+        div_u: zeroArgs("i64.div_u", [0x80], [i64Type, i64Type], i64Type),
+        rem_s: zeroArgs("i64.rem_s", [0x81], [i64Type, i64Type], i64Type),
+        rem_u: zeroArgs("i64.rem_u", [0x82], [i64Type, i64Type], i64Type),
+        and: zeroArgs("i64.and", [0x83], [i64Type, i64Type], i64Type),
+        or: zeroArgs("i64.or", [0x84], [i64Type, i64Type], i64Type),
+        xor: zeroArgs("i64.xor", [0x85], [i64Type, i64Type], i64Type),
+        shl: zeroArgs("i64.shl", [0x86], [i64Type, i64Type], i64Type),
+        shr_s: zeroArgs("i64.shr_s", [0x87], [i64Type, i64Type], i64Type),
+        shr_u: zeroArgs("i64.shr_u", [0x88], [i64Type, i64Type], i64Type),
+        rotl: zeroArgs("i64.rotl", [0x89], [i64Type, i64Type], i64Type),
+        rotr: zeroArgs("i64.rotr", [0x8A], [i64Type, i64Type], i64Type),
 
-        clz: zeroArgs(0x79),
-        ctz: zeroArgs(0x7A),
-        popcnt: zeroArgs(0x7B),
-        add: zeroArgs(0x7C),
-        sub: zeroArgs(0x7D),
-        mul: zeroArgs(0x7E),
-        div_s: zeroArgs(0x7F),
-        div_u: zeroArgs(0x80),
-        rem_s: zeroArgs(0x81),
-        rem_u: zeroArgs(0x82),
-        and: zeroArgs(0x83),
-        or: zeroArgs(0x84),
-        xor: zeroArgs(0x85),
-        shl: zeroArgs(0x86),
-        shr_s: zeroArgs(0x87),
-        shr_u: zeroArgs(0x88),
-        rotl: zeroArgs(0x89),
-        rotr: zeroArgs(0x8A),
+        extend_i32_s: zeroArgs("i64.extend_i32_s", [0xAC], [i32Type], i64Type),
+        extend_i32_u: zeroArgs("i64.extend_i32_u", [0xAD], [i32Type], i64Type),
+        trunc_f32_s: zeroArgs("i64.trunc_f32_s", [0xAE], [f32Type], i64Type),
+        trunc_f32_u: zeroArgs("i64.trunc_f32_u", [0xAF], [f32Type], i64Type),
+        trunc_f64_s: zeroArgs("i64.trunc_f64_s", [0xB0], [f64Type], i64Type),
+        trunc_f64_u: zeroArgs("i64.trunc_f64_u", [0xB1], [f64Type], i64Type),
 
-        extend_i32_s: zeroArgs(0xAC),
-        extend_i32_u: zeroArgs(0xAD),
-        trunc_f32_s: zeroArgs(0xAE),
-        trunc_f32_u: zeroArgs(0xAF),
-        trunc_f64_s: zeroArgs(0xB0),
-        trunc_f64_u: zeroArgs(0xB1),
-
-        reinterpret_f64: zeroArgs(0xBD),
-        extend8_s: zeroArgs(0xC2),
-        extend16_s: zeroArgs(0xC3),
-        extend32_s: zeroArgs(0xC4),
+        reinterpret_f64: zeroArgs("i64.reinterpret_f64", [0xBD], [f64Type], i64Type),
+        extend8_s: zeroArgs("i64.extend8_s", [0xC2], [i64Type], i64Type),
+        extend16_s: zeroArgs("i64.extend16_s", [0xC3], [i64Type], i64Type),
+        extend32_s: zeroArgs("i64.extend32_s", [0xC4], [i64Type], i64Type),
 
         // Non-trapping Float-to-int Conversions
-        trunc_sat_f32_s: zeroArgs(0xFC, 4),
-        trunc_sat_f32_u: zeroArgs(0xFC, 5),
-        trunc_sat_f64_s: zeroArgs(0xFC, 6),
-        trunc_sat_f64_u: zeroArgs(0xFC, 7),
+        trunc_sat_f32_s: zeroArgs("i32.trunc_sat_f32_s", [0xFC, 4], [f32Type], i64Type),
+        trunc_sat_f32_u: zeroArgs("i32.trunc_sat_f32_u", [0xFC, 5], [f32Type], i64Type),
+        trunc_sat_f64_s: zeroArgs("i32.trunc_sat_f64_s", [0xFC, 6], [f64Type], i64Type),
+        trunc_sat_f64_u: zeroArgs("i32.trunc_sat_f64_u", [0xFC, 7], [f64Type], i64Type),
     } as const,
 
     f32: {
-        load: memArg(0x2A),
-        store: memArg(0x38),
+        load: memArg("f32.load", [0x2A], "load", f32Type),
+        store: memArg("f32.store", [0x38], "store", f32Type),
 
+        const: constantArg("f32.const", [0x43], encodeF32, f32Type),
 
-        const: (x: number) => () => [0x43 as byte, ...encodeF32(x)],
+        eq: zeroArgs("f32.eq", [0x5B], [f32Type, f32Type], i32Type),
+        ne: zeroArgs("f32.ne", [0x5C], [f32Type, f32Type], i32Type),
+        lt: zeroArgs("f32.lt", [0x5D], [f32Type, f32Type], i32Type),
+        gt: zeroArgs("f32.gt", [0x5E], [f32Type, f32Type], i32Type),
+        le: zeroArgs("f32.le", [0x5F], [f32Type, f32Type], i32Type),
+        ge: zeroArgs("f32.ge", [0x60], [f32Type, f32Type], i32Type),
 
-        eq: zeroArgs(0x5B),
-        ne: zeroArgs(0x5C),
-        lt: zeroArgs(0x5D),
-        gt: zeroArgs(0x5E),
-        le: zeroArgs(0x5F),
-        ge: zeroArgs(0x60),
+        abs: zeroArgs("f32.abs", [0x8B], [f32Type], f32Type),
+        neg: zeroArgs("f32.neg", [0x8C], [f32Type], f32Type),
+        ceil: zeroArgs("f32.ceil", [0x8D], [f32Type], f32Type),
+        floor: zeroArgs("f32.floor", [0x8E], [f32Type], f32Type),
+        trunc: zeroArgs("f32.trunc", [0x8F], [f32Type], f32Type),
+        nearest: zeroArgs("f32.nearest", [0x90], [f32Type], f32Type),
+        sqrt: zeroArgs("f32.sqrt", [0x91], [f32Type], f32Type),
+        add: zeroArgs("f32.add", [0x92], [f32Type, f32Type], f32Type),
+        sub: zeroArgs("f32.sub", [0x93], [f32Type, f32Type], f32Type),
+        mul: zeroArgs("f32.mul", [0x94], [f32Type, f32Type], f32Type),
+        div: zeroArgs("f32.div", [0x95], [f32Type, f32Type], f32Type),
+        min: zeroArgs("f32.min", [0x96], [f32Type, f32Type], f32Type),
+        max: zeroArgs("f32.max", [0x97], [f32Type, f32Type], f32Type),
+        copysign: zeroArgs("f32.copysign", [0x98], [f32Type, f32Type], f32Type),
 
-        abs: zeroArgs(0x8B),
-        neg: zeroArgs(0x8C),
-        ceil: zeroArgs(0x8D),
-        floor: zeroArgs(0x8E),
-        trunc: zeroArgs(0x8F),
-        nearest: zeroArgs(0x90),
-        sqrt: zeroArgs(0x91),
-        add: zeroArgs(0x92),
-        sub: zeroArgs(0x93),
-        mul: zeroArgs(0x94),
-        div: zeroArgs(0x95),
-        min: zeroArgs(0x96),
-        max: zeroArgs(0x97),
-        copysign: zeroArgs(0x98),
+        convert_i32_s: zeroArgs("f32.convert_i32_s", [0xB2], [i32Type], f32Type),
+        convert_i32_u: zeroArgs("f32.convert_i32_u", [0xB3], [i32Type], f32Type),
+        convert_i64_s: zeroArgs("f32.convert_i64_s", [0xB4], [i64Type], f32Type),
+        convert_i64_u: zeroArgs("f32.convert_i64_u", [0xB5], [i64Type], f32Type),
+        demote_f64: zeroArgs("f32.demote_f64", [0xB6], [f64Type], f32Type),
 
-        convert_i32_s: zeroArgs(0xB2),
-        convert_i32_u: zeroArgs(0xB3),
-        convert_i64_s: zeroArgs(0xB4),
-        convert_i64_u: zeroArgs(0xB5),
-        demote_f64: zeroArgs(0xB6),
-
-        reinterpret_i32: zeroArgs(0xBE),
+        reinterpret_i32: zeroArgs("f32.reinterpret_i32", [0xBE], [i32Type], f32Type),
     } as const,
 
     f64: {
-        load: memArg(0x2B),
-        store: memArg(0x39),
+        load: memArg("f64.load", [0x2B], "load", f64Type),
+        store: memArg("f64.store", [0x39], "store", f64Type),
 
+        const: constantArg("f64.const", [0x44], encodeF64, f64Type),
 
-        const: (x: number) => () => [0x44 as byte, ...encodeF64(x)],
+        eq: zeroArgs("f64.eq", [0x61], [f64Type, f64Type], i32Type),
+        ne: zeroArgs("f64.ne", [0x62], [f64Type, f64Type], i32Type),
+        lt: zeroArgs("f64.lt", [0x63], [f64Type, f64Type], i32Type),
+        gt: zeroArgs("f64.gt", [0x64], [f64Type, f64Type], i32Type),
+        le: zeroArgs("f64.le", [0x65], [f64Type, f64Type], i32Type),
+        ge: zeroArgs("f64.ge", [0x66], [f64Type, f64Type], i32Type),
 
-        eq: zeroArgs(0x61),
-        ne: zeroArgs(0x62),
-        lt: zeroArgs(0x63),
-        gt: zeroArgs(0x64),
-        le: zeroArgs(0x65),
-        ge: zeroArgs(0x66),
+        abs: zeroArgs("f64.abs", [0x99], [f64Type], f64Type),
+        neg: zeroArgs("f64.neg", [0x9A], [f64Type], f64Type),
+        ceil: zeroArgs("f64.ceil", [0x9B], [f64Type], f64Type),
+        floor: zeroArgs("f64.floor", [0x9C], [f64Type], f64Type),
+        trunc: zeroArgs("f64.trunc", [0x9D], [f64Type], f64Type),
+        nearest: zeroArgs("f64.nearest", [0x9E], [f64Type], f64Type),
+        sqrt: zeroArgs("f64.sqrt", [0x9F], [f64Type], f64Type),
+        add: zeroArgs("f64.add", [0xA0], [f64Type, f64Type], f64Type),
+        sub: zeroArgs("f64.sub", [0xA1], [f64Type, f64Type], f64Type),
+        mul: zeroArgs("f64.mul", [0xA2], [f64Type, f64Type], f64Type),
+        div: zeroArgs("f64.div", [0xA3], [f64Type, f64Type], f64Type),
+        min: zeroArgs("f64.min", [0xA4], [f64Type, f64Type], f64Type),
+        max: zeroArgs("f64.max", [0xA5], [f64Type, f64Type], f64Type),
+        copysign: zeroArgs("f64.copysign", [0xA6], [f64Type, f64Type], f64Type),
 
-        abs: zeroArgs(0x99),
-        neg: zeroArgs(0x9A),
-        ceil: zeroArgs(0x9B),
-        floor: zeroArgs(0x9C),
-        trunc: zeroArgs(0x9D),
-        nearest: zeroArgs(0x9E),
-        sqrt: zeroArgs(0x9F),
-        add: zeroArgs(0xA0),
-        sub: zeroArgs(0xA1),
-        mul: zeroArgs(0xA2),
-        div: zeroArgs(0xA3),
-        min: zeroArgs(0xA4),
-        max: zeroArgs(0xA5),
-        copysign: zeroArgs(0xA6),
+        convert_i32_s: zeroArgs("f64.convert_i32_s", [0xB7], [i32Type], f64Type),
+        convert_i32_u: zeroArgs("f64.convert_i32_u", [0xB8], [i32Type], f64Type),
+        convert_i64_s: zeroArgs("f64.convert_i64_s", [0xB9], [i64Type], f64Type),
+        convert_i64_u: zeroArgs("f64.convert_i64_u", [0xBA], [i64Type], f64Type),
+        promote_f32: zeroArgs("f64.promote_f32", [0xBB], [f32Type], f64Type),
 
-        convert_i32_s: zeroArgs(0xB7),
-        convert_i32_u: zeroArgs(0xB8),
-        convert_i64_s: zeroArgs(0xB9),
-        convert_i64_u: zeroArgs(0xBA),
-        promote_f32: zeroArgs(0xBB),
-
-        reinterpret_i64: zeroArgs(0xBF),
+        reinterpret_i64: zeroArgs("f64.reinterpret_i64", [0xBF], [i64Type], f64Type),
     } as const
 
 } as const;
-
-
-function encodeBlockType(t: ValueType | null): byte[] {
-    if (t === null) return [0x40 as byte];
-    return [t];
-}
-
-function zeroArgs(opcode: number, ...extra: number[]): () => WInstruction {
-    // always return the same instance
-    const instr = [opcode, ...extra] as byte[];
-    const innerFunction = () => instr;
-    return () => innerFunction;
-}
-
-// either an index (instance of T), an object with a getter for the index
-// or a plain number to make the api easier to use
-type index<T extends bigint> = number | T | {getIndex(depth: number): T};
-
-function encodeIndex<T extends bigint>(idx: index<T>, depth: number): byte[] {
-    let value: T;
-    if (typeof idx === "number") {
-        value = BigInt(idx) as T;
-    } else if (typeof idx === "bigint") {
-        value = idx as T;
-    } else {
-        value = idx.getIndex(depth);
-    }
-    return encodeU32(value);
-}
-
-function indexArg<T extends bigint>(opcode: number, ...after: number[]): (x: index<T>) => WInstruction {
-    return (i) => (depth: number) => [opcode as byte, ...encodeIndex(i, depth), ...after as byte[]];
-}
-
-function memArg(opcode: number): (align: bigint | number, offset: bigint | number) => WInstruction {
-    return (align, offset) => () => {
-        if (typeof align === "number") align = BigInt(align);
-        if (typeof offset === "number") offset = BigInt(offset);
-
-        return [opcode as byte, ...encodeU32(align), ...encodeU32(offset)];
-    };
-}

@@ -90,6 +90,16 @@ export class WFunctionBuilder {
         return {getIndex: this.fn.getIndex.bind(this.fn)};
     }
 
+    get type(): FunctionType {
+        return this.fn.type;
+    }
+
+    getLocal(index: localidx): WLocal {
+        const i = Number(index);
+        if (index < this._arguments.length) return this._arguments[i];
+        return this._locals[i - this._arguments.length];
+    }
+
     private _localidx(l: WLocal) {
         let idx = this._arguments.indexOf(l);
         if (idx >= 0) return BigInt(idx) as localidx;
@@ -101,8 +111,7 @@ export class WFunctionBuilder {
     static build(fn: WFunction, bodyFn: (b: WFunctionBuilder) => WExpression): [byte[], ValueType[]] {
         const builder = new WFunctionBuilder(fn);
         const instructions = bodyFn(builder);
-        const bytes = instructions.map(x => x(0)).flat();
-        return [bytes, builder.locals.map(x => x.type)];
+        return [instructions.encoded, builder.locals.map(x => x.type)];
     }
 }
 

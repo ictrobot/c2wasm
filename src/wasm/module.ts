@@ -1,15 +1,15 @@
 import {byte, typeidx, funcidx, globalidx, tableidx} from "./base_types";
-import {encodeU32, encodeUtf8} from "./encoding";
+import {encodeU32, encodeUtf8, encodeConstantInstr} from "./encoding";
 import {WFunctionBuilder, WFunction, WImportedFunction} from "./functions";
 import {WGlobal} from "./global";
-import {WExpression, Instructions} from "./instructions";
-import {encodeVec, ResultType, encodeFunctionType, FunctionType, MemoryType, encodeLimits, ValueType} from "./wtypes";
+import {WExpression} from "./instructions";
+import {encodeVec, ResultType, encodeFunctionType, FunctionType, MemoryType, encodeLimits, ValueType, i32Type} from "./wtypes";
 
 export class ModuleBuilder {
     private _functions: WFunction[] = [];
     private _importedFunctions: WImportedFunction[] = [];
     private _functionTable: (WFunction | WImportedFunction)[] = [];
-    private _functionTypes: byte[][] = [];
+    private _functionTypes: FunctionType[] = [];
     private _globals: WGlobal[] = [];
     private _memory?: MemoryType;
     private _dataSegments: [offset: number, contents: byte[]][] = [];
@@ -25,6 +25,8 @@ export class ModuleBuilder {
     }
 
     importFunction(param: ResultType, returnValue: ResultType, module: string, name: string): WImportedFunction {
+        if (this._functions.length > 0) throw new Error("Cannot define an imported functions after defining normal functions");
+
         const fn = new WImportedFunction(this, [param, returnValue], module, name);
         this._importedFunctions.push(fn);
         return fn;
@@ -69,7 +71,7 @@ export class ModuleBuilder {
         return [
             0x00, 0x61, 0x73, 0x6D, // magic
             0x01, 0x00, 0x00, 0x00, // version
-            ...encodeSection(1, this._functionTypes), // type section
+            ...encodeSection(1, this._functionTypes.map(encodeFunctionType)), // type section
             ...encodeSection(2, imports), // import section
             ...encodeSection(3, funcTypes), // function section,
             ...encodeSection(4, this._encodeTable()), // table section
@@ -128,7 +130,7 @@ export class ModuleBuilder {
         if (this._functionTable.length === 0) return [];
 
         return [[0x00 as byte,
-            ...Instructions.i32.const(0)(), 0x0B as byte, // i32.const expression
+            ...encodeConstantInstr(0, i32Type), 0x0B as byte, // i32.const expression
             ...encodeVec(this._functionTable.map(x => encodeU32(x.getIndex())))]];
     }
 
@@ -139,7 +141,7 @@ export class ModuleBuilder {
 
         // convert each offset into `expression(i32.const offset)`
         return this._dataSegments.map(([offset, contents]) => [0x00 as byte,
-            ...Instructions.i32.const(offset)(), 0x0B as byte, // i32.const expression
+            ...encodeConstantInstr(offset, i32Type), 0x0B as byte, // i32.const expression
             ...encodeU32(BigInt(contents.length)), ...contents]); // byte vector
     }
 
@@ -164,13 +166,14 @@ export class ModuleBuilder {
     }
 
     _typeIndex(x: FunctionType): typeidx {
-        const encoded = encodeFunctionType(x);
         for (let i = 0; i < this._functionTypes.length; i++) {
-            if (this._functionTypes[i].length === encoded.length && this._functionTypes[i].every((v, i) => v === encoded[i])) {
+            const f = this._functionTypes[i];
+            if (f[0].length === x[0].length && f[0].every((v, i) => v === x[0][i]) &&
+                f[1].length === x[1].length && f[1].every((v, i) => v === x[1][i])) {
                 return BigInt(i) as typeidx;
             }
         }
-        return BigInt(this._functionTypes.push(encoded) - 1) as typeidx;
+        return BigInt(this._functionTypes.push(x) - 1) as typeidx;
     }
 
     _globalIndex(g: WGlobal): globalidx {
@@ -185,6 +188,19 @@ export class ModuleBuilder {
 
     get functionImports(): ReadonlyArray<WImportedFunction> {
         return this._importedFunctions;
+    }
+
+    _functionLookup(f: funcidx): WFunction | WImportedFunction {
+        if (f < this._importedFunctions.length) return this._importedFunctions[Number(f)];
+        return this._functions[Number(f) - this._importedFunctions.length];
+    }
+
+    _typeLookup(t: typeidx): FunctionType {
+        return this._functionTypes[Number(t)];
+    }
+
+    _globalLookup(g: globalidx): WGlobal {
+        return this._globals[Number(g)];
     }
 }
 

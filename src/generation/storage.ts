@@ -5,7 +5,7 @@ import {Scope} from "../tree/scope";
 import {CType, CArithmetic, CPointer, CStruct, CUnion, CArray, CVoid, CFuncType} from "../tree/types";
 import {Instructions, i32Type} from "../wasm";
 import {localidx} from "../wasm/base_types";
-import {WExpression, WInstruction} from "../wasm/instructions";
+import {WInstruction} from "../wasm/instructions";
 import {GenError} from "./gen_error";
 import {WFnGenerator, WGenerator} from "./generator";
 import {staticInitializer} from "./static_initializer";
@@ -35,8 +35,8 @@ export function storageSetupStaticVar(ctx: WGenerator, d: CVarDefinition): (() =
     }
 }
 
-export function storageSetupScope(ctx: WFnGenerator, s: Scope): WExpression {
-    const instr: WExpression = [];
+export function storageSetupScope(ctx: WFnGenerator, s: Scope): WInstruction[] {
+    const instr: WInstruction[] = [];
 
     for (const declaration of s.declarations) {
         if (declaration instanceof CArgument) {
@@ -106,7 +106,7 @@ export function storageSetupScope(ctx: WFnGenerator, s: Scope): WExpression {
 // the storage operations
 
 /** Pushes the stored value from location 'e' onto the stack  */
-export function storageGet(ctx: WFnGenerator, ctype: CType, locationExpr: CExpression): WExpression {
+export function storageGet(ctx: WFnGenerator, ctype: CType, locationExpr: CExpression): WInstruction[] {
     const [instr, location] = fromExpression(ctx, locationExpr);
 
     if (ctype instanceof CStruct || ctype instanceof CUnion) {
@@ -128,7 +128,7 @@ export function storageGet(ctx: WFnGenerator, ctype: CType, locationExpr: CExpre
 
 /** Stores the value on the top of the stack when 'valueExpr' is run into location 'locationExpr'.
  * If keepValue is true then the stored value is kept on the top of the stack after being stored */
-export function storageSet(ctx: WFnGenerator, ctype: CType, locationExpr: CExpression, valueExpr: CExpression, keepValue: boolean): WExpression {
+export function storageSet(ctx: WFnGenerator, ctype: CType, locationExpr: CExpression, valueExpr: CExpression, keepValue: boolean): WInstruction[] {
     const [instr, location] = fromExpression(ctx, locationExpr);
     const valueInstr = ctx.expression(valueExpr, false);
     valueInstr.push(...conversion(valueExpr.type, locationExpr.type));
@@ -180,7 +180,7 @@ export function storageSet(ctx: WFnGenerator, ctype: CType, locationExpr: CExpre
 
 /** Updates the location 'locationExpr' by running 'instr' which should transform its value on the stack.
  * If keepValue is true then the stored value is kept on the top of the stack after being stored */
-export function storageUpdate(ctx: WFnGenerator, ctype: CType, locationExpr: CExpression, transform: WExpression, keepValue: boolean): WExpression {
+export function storageUpdate(ctx: WFnGenerator, ctype: CType, locationExpr: CExpression, transform: WInstruction[], keepValue: boolean): WInstruction[] {
     if (ctype instanceof CArray || ctype instanceof CStruct || ctype instanceof CUnion) {
         throw new GenError("Cannot storageUpdate " + ctype.typeName, ctx, locationExpr.node);
     }
@@ -239,7 +239,7 @@ export function storageUpdate(ctx: WFnGenerator, ctype: CType, locationExpr: CEx
 
 /** Updates the location 'locationExpr' by running 'instr' which should transform its value on the stack.
  * Value before transform is left on the stack */
-export function storageGetThenUpdate(ctx: WFnGenerator, ctype: CType, locationExpr: CExpression, transform: WExpression): WExpression {
+export function storageGetThenUpdate(ctx: WFnGenerator, ctype: CType, locationExpr: CExpression, transform: WInstruction[]): WInstruction[] {
     if (ctype instanceof CArray || ctype instanceof CStruct || ctype instanceof CUnion) {
         throw new GenError("Cannot storageGetThenUpdate " + ctype.typeName, ctx, locationExpr.node);
     }
@@ -283,7 +283,7 @@ export function storageGetThenUpdate(ctx: WFnGenerator, ctype: CType, locationEx
 }
 
 // helper to get address of a storage location
-export function getAddress(ctx: WFnGenerator, s: e.CExpression): WExpression {
+export function getAddress(ctx: WFnGenerator, s: e.CExpression): WInstruction[] {
     const [instr, loc] = fromExpression(ctx, s);
     if (loc.type === "local") {
         throw new GenError("Local with addressed access stored in local. This shouldn't happen!", ctx, s.node);
@@ -305,7 +305,7 @@ export function getAddress(ctx: WFnGenerator, s: e.CExpression): WExpression {
  * The first return value are instructions to be executed before accessing the storage and
  * the second return value is the storage location itself.
  */
-function fromExpression(ctx: WFnGenerator, s: e.CExpression): [WExpression, StorageLocation] {
+function fromExpression(ctx: WFnGenerator, s: e.CExpression): [WInstruction[], StorageLocation] {
     if (!s.lvalue) throw new GenError("Only lvalue expressions can have storage locations", ctx, s.node);
 
     if (s instanceof e.CIdentifier) {
@@ -426,7 +426,7 @@ function store(type: CType, offset: number): WInstruction {
     }
 }
 
-function memcpy(sourceAddr: WExpression, destAddr: WExpression, bytes: number): WExpression {
+function memcpy(sourceAddr: WInstruction[], destAddr: WInstruction[], bytes: number): WInstruction[] {
     return [
         ...destAddr,
         ...sourceAddr,

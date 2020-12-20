@@ -1,6 +1,6 @@
 import {CType, CArithmetic, CPointer, CArray, CVoid, CFuncType, CStruct, CUnion} from "../tree/types";
 import {Instructions, ValueType, f32Type, f64Type, i64Type, i32Type} from "../wasm";
-import {WExpression} from "../wasm/instructions";
+import {WInstruction} from "../wasm/instructions";
 import {ResultType} from "../wasm/wtypes";
 
 // CType - CArithmetic + wasm.ValueType
@@ -30,7 +30,7 @@ export function realType(type: CType): ValueType {
     throw new Error(type.typeName + " doesn't have a real type");
 }
 
-export function conversion(inType: CType, outType: CType): WExpression {
+export function conversion(inType: CType, outType: CType): WInstruction[] {
     if (inType.equals(outType)) return [];
 
     if (inType instanceof CArithmetic && outType instanceof CArithmetic) {
@@ -61,7 +61,7 @@ export function conversion(inType: CType, outType: CType): WExpression {
  * > When a value of floating type is converted to integral type, the fractional part is discarded.
  * > If the value of the integral part cannot be represented by the integral type, the behavior is undefined.
  */
-function arithmeticConversion(inType: CArithmetic, outType: CArithmetic): WExpression {
+function arithmeticConversion(inType: CArithmetic, outType: CArithmetic): WInstruction[] {
     if (CArithmetic.BOOL.equals(outType)) {
         if (CArithmetic.Fp64.equals(inType)) return [Instructions.f64.const(0), Instructions.f64.ne()];
         if (CArithmetic.Fp32.equals(inType)) return [Instructions.f32.const(0), Instructions.f32.ne()];

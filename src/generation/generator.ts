@@ -7,7 +7,8 @@ import {ModuleBuilder, WFunctionBuilder, WFunction, Instructions, WImportedFunct
 import type {funcidx, tableidx, typeidx} from "../wasm/base_types";
 import type {WLocal} from "../wasm/functions";
 import type {WGlobal} from "../wasm/global";
-import type {WExpression} from "../wasm/instructions";
+import {WExpression} from "../wasm/instructions";
+import type {WInstruction} from "../wasm/instructions";
 import {expressionGeneration} from "./expressions";
 import {GenError} from "./gen_error";
 import {statementGeneration} from "./statements";
@@ -66,7 +67,8 @@ export class WGenerator {
 
     private functionBody(s: CFuncDefinition, b: WFunctionBuilder): WExpression {
         const fnGenerator = new WFnGenerator(this, b, s.name);
-        const body = fnGenerator.statement(s.body);
+        const body = new WExpression(null, 0, b);
+        body.push(...fnGenerator.statement(s.body));
 
         if (fnGenerator.shadowStackUsage > 0) {
             // use memory.fill to ensure shadow stack space is 0 before fn runs
@@ -79,7 +81,7 @@ export class WGenerator {
         }
 
         if (s.type.returnType.bytes > 0) {
-            if (body[body.length - 1] === Instructions.return()) {
+            if (body.get(-1).name === "return") {
                 // Final return can be implicit
                 body.pop();
             } else {
@@ -133,15 +135,15 @@ export class WFnGenerator {
     constructor(readonly gen: WGenerator, readonly builder: WFunctionBuilder, readonly fnName: string) {
     }
 
-    statement(s: CStatement): WExpression {
+    statement(s: CStatement): WInstruction[] {
         return statementGeneration(this, s);
     }
 
-    expression(e: CExpression, discardResult: boolean): WExpression {
+    expression(e: CExpression, discardResult: boolean): WInstruction[] {
         return expressionGeneration(this, e, discardResult);
     }
 
-    withTemporaryLocal(type: ValueType, expressionFn: (local: WLocal) => WExpression): WExpression {
+    withTemporaryLocal(type: ValueType, expressionFn: (local: WLocal) => WInstruction[]): WInstruction[] {
         const localIdx = this.temporaries.findIndex(x => x.type === type);
         let local: WLocal;
         if (localIdx < 0) {

@@ -2,54 +2,54 @@ import {CFuncDefinition} from "../tree/declarations";
 import {CConstant} from "../tree/expressions";
 import * as c from "../tree/statements";
 import {CArithmetic, CPointer} from "../tree/types";
-import {Instructions, i32Type} from "../wasm";
+import {Instructions} from "../wasm";
 import {labelidx} from "../wasm/base_types";
-import {WExpression, WInstruction} from "../wasm/instructions";
+import {WInstruction} from "../wasm/instructions";
 import {subExpr, condition, expressionGeneration, gInstr} from "./expressions";
 import {GenError} from "./gen_error";
 import {WFnGenerator} from "./generator";
 import {storageSetupScope} from "./storage";
 import {valueType} from "./type_conversion";
 
-function _compoundStatement(ctx: WFnGenerator, s: c.CCompoundStatement): WExpression {
+function _compoundStatement(ctx: WFnGenerator, s: c.CCompoundStatement): WInstruction[] {
     const instr = storageSetupScope(ctx, s.scope);
     const body = s.statements.flatMap(s2 => statementGeneration(ctx, s2));
     body.unshift(...instr);
     return body;
 }
 
-function _expressionStatement(ctx: WFnGenerator, s: c.CExpressionStatement): WExpression {
+function _expressionStatement(ctx: WFnGenerator, s: c.CExpressionStatement): WInstruction[] {
     return ctx.expression(s.expression, true);
 }
 
-function _nop(ctx: WFnGenerator, s: c.CNop): WExpression {
+function _nop(ctx: WFnGenerator, s: c.CNop): WInstruction[] {
     return []; // [Instructions.nop()]
 }
 
-function _if(ctx: WFnGenerator, s: c.CIf): WExpression {
+function _if(ctx: WFnGenerator, s: c.CIf): WInstruction[] {
     const ifBody = s.ifBody === undefined ? [Instructions.nop()] : statementGeneration(ctx, s.ifBody);
     const elseBody = s.elseBody === undefined ? undefined : statementGeneration(ctx, s.elseBody);
 
     return [...condition(ctx, s.test), Instructions.if(null, ifBody, elseBody)];
 }
 
-function _forLoop(ctx: WFnGenerator, s: c.CForLoop): WExpression {
+function _forLoop(ctx: WFnGenerator, s: c.CForLoop): WInstruction[] {
     if (s.body === undefined) throw new GenError("Invalid for loop body", ctx, s.node);
     const storageSetup = storageSetupScope(ctx, s.scope);
 
-    let init: WExpression = [];
+    let init: WInstruction[] = [];
     if (Array.isArray(s.init)) {
         init = s.init.flatMap(e => ctx.expression(e.expression, true));
     } else if (s.init !== undefined && !(s.init instanceof c.CNop)) {
         init = ctx.expression(s.init.expression, true);
     }
 
-    let test: WExpression = [Instructions.i32.const(1n)];
+    let test: WInstruction[] = [Instructions.i32.const(1n)];
     if (s.test !== undefined && !(s.test instanceof c.CNop)) {
         test = condition(ctx, s.test.expression);
     }
 
-    let update: WExpression = [];
+    let update: WInstruction[] = [];
     if (s.update !== undefined) update = ctx.expression(s.update, true);
 
     return [
@@ -70,7 +70,7 @@ function _forLoop(ctx: WFnGenerator, s: c.CForLoop): WExpression {
     ];
 }
 
-function _whileLoop(ctx: WFnGenerator, s: c.CWhileLoop): WExpression {
+function _whileLoop(ctx: WFnGenerator, s: c.CWhileLoop): WInstruction[] {
     if (s.body === undefined) throw new GenError("Invalid while loop body", ctx, s.node);
 
     return [Instructions.loop(null, [
@@ -84,7 +84,7 @@ function _whileLoop(ctx: WFnGenerator, s: c.CWhileLoop): WExpression {
     ])];
 }
 
-function _doLoop(ctx: WFnGenerator, s: c.CDoLoop): WExpression {
+function _doLoop(ctx: WFnGenerator, s: c.CDoLoop): WInstruction[] {
     if (s.body === undefined) throw new GenError("Invalid while loop body", ctx, s.node);
 
     return [Instructions.block(null, [
@@ -98,16 +98,16 @@ function _doLoop(ctx: WFnGenerator, s: c.CDoLoop): WExpression {
     )];
 }
 
-function _switch(ctx: WFnGenerator, s: c.CSwitch): WExpression {
+function _switch(ctx: WFnGenerator, s: c.CSwitch): WInstruction[] {
     const type = valueType(s.expression.type as CArithmetic);
     return ctx.withTemporaryLocal(type, value => {
-        const initInstr: WExpression = [
+        const initInstr: WInstruction[] = [
             ...expressionGeneration(ctx, s.expression, false),
             Instructions.local.set(value)
         ];
 
         // build up jump table
-        const checks: WExpression = [];
+        const checks: WInstruction[] = [];
         let depth = 0;
         for (const child of s.children) {
             for (const sCase of child.cases) {
@@ -138,7 +138,7 @@ function _switch(ctx: WFnGenerator, s: c.CSwitch): WExpression {
     });
 }
 
-function _continue(ctx: WFnGenerator, s: c.CContinue): WExpression {
+function _continue(ctx: WFnGenerator, s: c.CContinue): WInstruction[] {
     return [Instructions.br({
         getIndex(depth: number): labelidx {
             const statement = s.loop as any as Record<typeof continueDepthSymbol, number | undefined>;
@@ -150,7 +150,7 @@ function _continue(ctx: WFnGenerator, s: c.CContinue): WExpression {
     })];
 }
 
-function _break(ctx: WFnGenerator, s: c.CBreak): WExpression {
+function _break(ctx: WFnGenerator, s: c.CBreak): WInstruction[] {
     return [Instructions.br({
         getIndex(depth: number): labelidx {
             const statement = s.target as any as Record<typeof breakDepthSymbol, number | undefined>;
@@ -162,14 +162,14 @@ function _break(ctx: WFnGenerator, s: c.CBreak): WExpression {
     })];
 }
 
-function _return(ctx: WFnGenerator, s: c.CReturn): WExpression {
+function _return(ctx: WFnGenerator, s: c.CReturn): WInstruction[] {
     if (s.value !== undefined) {
         return [...subExpr(ctx, s.value, s.func.type.returnType), Instructions.return()];
     }
     return [Instructions.return()];
 }
 
-export function statementGeneration(ctx: WFnGenerator, s: c.CStatement): WExpression {
+export function statementGeneration(ctx: WFnGenerator, s: c.CStatement): WInstruction[] {
     if (s instanceof c.CCompoundStatement) return _compoundStatement(ctx, s);
     else if (s instanceof c.CExpressionStatement) return _expressionStatement(ctx, s);
     else if (s instanceof c.CNop) return _nop(ctx, s);
