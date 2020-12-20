@@ -181,13 +181,14 @@ const continueDepthSymbol = Symbol("continue depth");
 function storeBreakDepth<T extends c.CForLoop | c.CWhileLoop | c.CDoLoop | c.CSwitch>(s: T): (c: {depth: number}) => void {
     const statement = s as Record<typeof breakDepthSymbol, any>;
     return ({depth}) => {
-        statement[breakDepthSymbol] = depth;
+        // passed the instruction's context, so the depth of the structured instruction is depth + 1
+        statement[breakDepthSymbol] = depth + 1;
     };
 }
 
 function storeContinueDepth<T extends c.CForLoop | c.CWhileLoop | c.CDoLoop>(s: T): (c: {depth: number}) => void {
     const statement = s as Record<typeof continueDepthSymbol, any>;
     return ({depth}) => {
-        statement[continueDepthSymbol] = depth;
+        statement[continueDepthSymbol] = depth + 1;
     };
 }
