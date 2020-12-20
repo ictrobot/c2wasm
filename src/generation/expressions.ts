@@ -67,7 +67,10 @@ function functionCall(ctx: WFnGenerator, e: c.CFunctionCall, discard: boolean): 
     }
 
     const internalExpression = internalFunctions(ctx, e, discard); // __wasm__ etc
-    if (internalExpression !== undefined) return internalExpression;
+    if (internalExpression !== undefined) {
+        if (e.fnType.returnType.bytes > 0 && discard) internalExpression.push(Instructions.drop());
+        return internalExpression;
+    }
 
     const instr = e.fnType.parameterTypes.flatMap((t, i) => subExpr(ctx, e.args[i], t));
     if (indirectValue.length > 0) {
