@@ -375,16 +375,7 @@ function assignment(ctx: WFnGenerator, e: c.CAssignment, discard: boolean): WIns
         // try to convert "body" into instructions, then remove the instructions which load the lhs to create transformation
         const transform = expressionGeneration(ctx, body, false);
         const lhs = expressionGeneration(ctx, e.lhs, false);
-        while (lhs.length > 0) {
-            const bytesToRemove = (lhs.shift() as WInstruction)({} as any).encoded;
-            const transformBytes = (transform.shift() as WInstruction)({} as any).encoded;
-
-            if (bytesToRemove.length !== transformBytes.length || bytesToRemove.find((v, i) => v !== transformBytes[i])) {
-                throw new GenError("Failed to construct op=", ctx, e.node);
-            }
-        }
-
-        return storageUpdate(ctx, e.lhs.type, e.lhs, transform, !discard);
+        return storageUpdate(ctx, e.lhs.type, e.lhs, transform.slice(lhs.length), !discard);
     } else if (e.rhs instanceof c.CInitializer) {
         const instr: WInstruction[] = [];
 
