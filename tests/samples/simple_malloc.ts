@@ -12,11 +12,10 @@ test("simple malloc using __wasm__", async t => {
           mallocPointer += bytes;
         
           // grow memory if needed
-          int currentPages = __wasm_i32__(0x3F, 0x00); // memory.size
+          int currentPages = __wasm_i32__(0, 0x3F, 0x00); // memory.size
         
           if (mallocPointer > currentPages * PAGE_SIZE) {
-            __wasm_push__(1, 1 + (mallocPointer / PAGE_SIZE) - currentPages);
-            __wasm__(0x40, 0, 0x1A); // memory.grow, drop
+            __wasm_i32__(1, 1 + (mallocPointer / PAGE_SIZE) - currentPages, 0x40, 0); // memory.grow
           }
           
           return thisPointer;

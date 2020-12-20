@@ -24,7 +24,7 @@ export interface BaseInstance {
 
     /* Instruction as bytes */
     encoded: ReadonlyArray<byte>;
-    /* Values consumed from stack, parameters[0] being top of the stack, [1] under that etc */
+    /* Values consumed from stack, parameters[n-1] being top of the stack */
     readonly parameters: ReadonlyArray<ValueType>;
     /* Value pushed onto stack if any */
     readonly result: ValueType | null;
@@ -267,7 +267,7 @@ export class WExpression {
         if (!instr) return undefined;
 
         if (instr.result) this._stack.pop();
-        for (let i = instr.parameters.length - 1; i >= 0; i--) this._stack.push(instr.parameters[i]);
+        this._stack.push(...instr.parameters);
         return instr;
     }
 
@@ -290,8 +290,10 @@ export class WExpression {
             stack
         });
         // check stack parameters
-        for (let i = 0; i < instr.parameters.length; i++) {
-            if (instr.parameters[i] !== stack.pop()) throw new Error("Stack does not match Wasm instruction parameters");
+        for (let i = instr.parameters.length - 1; i >= 0; i--) {
+            if (instr.parameters[i] !== stack.pop()) {
+                throw new Error(`Stack does not match Wasm instruction (${instr.name}) parameters\nPrevious instructions: ${this._instructions.map(x => x.name).reverse().join(", ")}`);
+            }
         }
         // push result if any
         if (instr.result) stack.push(instr.result);

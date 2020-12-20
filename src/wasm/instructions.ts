@@ -34,7 +34,7 @@ export const Instructions = {
     }),
     call_indirect: idxArg<typeidx>("call_indirect", [0x11, 0x00], [], ({builder, value}) => {
         const type = builder.fn.parent._typeLookup(value);
-        return {parameters: type[0], result: type[1][0] ?? null, reads: [], writes: ["functionCall"]};
+        return {parameters: [...type[0], i32Type], result: type[1][0] ?? null, reads: [], writes: ["functionCall"]};
     }),
 
 
