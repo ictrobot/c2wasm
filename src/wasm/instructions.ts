@@ -94,7 +94,7 @@ export const Instructions = {
 
         const: constantArg("i32.const", [0x41], encodeInt32Constant, i32Type),
 
-        eqz: zeroArgs("i32.eqz", [0x45], [i32Type, i32Type], i32Type),
+        eqz: zeroArgs("i32.eqz", [0x45], [i32Type], i32Type),
         eq: zeroArgs("i32.eq", [0x46], [i32Type, i32Type], i32Type),
         ne: zeroArgs("i32.ne", [0x47], [i32Type, i32Type], i32Type),
         lt_s: zeroArgs("i32.lt_s", [0x48], [i32Type, i32Type], i32Type),
@@ -157,7 +157,7 @@ export const Instructions = {
 
         const: constantArg("i64.const", [0x42], encodeInt64Constant, i64Type),
 
-        eqz: zeroArgs("i64.eqz", [0x50], [i64Type, i64Type], i32Type),
+        eqz: zeroArgs("i64.eqz", [0x50], [i64Type], i32Type),
         eq: zeroArgs("i64.eq", [0x51], [i64Type, i64Type], i32Type),
         ne: zeroArgs("i64.ne", [0x52], [i64Type, i64Type], i32Type),
         lt_s: zeroArgs("i64.lt_s", [0x53], [i64Type, i64Type], i32Type),
