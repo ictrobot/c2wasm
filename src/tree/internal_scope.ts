@@ -14,62 +14,40 @@ const fakeParseNode: ParseNode = new class extends ParseNode {
 export const INTERNAL_FNS = {
     /** For executing arbitrary Wasm
      *
-     * __wasm_push__([byte1], [bytes]...]);
+     * __wasm_push__([#parameters], [parameter1], [parameter2], ..., [byte1], [byte2]...);
      */
     wasm: new CFuncDeclaration(
         fakeParseNode,
         "__wasm__",
-        new CFuncType(fakeParseNode, new CVoid(), [CArithmetic.U8], undefined, true),
+        new CFuncType(fakeParseNode, new CVoid(), [CArithmetic.U32], undefined, true),
         "internal"
     ),
-    /** For executing arbitrary Wasm returning i32
-     *
-     * __wasm_i32__([byte1], [bytes]...]);
-     */
+    /** For executing arbitrary Wasm returning i32 */
     wasm_i32: new CFuncDeclaration(
         fakeParseNode,
         "__wasm_i32__",
-        new CFuncType(fakeParseNode, CArithmetic.U32, [CArithmetic.U8], undefined, true),
+        new CFuncType(fakeParseNode, CArithmetic.U32, [CArithmetic.U32], undefined, true),
         "internal"
     ),
-    /** For executing arbitrary Wasm returning i64
-     *
-     * __wasm_i64__([byte1], [bytes]...]);
-     */
+    /** For executing arbitrary Wasm returning i64 */
     wasm_i64: new CFuncDeclaration(
         fakeParseNode,
         "__wasm_i64__",
-        new CFuncType(fakeParseNode, CArithmetic.U64, [CArithmetic.U8], undefined, true),
+        new CFuncType(fakeParseNode, CArithmetic.U64, [CArithmetic.U32], undefined, true),
         "internal"
     ),
-    /** For executing arbitrary Wasm returning f32
-     *
-     * __wasm_f32__([byte1], [bytes]...]);
-     */
+    /** For executing arbitrary Wasm returning f32 */
     wasm_f32: new CFuncDeclaration(
         fakeParseNode,
         "__wasm_f32__",
-        new CFuncType(fakeParseNode, CArithmetic.Fp32, [CArithmetic.U8], undefined, true),
+        new CFuncType(fakeParseNode, CArithmetic.Fp32, [CArithmetic.U32], undefined, true),
         "internal"
     ),
-    /** For executing arbitrary Wasm returning f64
-     *
-     * __wasm_f64__([byte1], [bytes]...]);
-     */
+    /** For executing arbitrary Wasm returning f64 */
     wasm_f64: new CFuncDeclaration(
         fakeParseNode,
         "__wasm_f64__",
-        new CFuncType(fakeParseNode, CArithmetic.Fp64, [CArithmetic.U8], undefined, true),
-        "internal"
-    ),
-    /** For pushing arbitrary values onto the Wasm stack
-     *
-     * __wasm_push__([count], expr1, expr2, ...);
-     */
-    wasm_push: new CFuncDeclaration(
-        fakeParseNode,
-        "__wasm_push__",
-        new CFuncType(fakeParseNode, new CVoid(), [CArithmetic.U32], undefined, true),
+        new CFuncType(fakeParseNode, CArithmetic.Fp64, [CArithmetic.U32], undefined, true),
         "internal"
     ),
     /** For getting the value of the shadow stack pointer

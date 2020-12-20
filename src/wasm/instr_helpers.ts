@@ -4,7 +4,8 @@ import {WFunctionBuilder, WLocal} from "./functions";
 import {WGlobal} from "./global";
 import {ValueType, i32Type} from "./wtypes";
 
-type Resource = "memory" | "functionCall" | WLocal | WGlobal;
+type ReadResource = "memory" | WLocal | WGlobal;
+type WriteResource = "functionCall" | "arbitrary" | ReadResource;
 
 type Context = {
     parent: StructureInstance | null,
@@ -28,9 +29,9 @@ export interface BaseInstance {
     /* Value pushed onto stack if any */
     readonly result: ValueType | null;
 
-    readonly reads: ReadonlyArray<Resource>;
+    readonly reads: ReadonlyArray<ReadResource>;
     /* Resource written to */
-    readonly writes: ReadonlyArray<Resource>;
+    readonly writes: ReadonlyArray<WriteResource>;
 }
 
 type InstrInstances = ZeroArgInstance | ConstantInstance<bigint | number> | MemInstance | IdxInstance | StructureInstance;
@@ -42,7 +43,7 @@ interface ZeroArgInstance extends BaseInstance {
 }
 
 export function zeroArgs(name: string, opcode: number[], parameters: ReadonlyArray<ValueType>, result: ValueType | null,
-                         reads: Resource[] = [], writes: Resource[] = []): () => InstrContext<ZeroArgInstance> {
+                         reads: ReadResource[] = [], writes: WriteResource[] = []): () => InstrContext<ZeroArgInstance> {
     const instr: Omit<ZeroArgInstance, "parent"> = {
         name,
         type: "zeroArg", args: {},
@@ -53,7 +54,7 @@ export function zeroArgs(name: string, opcode: number[], parameters: ReadonlyArr
     return () => ({parent}) => Object.setPrototypeOf({parent}, instr);
 }
 
-type DataFlow = {parameters: ValueType[], result: ValueType | null, reads: Resource[], writes: Resource[]};
+type DataFlow = {parameters: ValueType[], result: ValueType | null, reads: ReadResource[], writes: WriteResource[]};
 export function zeroArgsSpecial(name: string, opcode: number[], specialFn: InstrContext<DataFlow>): () => InstrContext<ZeroArgInstance> {
     return () => (context) => {
         const {parameters, result, reads, writes} = specialFn(context);
@@ -308,12 +309,12 @@ export class WExpression {
         return encoded;
     }
 
-    get reads(): ReadonlyArray<Resource> {
+    get reads(): ReadonlyArray<ReadResource> {
         const reads = this._instructions.flatMap(x => x.reads);
         return [...new Set(reads)];
     }
 
-    get writes(): ReadonlyArray<Resource> {
+    get writes(): ReadonlyArray<WriteResource> {
         const writes = this._instructions.flatMap(x => x.writes);
         return [...new Set(writes)];
     }

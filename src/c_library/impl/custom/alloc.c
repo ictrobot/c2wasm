@@ -75,8 +75,7 @@ void* malloc(size_t size) {
 
         // failed to find block, try allocating more webassembly memory
         int pages = 1 + ((size + ALLOC_OFFSET) / PAGE_SIZE);
-        __wasm_push__(1, pages);
-        int result = __wasm_i32__(0x40, 0); // wasm: memory.grow
+        int result = __wasm_i32__(1, pages, 0x40, 0); // wasm: memory.grow(pages)
         if (result < 0) {
             // failed to allocate...
             return NULL;
@@ -103,8 +102,7 @@ void free(void* ptr) {
         }
 
         // wipe block (technically not needed)
-        __wasm_push__(3, ptr, 0, block->size); // destAddr value size
-        __wasm__(0xFC, 0x0B, 0x00); // memory.fill
+        __wasm__(3, ptr, 0, block->size, 0xFC, 0x0B, 0x00); // memory.fill(destAddr value size)
 
         // find where to slot in block
         struct node* list = &alloc_list;
@@ -139,8 +137,7 @@ void* realloc(void* ptr, size_t size) {
         }
 
         void* new_ptr = malloc(size);
-        __wasm_push__(3, new_ptr, ptr, block->size); // destAddr sourceAddr size
-        __wasm__(0xFC, 0x0A, 0x00, 0x00); // memory.copy
+        __wasm__(3, new_ptr, ptr, block->size, 0xFC, 0x0A, 0x00, 0x00); // memory.copy(destAddr sourceAddr size)
         free(ptr);
         return new_ptr;
     }
@@ -154,8 +151,7 @@ void* calloc(size_t nobj, size_t size) {
 
         if (ptr) {
             // should already be zeroed... but do it again just in case
-            __wasm_push__(3, ptr, 0, size); // destAddr value size
-            __wasm__(0xFC, 0x0B, 0x00); // memory.fill
+            __wasm__(3, ptr, 0, size, 0xFC, 0x0B, 0x00); // memory.fill(destAddr value size)
         }
         return ptr;
     }

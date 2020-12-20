@@ -19,14 +19,12 @@ char* strncpy(char* destination, const char* source, size_t n) {
 }
 
 void* memcpy(void* destination, const void* source, size_t n) {
-    __wasm_push__(3, destination, source, n);
-    __wasm__(0xFC, 0x0A, 0, 0);
+    __wasm__(3, destination, source, n, 0xFC, 0x0A, 0, 0); // memory.copy(destAddr sourceAddr size)
     return destination;
 }
 
 void* memset(void* destination, int c, size_t n) {
-    __wasm_push__(3, destination, c, n);
-    __wasm__(0xFC, 0x0B, 0);
+    __wasm__(3, destination, c, n, 0xFC, 0x0B, 0); // memory.fill(destAddr value size)
     return destination;
 }
 
