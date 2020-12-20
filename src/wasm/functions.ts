@@ -1,6 +1,7 @@
+import exp from "constants";
 import {funcidx, localidx, byte, tableidx} from "./base_types";
 import {encodeU32} from "./encoding";
-import {WExpression} from "./instructions";
+import {WExpression, WInstruction} from "./instructions";
 import {ModuleBuilder} from "./module";
 import {ValueType, FunctionType, encodeVec} from "./wtypes";
 
@@ -33,7 +34,7 @@ export class WFunction {
         return this.parent._tableIndex(this);
     }
 
-    define(bodyFn: (b: WFunctionBuilder) => WExpression): void {
+    define(bodyFn: (b: WFunctionBuilder) => WInstruction[]): void {
         if (this.body !== undefined) throw new Error(`Wasm function already defined`);
         [this.body, this.locals] = WFunctionBuilder.build(this, bodyFn);
     }
@@ -108,10 +109,11 @@ export class WFunctionBuilder {
         throw "Local not found?";
     }
 
-    static build(fn: WFunction, bodyFn: (b: WFunctionBuilder) => WExpression): [byte[], ValueType[]] {
+    static build(fn: WFunction, bodyFn: (b: WFunctionBuilder) => WInstruction[]): [byte[], ValueType[]] {
         const builder = new WFunctionBuilder(fn);
-        const instructions = bodyFn(builder);
-        return [instructions.encoded, builder.locals.map(x => x.type)];
+        const expression = new WExpression(null, 0, builder);
+        expression.push(...bodyFn(builder));
+        return [expression.encoded, builder.locals.map(x => x.type)];
     }
 }
 

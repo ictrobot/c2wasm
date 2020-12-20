@@ -168,10 +168,13 @@ function encodeBlockType(t: ValueType | null): byte[] {
     return [t];
 }
 
-export function blockLoopInstr(opcode: number, name: "block" | "loop"): (type: ValueType | null, body: PartialInstr[]) => InstrContext<BlockLoopInstance> {
-    return (type, body) => ({parent, depth, builder}) => {
+export function blockLoopInstr(opcode: number, name: "block" | "loop"): (type: ValueType | null, body: PartialInstr[], contextFn?: InstrContext<void>) => InstrContext<BlockLoopInstance> {
+    return (type, body, contextFn) => (context) => {
+        if (contextFn) contextFn(context); // used to store depth
+
         const instr: BlockLoopInstance = {
-            name, parent,
+            name,
+            parent: context.parent,
             type: "structured",
             parameters: [], result: type,
 
@@ -188,16 +191,18 @@ export function blockLoopInstr(opcode: number, name: "block" | "loop"): (type: V
                 return expression.writes;
             }
         };
-        const expression = new WExpression(instr, depth + 1, builder);
+        const expression = new WExpression(instr, context.depth + 1, context.builder);
         expression.push(...body);
         return instr;
     };
 }
 
-export function ifInstr(opcode: number, elseOpcode: number): (type: ValueType | null, body: PartialInstr[], elseBody?: PartialInstr[]) => InstrContext<IfInstance> {
-    return (type, body, elseBody) => ({parent, depth, builder}) => {
+export function ifInstr(opcode: number, elseOpcode: number): (type: ValueType | null, body: PartialInstr[], elseBody?: PartialInstr[], contextFn?: InstrContext<void>) => InstrContext<IfInstance> {
+    return (type, body, elseBody, contextFn) => (context) => {
+        if (contextFn) contextFn(context); // used to store depth
+
         const instr: IfInstance = {
-            name: "if", type: "structured", parent,
+            name: "if", type: "structured", parent: context.parent,
             parameters: [], result: type,
 
             get encoded() {
@@ -225,11 +230,11 @@ export function ifInstr(opcode: number, elseOpcode: number): (type: ValueType | 
             },
         };
 
-        const expression = new WExpression(parent, depth, builder);
+        const expression = new WExpression(instr, context.depth + 1, context.builder);
         expression.push(...body);
         let expression2: WExpression | undefined;
         if (elseBody) {
-            expression2 = new WExpression(parent, depth, builder);
+            expression2 = new WExpression(instr, context.depth + 1, context.builder);
             expression2.push(...elseBody);
         }
         return instr;

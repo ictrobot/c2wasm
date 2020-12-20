@@ -7,7 +7,6 @@ import {ModuleBuilder, WFunctionBuilder, WFunction, Instructions, WImportedFunct
 import type {funcidx, tableidx, typeidx} from "../wasm/base_types";
 import type {WLocal} from "../wasm/functions";
 import type {WGlobal} from "../wasm/global";
-import {WExpression} from "../wasm/instructions";
 import type {WInstruction} from "../wasm/instructions";
 import {expressionGeneration} from "./expressions";
 import {GenError} from "./gen_error";
@@ -65,10 +64,9 @@ export class WGenerator {
         this.functions.set(func, wasmFunc);
     }
 
-    private functionBody(s: CFuncDefinition, b: WFunctionBuilder): WExpression {
+    private functionBody(s: CFuncDefinition, b: WFunctionBuilder): WInstruction[] {
         const fnGenerator = new WFnGenerator(this, b, s.name);
-        const body = new WExpression(null, 0, b);
-        body.push(...fnGenerator.statement(s.body));
+        const body = fnGenerator.statement(s.body);
 
         if (fnGenerator.shadowStackUsage > 0) {
             // use memory.fill to ensure shadow stack space is 0 before fn runs
@@ -78,18 +76,6 @@ export class WGenerator {
                 Instructions.i32.const(fnGenerator.shadowStackUsage),
                 Instructions.memory.fill()
             );
-        }
-
-        if (s.type.returnType.bytes > 0) {
-            if (body.get(-1).name === "return") {
-                // Final return can be implicit
-                body.pop();
-            } else {
-                // No return generated at the end of the function, however this fn must have passed c-tree
-                // always returns validation. Therefore add a trapping unreachable instruction to end of function body
-                // to pass wasm validation.
-                body.push(Instructions.unreachable());
-            }
         }
         return body;
     }

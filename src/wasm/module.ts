@@ -2,7 +2,7 @@ import {byte, typeidx, funcidx, globalidx, tableidx} from "./base_types";
 import {encodeU32, encodeUtf8, encodeConstantInstr} from "./encoding";
 import {WFunctionBuilder, WFunction, WImportedFunction} from "./functions";
 import {WGlobal} from "./global";
-import {WExpression} from "./instructions";
+import {WExpression, WInstruction} from "./instructions";
 import {encodeVec, ResultType, encodeFunctionType, FunctionType, MemoryType, encodeLimits, ValueType, i32Type} from "./wtypes";
 
 export class ModuleBuilder {
@@ -16,7 +16,7 @@ export class ModuleBuilder {
     startFunction?: WFunction;
     emitCallback?: () => void;
 
-    function(params: ResultType, returnValue: ResultType, bodyFn?: (b: WFunctionBuilder) => WExpression, exportName?: string): WFunction {
+    function(params: ResultType, returnValue: ResultType, bodyFn?: (b: WFunctionBuilder) => WInstruction[], exportName?: string): WFunction {
         const type: FunctionType = [params, returnValue];
         const fn = new WFunction(this, type, exportName);
         this._functions.push(fn);

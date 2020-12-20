@@ -58,14 +58,12 @@ function _forLoop(ctx: WFnGenerator, s: c.CForLoop): WInstruction[] {
         Instructions.loop(null, [
             ...test,
             Instructions.if(null, [
-                storeBreakDepth(s),
                 Instructions.block(null, [
-                    storeContinueDepth(s),
                     ...statementGeneration(ctx, s.body),
-                ]),
+                ], storeContinueDepth(s)),
                 ...update,
                 Instructions.br(1) // jump back to start of loop
-            ])
+            ], undefined, storeBreakDepth(s))
         ])
     ];
 }
@@ -74,28 +72,24 @@ function _whileLoop(ctx: WFnGenerator, s: c.CWhileLoop): WInstruction[] {
     if (s.body === undefined) throw new GenError("Invalid while loop body", ctx, s.node);
 
     return [Instructions.loop(null, [
-        storeContinueDepth(s),
         ...condition(ctx, s.test),
         Instructions.if(null, [
-            storeBreakDepth(s),
             ...statementGeneration(ctx, s.body),
             Instructions.br(1) // jump back to start of loop
-        ])
-    ])];
+        ], undefined, storeBreakDepth(s))
+    ], storeContinueDepth(s))];
 }
 
 function _doLoop(ctx: WFnGenerator, s: c.CDoLoop): WInstruction[] {
     if (s.body === undefined) throw new GenError("Invalid while loop body", ctx, s.node);
 
     return [Instructions.block(null, [
-        storeBreakDepth(s),
         Instructions.loop(null, [
-            storeContinueDepth(s),
-
             ...statementGeneration(ctx, s.body),
             ...condition(ctx, s.test),
-            Instructions.br_if(0)])]
-    )];
+            Instructions.br_if(0)
+        ], storeContinueDepth(s))
+    ], storeBreakDepth(s))];
 }
 
 function _switch(ctx: WFnGenerator, s: c.CSwitch): WInstruction[] {
@@ -126,12 +120,9 @@ function _switch(ctx: WFnGenerator, s: c.CSwitch): WInstruction[] {
         let block = Instructions.block(null, checks);
         for (let i = 0; i < s.children.length; i++) {
             block = Instructions.block(null, [
-                // final case body is also break target
-                i === s.children.length - 1 ? storeBreakDepth(s) : () => [],
-
                 block,
                 ...ctx.statement(s.children[i].body)
-            ]);
+            ], i === s.children.length - 1 ? storeBreakDepth(s) : undefined); // final case body is also break target
         }
 
         return [...initInstr, block];
@@ -183,27 +174,20 @@ export function statementGeneration(ctx: WFnGenerator, s: c.CStatement): WInstru
     else return _return(ctx, s);
 }
 
-// helpers
-function isNested(s: c.CStatement) {
-    return !(s.parent instanceof c.CCompoundStatement && s.parent.parent instanceof CFuncDefinition);
-}
-
 // break and continue depth helpers
 const breakDepthSymbol = Symbol("break depth");
 const continueDepthSymbol = Symbol("continue depth");
 
-function storeBreakDepth<T extends c.CForLoop | c.CWhileLoop | c.CDoLoop | c.CSwitch>(s: T): WInstruction {
+function storeBreakDepth<T extends c.CForLoop | c.CWhileLoop | c.CDoLoop | c.CSwitch>(s: T): (c: {depth: number}) => void {
     const statement = s as Record<typeof breakDepthSymbol, any>;
-    return (d : number) => {
-        statement[breakDepthSymbol] = d;
-        return [];
+    return ({depth}) => {
+        statement[breakDepthSymbol] = depth;
     };
 }
 
-function storeContinueDepth<T extends c.CForLoop | c.CWhileLoop | c.CDoLoop>(s: T): WInstruction {
+function storeContinueDepth<T extends c.CForLoop | c.CWhileLoop | c.CDoLoop>(s: T): (c: {depth: number}) => void {
     const statement = s as Record<typeof continueDepthSymbol, any>;
-    return (d : number) => {
-        statement[continueDepthSymbol] = d;
-        return [];
+    return ({depth}) => {
+        statement[continueDepthSymbol] = depth;
     };
 }
