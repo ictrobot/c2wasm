@@ -339,6 +339,10 @@ export class WExpression {
         return this._instructions;
     }
 
+    get stack(): ReadonlyArray<ValueType> {
+        return this._stack;
+    }
+
     get encoded(): byte[] {
         const encoded = this._instructions.flatMap(x => x.encoded);
         encoded.push(0x0B as byte);

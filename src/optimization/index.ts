@@ -9,15 +9,15 @@ export function optimize(fn: WFunctionBuilder, expr: WExpression): void {
 }
 
 optimizers.push({
-    name: "fix return",
+    name: "return",
     run: (fn, expr) => {
         if (fn.type[1].length > 0) {
             // if function returns something
             if (expr.get(-1).name === "return") {
                 // final return can be implicit
                 expr.pop();
-            } else {
-                // no return at end of function, must return elsewhere
+            } else if (expr.stack.length === 0) {
+                // no return at end of function or value left on stack, must return elsewhere
                 expr.push(Instructions.unreachable());
             }
         }
