@@ -204,7 +204,7 @@ export function ifInstr(opcode: number, elseOpcode: number): (type: ValueType | 
 
         const instr: IfInstance = {
             name: "if", type: "structured", parent: context.parent,
-            parameters: [], result: type,
+            parameters: [i32Type], result: type,
 
             get encoded() {
                 const instr = [opcode as byte, ...encodeBlockType(type), ...expression.encoded];
