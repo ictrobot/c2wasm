@@ -1,3 +1,4 @@
+import {optimize} from "../optimization";
 import {funcidx, localidx, byte, tableidx} from "./base_types";
 import {encodeU32} from "./encoding";
 import {WExpression, WInstruction} from "./instructions";
@@ -112,6 +113,7 @@ export class WFunctionBuilder {
         const builder = new WFunctionBuilder(fn);
         const expression = new WExpression(null, 0, builder);
         expression.push(...bodyFn(builder));
+        optimize(builder, expression);
         return [expression.encoded, builder.locals.map(x => x.type)];
     }
 }

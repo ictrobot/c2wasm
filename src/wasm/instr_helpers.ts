@@ -14,7 +14,7 @@ type Context = {
     stack: ReadonlyArray<ValueType>;
 };
 type InstrContext<T> = (c: Context) => T;
-export type PartialInstr = InstrContext<InstrInstances>;
+export type PartialInstr = InstrContext<InstrInstance>;
 
 export interface BaseInstance {
     readonly name: string;
@@ -34,7 +34,7 @@ export interface BaseInstance {
     readonly writes: ReadonlyArray<WriteResource>;
 }
 
-type InstrInstances = ZeroArgInstance | ConstantInstance<bigint | number> | MemInstance | IdxInstance | StructureInstance;
+export type InstrInstance = ZeroArgInstance | ConstantInstance<bigint | number> | MemInstance | IdxInstance | StructureInstance;
 
 // Zero argument instructions
 interface ZeroArgInstance extends BaseInstance {
@@ -246,7 +246,7 @@ export function ifInstr(opcode: number, elseOpcode: number): (type: ValueType | 
 // Expressions
 export class WExpression {
     private _stack: ValueType[] = [];
-    private _instructions: BaseInstance[] = [];
+    private _instructions: InstrInstance[] = [];
 
     constructor(private readonly parent: StructureInstance | null, readonly depth: number, readonly builder: WFunctionBuilder) {
     }
@@ -257,12 +257,12 @@ export class WExpression {
         }
     }
 
-    get(index: number): BaseInstance {
+    get(index: number): InstrInstance {
         if (index < 0) index += this.instructions.length;
         return this._instructions[index];
     }
 
-    pop(): BaseInstance | undefined {
+    pop(): InstrInstance | undefined {
         const instr = this._instructions.pop();
         if (!instr) return undefined;
 
@@ -273,7 +273,7 @@ export class WExpression {
 
     unshift(...items: PartialInstr[]): void {
         const stack: ValueType[] = []; // new instructions going at start of expression, so stack will be empty
-        const instr: BaseInstance[] = [];
+        const instr: InstrInstance[] = [];
         for (const instrFn of items) {
             instr.push(this.createInstr(instrFn, stack));
         }
@@ -281,14 +281,38 @@ export class WExpression {
         this._stack.unshift(...stack);
     }
 
-    private createInstr(instrFn: PartialInstr, stack: ValueType[]): BaseInstance {
-        // get instance of the instruction
-        const instr = instrFn({
-            parent: this.parent,
-            depth: this.depth,
-            builder: this.builder,
-            stack
-        });
+    replace(start: number, end: number, ...items: PartialInstr[]): void {
+        if (start < 0 || end < start || start >= this._instructions.length) {
+            throw new Error("Invalid replacement indices");
+        }
+
+        // stack and instructions before
+        const stack: ValueType[] = []; // new instructions going at start of expression, so stack will be empty
+        const instructions: InstrInstance[] = this._instructions.slice(0, start);
+        instructions.forEach(x => this.stackManipulation(stack, x));
+
+        // new instructions
+        for (const newInstr of items) instructions.push(this.createInstr(newInstr, stack));
+
+        // instructions after
+        try {
+            for (let i = end, instr; i < this._instructions.length; i++) {
+                this.stackManipulation(stack, instr = this._instructions[i]);
+                instructions.push(instr);
+            }
+
+            // check stack the same
+            if (this._stack.length !== stack.length || this._stack.some((v, i) => v !== stack[i])) {
+                throw new Error("Stack different");
+            }
+
+            this._instructions = instructions;
+        } catch (e) {
+            throw new Error("Invalid replacement due to: \n" + e.stack);
+        }
+    }
+
+    private stackManipulation(stack: ValueType[], instr: InstrInstance) {
         // check stack parameters
         for (let i = instr.parameters.length - 1; i >= 0; i--) {
             if (instr.parameters[i] !== stack.pop()) {
@@ -297,11 +321,21 @@ export class WExpression {
         }
         // push result if any
         if (instr.result) stack.push(instr.result);
+    }
 
+    private createInstr(instrFn: PartialInstr, stack: ValueType[]): InstrInstance {
+        // get instance of the instruction
+        const instr = instrFn({
+            parent: this.parent,
+            depth: this.depth,
+            builder: this.builder,
+            stack
+        });
+        this.stackManipulation(stack, instr);
         return instr;
     }
 
-    get instructions(): ReadonlyArray<BaseInstance> {
+    get instructions(): ReadonlyArray<InstrInstance> {
         return this._instructions;
     }
 
