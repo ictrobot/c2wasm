@@ -9,7 +9,10 @@ export interface Optimizer {
 export function peephole(expr: WExpression, fn: (instr: InstrInstance[]) => PartialInstr[] | undefined, size: number): void {
     for (let i = 0; i <= expr.instructions.length - size; i++) {
         const replacement = fn(expr.instructions.slice(i, i + size));
-        if (replacement !== undefined) expr.replace(i, i + size, ...replacement);
+        if (replacement !== undefined) {
+            expr.replace(i, i + size, ...replacement);
+            i--; // repeat with new instructions
+        }
     }
 
     for (const instruction of expr.instructions) {

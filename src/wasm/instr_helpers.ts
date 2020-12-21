@@ -72,11 +72,12 @@ export function zeroArgsSpecial(name: string, opcode: number[], specialFn: Instr
 interface ConstantInstance<T extends bigint | number> extends BaseInstance {
     type: "constant";
     args: {value: T};
+    result: ValueType;
 }
 
 export function constantArg<T extends bigint | number>(name: string, opcode: number[],
                                                        encodeFn: (x: T) => byte[],
-                                                       result: ValueType | null): (x: T) => InstrContext<ConstantInstance<T>> {
+                                                       result: ValueType): (x: T) => InstrContext<ConstantInstance<T>> {
     return (value) => ({parent}) => ({
         name, parent,
         type: "constant", args: {value},
