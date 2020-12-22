@@ -6,19 +6,17 @@ export interface Optimizer {
     run(fn: WFunctionBuilder, expr: WExpression): void
 }
 
-export function peephole(expr: WExpression, fn: (instr: InstrInstance[]) => PartialInstr[] | undefined, size: number): void {
+type PeepholeCallback = (instr: InstrInstance[], depth: number) => (InstrInstance | PartialInstr)[] | undefined;
+export function peephole(expr: WExpression, fn: PeepholeCallback, size: number, depth = 0): void {
     for (let i = 0; i <= expr.instructions.length - size; i++) {
-        const replacement = fn(expr.instructions.slice(i, i + size));
-        if (replacement !== undefined) {
-            expr.replace(i, i + size, ...replacement);
-            i--; // repeat with new instructions
-        }
+        const replacement = fn(expr.instructions.slice(i, i + size), depth);
+        if (replacement !== undefined) expr.replace(i, i + size, ...replacement);
     }
 
     for (const instruction of expr.instructions) {
         if (instruction.type === "structured") {
-            peephole(instruction.args.expression, fn, size);
-            if (instruction.args.expression2) peephole(instruction.args.expression2, fn, size);
+            peephole(instruction.args.expression, fn, size, depth + 1);
+            if (instruction.args.expression2) peephole(instruction.args.expression2, fn, size, depth + 1);
         }
     }
 }

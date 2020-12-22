@@ -1,5 +1,7 @@
 import {WFunctionBuilder, WExpression, Instructions, f32Type, f64Type, i32Type} from "../wasm";
+import {labelidx} from "../wasm/base_types";
 import {WLocal} from "../wasm/functions";
+import {InstrInstance} from "../wasm/instr_helpers";
 import {Optimizer, peephole} from "./optimizer";
 
 const optimizers: Optimizer[] = [];
@@ -86,6 +88,43 @@ optimizers.push({
         }, 4);
     }
 });
+
+optimizers.push({
+    name: "remove unused blocks and loops",
+    run: (fn, expr) => {
+        peephole(expr, ([instr]) => {
+            if (instr.type !== "structured" || instr.name === "if" || instr.args.type !== null) return;
+            if (branchedTo(instr)) return;
+
+            // we can remove the block/loop as nothing branches to it
+            const replacement = instr.args.expression;
+            // however we must decrement the values of branch instructions inside the block which branch outside
+            peephole(replacement, ([child], depth) => {
+                if (child.type !== "index" || child.args.value < depth) return;
+
+                if (child.name === "br") {
+                    return [Instructions.br(child.args.value - 1n as labelidx)];
+                } else if (child.name === "br_if") {
+                    return [Instructions.br_if(child.args.value - 1n as labelidx)];
+                }
+            }, 1);
+
+            return replacement.instructions.slice();
+        }, 1);
+    }
+});
+
+function branchedTo(instr: InstrInstance, depth = -1n): boolean {
+    if (instr.type === "index" && instr.name.startsWith("br")) {
+        return instr.args.value === depth;
+    }
+    if (instr.type !== "structured") return false;
+
+    const {expression, expression2} = instr.args;
+    if (expression.instructions.some(child => branchedTo(child, depth + 1n))) return true;
+    if (expression2 === undefined) return false;
+    return expression2.instructions.some(child => branchedTo(child, depth + 1n));
+}
 
 function emulateOverflow(bits: number, value: bigint) {
     const bitmask = 2n ** BigInt(bits) - 1n;

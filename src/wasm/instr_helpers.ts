@@ -276,7 +276,7 @@ export class WExpression {
         this._stack.unshift(...stack);
     }
 
-    replace(start: number, end: number, ...items: PartialInstr[]): void {
+    replace(start: number, end: number, ...items: (PartialInstr | InstrInstance)[]): void {
         if (start < 0 || end < start || start >= this._instructions.length) {
             throw new Error("Invalid replacement indices");
         }
@@ -284,15 +284,22 @@ export class WExpression {
         // stack and instructions before
         const stack: ValueType[] = []; // new instructions going at start of expression, so stack will be empty
         const instructions: InstrInstance[] = this._instructions.slice(0, start);
-        instructions.forEach(x => this.stackManipulation(stack, x));
+        instructions.forEach(x => this.stackManipulation(x, stack));
 
         // new instructions
-        for (const newInstr of items) instructions.push(this.createInstr(newInstr, stack));
+        for (const newInstr of items) {
+            if (typeof newInstr === "function") {
+                instructions.push(this.createInstr(newInstr, stack));
+            } else {
+                this.stackManipulation(newInstr, stack);
+                instructions.push(newInstr);
+            }
+        }
 
         // instructions after
         try {
             for (let i = end, instr; i < this._instructions.length; i++) {
-                this.stackManipulation(stack, instr = this._instructions[i]);
+                this.stackManipulation(instr = this._instructions[i], stack);
                 instructions.push(instr);
             }
 
@@ -303,11 +310,11 @@ export class WExpression {
 
             this._instructions = instructions;
         } catch (e) {
-            throw new Error("Invalid replacement due to: \n" + e.stack);
+            throw new Error(`Invalid replacement due to: \n\n${e.stack}\n`);
         }
     }
 
-    private stackManipulation(stack: ValueType[], instr: InstrInstance) {
+    private stackManipulation(instr: InstrInstance, stack: ValueType[]) {
         // check stack parameters
         for (let i = instr.parameters.length - 1; i >= 0; i--) {
             if (instr.parameters[i] !== stack.pop()) {
@@ -325,7 +332,7 @@ export class WExpression {
             builder: this.builder,
             stack
         });
-        this.stackManipulation(stack, instr);
+        this.stackManipulation(instr, stack);
         return instr;
     }
 
