@@ -26,11 +26,10 @@ function arbitrary(ctx: WFnGenerator, e: CFunctionCall, result: ValueType | null
 
     return [
         ...parameterInstructions,
-        ({parent}) => ({
+        () => ({
             name: "arbitrary",
             type: "zeroArg",
             args: {},
-            parent,
 
             encoded: instructionBytes as byte[],
             parameters: parameterArgs.map(parm => realType(parm.type)),

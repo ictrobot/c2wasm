@@ -8,7 +8,6 @@ type ReadResource = "memory" | WLocal | WGlobal;
 type WriteResource = "functionCall" | "arbitrary" | ReadResource;
 
 type Context = {
-    parent: StructureInstance | null,
     depth: number;
     builder: WFunctionBuilder,
     stack: ReadonlyArray<ValueType>;
@@ -20,7 +19,6 @@ export interface BaseInstance {
     readonly name: string;
     readonly type: string;
     readonly args: object;
-    readonly parent: StructureInstance | null;
 
     /* Instruction as bytes */
     encoded: ReadonlyArray<byte>;
@@ -44,14 +42,14 @@ interface ZeroArgInstance extends BaseInstance {
 
 export function zeroArgs(name: string, opcode: number[], parameters: ReadonlyArray<ValueType>, result: ValueType | null,
                          reads: ReadResource[] = [], writes: WriteResource[] = []): () => InstrContext<ZeroArgInstance> {
-    const instr: Omit<ZeroArgInstance, "parent"> = {
+    const instr: ZeroArgInstance = {
         name,
         type: "zeroArg", args: {},
         encoded: opcode as byte[],
         parameters, result,
         reads, writes
     };
-    return () => ({parent}) => Object.setPrototypeOf({parent}, instr);
+    return () => () => instr;
 }
 
 type DataFlow = {parameters: ValueType[], result: ValueType | null, reads: ReadResource[], writes: WriteResource[]};
@@ -59,8 +57,7 @@ export function zeroArgsSpecial(name: string, opcode: number[], specialFn: Instr
     return () => (context) => {
         const {parameters, result, reads, writes} = specialFn(context);
         return {
-            name, parent: context.parent,
-            type: "zeroArg", args: {},
+            name, type: "zeroArg", args: {},
             encoded: opcode as byte[],
             parameters, result,
             reads, writes
@@ -78,9 +75,8 @@ interface ConstantInstance<T extends bigint | number> extends BaseInstance {
 export function constantArg<T extends bigint | number>(name: string, opcode: number[],
                                                        encodeFn: (x: T) => byte[],
                                                        result: ValueType): (x: T) => InstrContext<ConstantInstance<T>> {
-    return (value) => ({parent}) => ({
-        name, parent,
-        type: "constant", args: {value},
+    return (value) => () => ({
+        name, type: "constant", args: {value},
         encoded: [...opcode as byte[], ...encodeFn(value)],
         parameters: [], result,
         reads: [], writes: []
@@ -101,8 +97,8 @@ export function memArg(name: string, opcode: number[],
         const encoded = [...opcode as byte[], ...encodeU32(align), ...encodeU32(offset)];
         const args = {align, offset};
 
-        return ({parent}) => ({
-            name, parent, encoded,
+        return () => ({
+            name, encoded,
             type: "memory", args: args,
             parameters: type === "load" ? [i32Type] : [i32Type, valueType],
             result: type === "load" ? valueType : null,
@@ -144,7 +140,7 @@ export function idxArg<T extends bigint>(name: string, opcode: number[], suffix:
 
         return {
             name, encoded,
-            parent: context.parent, type: "index", args: {value},
+            type: "index", args: {value},
             parameters, result,
             reads, writes
         };
@@ -175,9 +171,7 @@ export function blockLoopInstr(opcode: number, name: "block" | "loop"): (type: V
         if (contextFn) contextFn(context); // used to store depth
 
         const instr: BlockLoopInstance = {
-            name,
-            parent: context.parent,
-            type: "structured",
+            name, type: "structured",
             parameters: [], result: type,
 
             get encoded() {
@@ -204,7 +198,7 @@ export function ifInstr(opcode: number, elseOpcode: number): (type: ValueType | 
         if (contextFn) contextFn(context); // used to store depth
 
         const instr: IfInstance = {
-            name: "if", type: "structured", parent: context.parent,
+            name: "if", type: "structured",
             parameters: [i32Type], result: type,
 
             get encoded() {
@@ -327,7 +321,6 @@ export class WExpression {
     private createInstr(instrFn: PartialInstr, stack: ValueType[]): InstrInstance {
         // get instance of the instruction
         const instr = instrFn({
-            parent: this.parent,
             depth: this.depth,
             builder: this.builder,
             stack
