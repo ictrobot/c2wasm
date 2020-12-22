@@ -2,16 +2,21 @@ import {WFunctionBuilder, WExpression, Instructions, f32Type, f64Type, i32Type} 
 import {labelidx} from "../wasm/base_types";
 import {WLocal} from "../wasm/functions";
 import {InstrInstance} from "../wasm/instr_helpers";
+import {getFlags} from "./flags";
 import {Optimizer, peephole} from "./optimizer";
 
 const optimizers: Optimizer[] = [];
 
 export function optimize(fn: WFunctionBuilder, expr: WExpression): void {
-    optimizers.forEach(opt => opt.run(fn, expr));
+    const flags = getFlags();
+    for (const optimizer of optimizers) {
+        if (optimizer.enabled(flags)) optimizer.run(fn, expr);
+    }
 }
 
 optimizers.push({
     name: "return",
+    enabled: () => true,
     run: (fn, expr) => {
         if (fn.type[1].length > 0) {
             // if function returns something
@@ -28,6 +33,7 @@ optimizers.push({
 
 optimizers.push({
     name: "[local.set, local.get] => [local.tee]",
+    enabled: (flags) => flags.peephole_local_tee,
     run: (fn, expr) => {
         peephole(expr, ([instr1, instr2]) => {
             if (instr1.name !== "local.set" || instr2.name !== "local.get") return;
@@ -40,6 +46,7 @@ optimizers.push({
 
 optimizers.push({
     name: "?.const, ?.const, ?.mul",
+    enabled: (flags) => flags.peephole_mul,
     run: (fn, expr) => {
         peephole(expr, ([instr1, instr2, instr3]) => {
             // eslint-disable-next-line eqeqeq
@@ -64,6 +71,7 @@ optimizers.push({
 
 optimizers.push({
     name: "?.const 0, ?.add",
+    enabled: (flags) => flags.peephole_add_0,
     run: (fn, expr) => {
         peephole(expr, ([instr1, instr2]) => {
             // eslint-disable-next-line eqeqeq
@@ -76,6 +84,7 @@ optimizers.push({
 
 optimizers.push({
     name: "i32.const, i32.add, i32.const, i32.add",
+    enabled: (flags) => flags.peephole_combine_adds,
     run: (fn, expr) => {
         peephole(expr, ([instr1, instr2, instr3, instr4]) => {
             // eslint-disable-next-line eqeqeq
@@ -91,6 +100,7 @@ optimizers.push({
 
 optimizers.push({
     name: "remove unused blocks and loops",
+    enabled: (flags) => flags.peephole_remove_blocks,
     run: (fn, expr) => {
         peephole(expr, ([instr]) => {
             if (instr.type !== "structured" || instr.name === "if" || instr.args.type !== null) return;
