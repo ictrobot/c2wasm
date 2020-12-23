@@ -1,11 +1,11 @@
-import {WFunctionBuilder, WExpression} from "../wasm";
+import {WExpression} from "../wasm";
 import {InstrInstance, PartialInstr} from "../wasm/instr_helpers";
 import {OptimizationFlags} from "./flags";
 
 export interface Optimizer {
     name: string,
     enabled: (flags: OptimizationFlags) => boolean,
-    run(fn: WFunctionBuilder, expr: WExpression): void
+    run(expr: WExpression): void
 }
 
 type PeepholeCallback = (instr: InstrInstance[], depth: number) => (InstrInstance | PartialInstr)[] | undefined;

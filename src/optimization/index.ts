@@ -1,24 +1,25 @@
-import {WFunctionBuilder, WExpression, Instructions, f32Type, f64Type, i32Type} from "../wasm";
+import {WExpression, Instructions, f32Type, f64Type, i32Type} from "../wasm";
 import {labelidx} from "../wasm/base_types";
 import {WLocal} from "../wasm/functions";
 import {InstrInstance} from "../wasm/instr_helpers";
+import {deadCodeElimination} from "./dead_code";
 import {getFlags} from "./flags";
 import {Optimizer, peephole} from "./optimizer";
 
 const optimizers: Optimizer[] = [];
 
-export function optimize(fn: WFunctionBuilder, expr: WExpression): void {
+export function optimize(expr: WExpression): void {
     const flags = getFlags();
     for (const optimizer of optimizers) {
-        if (optimizer.enabled(flags)) optimizer.run(fn, expr);
+        if (optimizer.enabled(flags)) optimizer.run(expr);
     }
 }
 
 optimizers.push({
     name: "return",
     enabled: () => true,
-    run: (fn, expr) => {
-        if (fn.type[1].length > 0) {
+    run: (expr) => {
+        if (expr.builder.type[1].length > 0) {
             // if function returns something
             if (expr.get(-1).name === "return") {
                 // final return can be implicit
@@ -34,7 +35,7 @@ optimizers.push({
 optimizers.push({
     name: "[local.set, local.get] => [local.tee]",
     enabled: (flags) => flags.peephole_local_tee,
-    run: (fn, expr) => {
+    run: (expr) => {
         peephole(expr, ([instr1, instr2]) => {
             if (instr1.name !== "local.set" || instr2.name !== "local.get") return;
             const resource = instr1.writes[0];
@@ -47,7 +48,7 @@ optimizers.push({
 optimizers.push({
     name: "?.const, ?.const, ?.mul",
     enabled: (flags) => flags.peephole_mul,
-    run: (fn, expr) => {
+    run: (expr) => {
         peephole(expr, ([instr1, instr2, instr3]) => {
             // eslint-disable-next-line eqeqeq
             if (instr1.type !== "constant" || instr2.type !== "constant") return;
@@ -72,7 +73,7 @@ optimizers.push({
 optimizers.push({
     name: "?.const 0, ?.add",
     enabled: (flags) => flags.peephole_add_0,
-    run: (fn, expr) => {
+    run: (expr) => {
         peephole(expr, ([instr1, instr2]) => {
             // eslint-disable-next-line eqeqeq
             if (instr1.type !== "constant" || instr1.args.value != 0) return;
@@ -85,7 +86,7 @@ optimizers.push({
 optimizers.push({
     name: "i32.const, i32.add, i32.const, i32.add",
     enabled: (flags) => flags.peephole_combine_adds,
-    run: (fn, expr) => {
+    run: (expr) => {
         peephole(expr, ([instr1, instr2, instr3, instr4]) => {
             // eslint-disable-next-line eqeqeq
             if (instr1.type !== "constant" || instr3.type !== "constant") return;
@@ -101,7 +102,7 @@ optimizers.push({
 optimizers.push({
     name: "remove unused blocks and loops",
     enabled: (flags) => flags.peephole_remove_blocks,
-    run: (fn, expr) => {
+    run: (expr) => {
         peephole(expr, ([instr]) => {
             if (instr.type !== "structured" || instr.name === "if" || instr.args.type !== null) return;
             if (branchedTo(instr)) return;
@@ -120,6 +121,47 @@ optimizers.push({
             }, 1);
 
             return replacement.instructions.slice();
+        }, 1);
+    }
+});
+
+optimizers.push({
+    name: "Basic dead code elimination",
+    enabled: (flags) => flags.dead_code_elimination,
+    run: deadCodeElimination
+});
+
+optimizers.push({
+    name: "Remove unused locals",
+    enabled: (flags) => flags.peephole_unused_locals,
+    run: (expr) => {
+        const usedLocals = new Set<WLocal>();
+        for (const resource of expr.writes) {
+            if (resource instanceof WLocal && !resource.isArgument) usedLocals.add(resource);
+        }
+        if (usedLocals.size === expr.builder.locals.length) return;
+
+        // store current list of locals to enable lookup when re-encoding
+        const oldLocals = expr.builder.args.slice();
+        oldLocals.push(...expr.builder.locals);
+
+        // remove any unused locals from builder
+        for (const local of expr.builder.locals.slice()) { // slice needed to avoid modifying whilst iterating
+            if (!usedLocals.has(local)) expr.builder.deleteLocal(local);
+        }
+
+        // now have to re-encode any local instructions
+        peephole(expr, ([instr]) => {
+            if (instr.type !== "index" || !instr.name.startsWith("local.")) return;
+            const local = oldLocals[Number(instr.args.value)];
+
+            if (instr.name === "local.get") {
+                return [Instructions.local.get(local)];
+            } else if (instr.name === "local.set") {
+                return [Instructions.local.set(local)];
+            } else if (instr.name === "local.tee") {
+                return [Instructions.local.tee(local)];
+            }
         }, 1);
     }
 });

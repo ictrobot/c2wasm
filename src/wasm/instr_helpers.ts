@@ -5,7 +5,7 @@ import {WGlobal} from "./global";
 import {ValueType, i32Type} from "./wtypes";
 
 type ReadResource = "memory" | WLocal | WGlobal;
-type WriteResource = "functionCall" | "arbitrary" | ReadResource;
+type WriteResource = "jump" | "arbitraryCode" | ReadResource;
 
 type Context = {
     depth: number;

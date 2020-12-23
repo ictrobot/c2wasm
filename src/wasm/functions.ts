@@ -70,7 +70,7 @@ export class WFunctionBuilder {
     private readonly _locals: WLocal[] = [];
 
     private constructor(readonly fn: WFunction) {
-        this._arguments = fn.type[0].map(t => new WLocal(this._localidx.bind(this), t));
+        this._arguments = fn.type[0].map(t => new WLocal(this._localidx.bind(this), t, true));
     }
 
     get locals(): ReadonlyArray<WLocal> {
@@ -78,9 +78,15 @@ export class WFunctionBuilder {
     }
 
     addLocal(t: ValueType): WLocal {
-        const local = new WLocal(this._localidx.bind(this), t);
+        const local = new WLocal(this._localidx.bind(this), t, false);
         this._locals.push(local);
         return local;
+    }
+
+    deleteLocal(local: WLocal): void {
+        // WARNING! this will invalidate any instructions already encoded
+        const index = this._locals.indexOf(local);
+        if (index >= 0) this._locals.splice(index, 1);
     }
 
     get args(): ReadonlyArray<WLocal> {
@@ -113,13 +119,13 @@ export class WFunctionBuilder {
         const builder = new WFunctionBuilder(fn);
         const expression = new WExpression(null, 0, builder);
         expression.push(...bodyFn(builder));
-        optimize(builder, expression);
+        optimize(expression);
         return [expression.encoded, builder.locals.map(x => x.type)];
     }
 }
 
 export class WLocal {
-    constructor(private readonly lookup: (l: WLocal) => localidx, readonly type: ValueType) {
+    constructor(private readonly lookup: (l: WLocal) => localidx, readonly type: ValueType, readonly isArgument: boolean) {
     }
 
     getIndex(): localidx {

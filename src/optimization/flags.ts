@@ -5,7 +5,10 @@ const DEFAULT = {
     peephole_mul: true,
     peephole_add_0: true,
     peephole_combine_adds: true,
-    peephole_remove_blocks: true
+    peephole_remove_blocks: true,
+    peephole_unused_locals: true,
+
+    dead_code_elimination: true,
 } as const;
 
 export type OptimizationFlags = {[k in keyof typeof DEFAULT]: boolean};

@@ -17,24 +17,24 @@ export const Instructions = {
         /** TODO: if jumping forward out of block which produces result, br consumes result.
          *  However this is not used in c2wasm. */
         parameters: [], result: null,
-        reads: [], writes: []
+        reads: [], writes: ["jump"]
     })),
     br_if: idxArg<labelidx>("br_if",[0x0D], [], () => ({
         parameters: [], result: null,
-        reads: [], writes: []
+        reads: [], writes: ["jump"]
     })),
     // br_table: {...},
     return: zeroArgsSpecial("return", [0x0F], ({builder}) => ({
         parameters: builder.type[1], result: null,
-        reads: [], writes: []
+        reads: [], writes: ["jump"]
     })),
     call: idxArg<funcidx>("call", [0x10], [], ({builder, value}) => {
         const func = builder.fn.parent._functionLookup(value);
-        return {parameters: func.type[0], result: func.type[1][0] ?? null, reads: [], writes: ["functionCall"]};
+        return {parameters: func.type[0], result: func.type[1][0] ?? null, reads: [], writes: ["jump"]};
     }),
     call_indirect: idxArg<typeidx>("call_indirect", [0x11], [0x00], ({builder, value}) => {
         const type = builder.fn.parent._typeLookup(value);
-        return {parameters: [...type[0], i32Type], result: type[1][0] ?? null, reads: [], writes: ["functionCall"]};
+        return {parameters: [...type[0], i32Type], result: type[1][0] ?? null, reads: [], writes: ["jump"]};
     }),
 
 
