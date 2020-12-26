@@ -115,7 +115,6 @@ export class WGenerator {
 }
 
 export class WFnGenerator {
-    private temporaries: WLocal[] = [];
     shadowStackUsage: number = 0;
 
     constructor(readonly gen: WGenerator, readonly builder: WFunctionBuilder, readonly fnName: string) {
@@ -129,18 +128,10 @@ export class WFnGenerator {
         return expressionGeneration(this, e, discardResult);
     }
 
-    withTemporaryLocal(type: ValueType, expressionFn: (local: WLocal) => WInstruction[]): WInstruction[] {
-        const localIdx = this.temporaries.findIndex(x => x.type === type);
-        let local: WLocal;
-        if (localIdx < 0) {
-            // no previous temporary local can be used, allocate a new one
-            local = this.builder.addLocal(type);
-        } else {
-            local = this.temporaries.splice(localIdx, 1)[0];
-        }
-
+    withTemporaryLocal<T>(type: ValueType, expressionFn: (local: WLocal) => T): T {
+        const local = this.builder.getTempLocal(type);
         const expression = expressionFn(local);
-        this.temporaries.push(local);
+        this.builder.freeTempLocal(local);
         return expression;
     }
 }

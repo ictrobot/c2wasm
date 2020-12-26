@@ -68,6 +68,7 @@ export class WFunction {
 export class WFunctionBuilder {
     private readonly _arguments: WLocal[];
     private readonly _locals: WLocal[] = [];
+    private readonly _freeTempLocals: WLocal[] = [];
 
     private constructor(readonly fn: WFunction) {
         this._arguments = fn.type[0].map(t => new WLocal(this._localidx.bind(this), t, true));
@@ -81,6 +82,21 @@ export class WFunctionBuilder {
         const local = new WLocal(this._localidx.bind(this), t, false);
         this._locals.push(local);
         return local;
+    }
+
+    getTempLocal(type: ValueType): WLocal {
+        const index = this._freeTempLocals.findIndex(x => x.type === type);
+        if (index < 0) {
+            // no previous temporary local can be used, allocate a new one
+            return this.addLocal(type);
+        } else {
+            // reuse temporary local
+            return this._freeTempLocals.splice(index, 1)[0];
+        }
+    }
+
+    freeTempLocal(local: WLocal): void {
+        this._freeTempLocals.push(local);
     }
 
     deleteLocal(local: WLocal): void {

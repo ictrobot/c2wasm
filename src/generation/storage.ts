@@ -5,6 +5,7 @@ import {Scope} from "../tree/scope";
 import {CType, CArithmetic, CPointer, CStruct, CUnion, CArray, CVoid, CFuncType} from "../tree/types";
 import {Instructions, i32Type} from "../wasm";
 import {localidx} from "../wasm/base_types";
+import {WLocal} from "../wasm/functions";
 import {WInstruction} from "../wasm/instructions";
 import {GenError} from "./gen_error";
 import {WFnGenerator, WGenerator} from "./generator";
@@ -35,8 +36,9 @@ export function storageSetupStaticVar(ctx: WGenerator, d: CVarDefinition): (() =
     }
 }
 
-export function storageSetupScope(ctx: WFnGenerator, s: Scope): WInstruction[] {
+export function storageSetupScope(ctx: WFnGenerator, s: Scope): [setup: WInstruction[], finishedCallback: () => void] {
     const instr: WInstruction[] = [];
+    const temporaries: WLocal[] = [];
 
     for (const declaration of s.declarations) {
         if (declaration instanceof CArgument) {
@@ -89,9 +91,11 @@ export function storageSetupScope(ctx: WFnGenerator, s: Scope): WInstruction[] {
                     });
                     ctx.shadowStackUsage += declaration.type.bytes;
                 } else {
+                    const local = ctx.builder.getTempLocal(realType(declaration.type));
+                    temporaries.push(local);
                     setStorageLocation(declaration, {
                         type: "local",
-                        index: ctx.builder.addLocal(realType(declaration.type))
+                        index: local
                     });
                 }
             } else if (declaration.storage === "static" && getStorageLocation(declaration) === undefined) { // storage should have already been setup
@@ -100,7 +104,7 @@ export function storageSetupScope(ctx: WFnGenerator, s: Scope): WInstruction[] {
         }
     }
 
-    return instr;
+    return [instr, () => temporaries.forEach(x => ctx.builder.freeTempLocal(x))];
 }
 
 // the storage operations

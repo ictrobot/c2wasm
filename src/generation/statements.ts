@@ -1,4 +1,3 @@
-import {CFuncDefinition} from "../tree/declarations";
 import {CConstant} from "../tree/expressions";
 import * as c from "../tree/statements";
 import {CArithmetic, CPointer} from "../tree/types";
@@ -12,9 +11,10 @@ import {storageSetupScope} from "./storage";
 import {valueType} from "./type_conversion";
 
 function _compoundStatement(ctx: WFnGenerator, s: c.CCompoundStatement): WInstruction[] {
-    const instr = storageSetupScope(ctx, s.scope);
+    const [instr, finishCallback] = storageSetupScope(ctx, s.scope);
     const body = s.statements.flatMap(s2 => statementGeneration(ctx, s2));
     body.unshift(...instr);
+    finishCallback();
     return body;
 }
 
@@ -35,7 +35,7 @@ function _if(ctx: WFnGenerator, s: c.CIf): WInstruction[] {
 
 function _forLoop(ctx: WFnGenerator, s: c.CForLoop): WInstruction[] {
     if (s.body === undefined) throw new GenError("Invalid for loop body", ctx, s.node);
-    const storageSetup = storageSetupScope(ctx, s.scope);
+    const [instr, storageFinishCallback] = storageSetupScope(ctx, s.scope);
 
     let init: WInstruction[] = [];
     if (Array.isArray(s.init)) {
@@ -52,9 +52,7 @@ function _forLoop(ctx: WFnGenerator, s: c.CForLoop): WInstruction[] {
     let update: WInstruction[] = [];
     if (s.update !== undefined) update = ctx.expression(s.update, true);
 
-    return [
-        ...storageSetup,
-        ...init,
+    instr.push(...init,
         Instructions.loop(null, [
             ...test,
             Instructions.if(null, [
@@ -65,7 +63,10 @@ function _forLoop(ctx: WFnGenerator, s: c.CForLoop): WInstruction[] {
                 Instructions.br(1) // jump back to start of loop
             ], undefined, storeBreakDepth(s))
         ])
-    ];
+    );
+
+    storageFinishCallback();
+    return instr;
 }
 
 function _whileLoop(ctx: WFnGenerator, s: c.CWhileLoop): WInstruction[] {
