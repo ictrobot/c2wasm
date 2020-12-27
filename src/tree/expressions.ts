@@ -354,7 +354,7 @@ export class CShift {
 
 export class CRelational {
     readonly lvalue = false;
-    readonly type = CArithmetic.S32;
+    readonly type = CArithmetic.BOOL;
     readonly commonType: CArithmetic;
 
     constructor(readonly node: ParseNode, readonly lhs: CExpression, readonly rhs: CExpression, readonly op: "LT" | "GT" | "LEq" | "GEq") {
@@ -374,7 +374,7 @@ export class CRelational {
 
 export class CEquality {
     readonly lvalue = false;
-    readonly type = CArithmetic.S32;
+    readonly type = CArithmetic.BOOL;
     readonly commonType: CArithmetic;
 
     constructor(readonly node: ParseNode, readonly lhs: CExpression, readonly rhs: CExpression, readonly op: "==" | "!=") {
@@ -410,7 +410,7 @@ export class CBitwiseAndOr {
 
 export class CLogicalAndOr {
     readonly lvalue = false;
-    readonly type = CArithmetic.S32;
+    readonly type = CArithmetic.BOOL;
 
     constructor(readonly node: ParseNode, readonly lhs: CExpression, readonly rhs: CExpression, readonly op: "and" | "or") {
         checks.asArithmeticOrPointer(lhs.node, lhs.type);

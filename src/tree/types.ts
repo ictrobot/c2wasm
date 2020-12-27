@@ -274,7 +274,7 @@ export class CArithmetic {
     static readonly U64 = new CArithmetic("unsigned long", 8, "unsigned");
     static readonly S64 = new CArithmetic("long", 8, "signed");
 
-    static readonly BOOL = new CArithmetic("bool", 4, "unsigned");
+    static readonly BOOL = new CArithmetic("bool", 4, "signed");
 }
 
 export const CSizeT = CArithmetic.U32;

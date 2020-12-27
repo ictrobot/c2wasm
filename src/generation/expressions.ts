@@ -469,7 +469,7 @@ export function subExpr(ctx: WFnGenerator, e: c.CExpression, desiredType: CType,
 export function condition(ctx: WFnGenerator, e: c.CExpression, anyNonZeroI32 = true): WInstruction[] {
     const wType = implType(e.type);
     if (wType === i32Type || wType instanceof CPointer) {
-        if (anyNonZeroI32) {
+        if (anyNonZeroI32 || CArithmetic.BOOL.equals(e.type)) {
             return expressionGeneration(ctx, e, false);
         } else {
             return [...expressionGeneration(ctx, e, false), Instructions.i32.const(0n), Instructions.i32.ne()];
