@@ -21,7 +21,7 @@ export class WImportedFunction {
 
 export class WFunction {
     private body?: byte[];
-    private locals: ValueType[] = [];
+    private _locals: ValueType[] = [];
 
     constructor(readonly parent: ModuleBuilder, readonly type: FunctionType, readonly exportName?: string) {
     }
@@ -36,7 +36,7 @@ export class WFunction {
 
     define(bodyFn: (b: WFunctionBuilder) => WInstruction[]): void {
         if (this.body !== undefined) throw new Error(`Wasm function already defined`);
-        [this.body, this.locals] = WFunctionBuilder.build(this, bodyFn);
+        [this.body, this._locals] = WFunctionBuilder.build(this, bodyFn);
     }
 
     toBytes(): byte[] {
@@ -62,6 +62,10 @@ export class WFunction {
         code.push(...this.body); // expression
         code.unshift(...encodeU32(BigInt(code.length)));
         return code;
+    }
+
+    get locals(): ReadonlyArray<ValueType> {
+        return this._locals;
     }
 }
 
