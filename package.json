@@ -14,7 +14,7 @@
   },
   "license": "MIT",
   "scripts": {
-    "test": "ava --timeout 1m",
+    "test": "ts-node src/c_library/standard_library.ts && tsc && ava --timeout 1m",
     "start": "node --experimental-wasm-bigint -r ts-node/register src/main.ts",
     "parser": "jison src/parsing/c_grammar.jison -o src/parsing/gen/c_grammar.js --default-action=none,merge",
     "lint": "eslint .",
@@ -22,6 +22,7 @@
     "build": "ts-node src/c_library/standard_library.ts && webpack"
   },
   "devDependencies": {
+    "@ava/typescript": "^1.1.1",
     "@types/moo": "^0.5.3",
     "@types/node": "^14.14.6",
     "@typescript-eslint/eslint-plugin": "^4.6.0",
@@ -48,12 +49,18 @@
       "tests/**/*",
       "!tests/benchmark"
     ],
-    "extensions": [
-      "ts"
-    ],
     "require": [
-      "ts-node/register"
+      "source-map-support/register"
     ],
+    "typescript": {
+      "rewritePaths": {
+        "src/": "build/src/",
+        "tests/": "build/tests/"
+      },
+      "extensions": [
+        "ts"
+      ]
+    },
     "nodeArguments": [
       "--experimental-wasm-bigint"
     ]

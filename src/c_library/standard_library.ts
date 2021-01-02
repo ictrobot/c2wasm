@@ -39,7 +39,7 @@ function cacheOutOfDate(lib: Map<string, string>): boolean {
 }
 
 function updateCache(lib: Map<string, string>) {
-    console.log("[standard library]: cache out of date\n");
+    console.trace("[standard library]: cache out of date\n");
 
     const obj: {[s: string]: string} = {};
     for (const [path, contents] of lib.entries()) {
@@ -50,7 +50,7 @@ function updateCache(lib: Map<string, string>) {
 }
 
 let lib: Map<string, string>;
-if (Object.prototype.hasOwnProperty.call(fs, "readdirSync")) {
+if (Object.prototype.hasOwnProperty.call(fs, "readdirSync") && fs.existsSync(IMPL_FOLDER)) {
     lib = list("", IMPL_FOLDER);
 
     try {

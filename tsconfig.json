@@ -78,6 +78,11 @@
   },
   "exclude": [
     "build",
-    "dist"
+    "dist",
+    "*.json" /* Ignore non-nested JSON files e.g. package.json */
+  ],
+  "include": [
+    "**/*.ts",
+    "**/*.json" /* Include the C library json file */
   ]
 }
