@@ -20,7 +20,7 @@ export class WImportedFunction {
 }
 
 export class WFunction {
-    private body?: byte[];
+    private _body?: WExpression;
     private _locals: ValueType[] = [];
 
     constructor(readonly parent: ModuleBuilder, readonly type: FunctionType, readonly exportName?: string) {
@@ -35,12 +35,12 @@ export class WFunction {
     }
 
     define(bodyFn: (b: WFunctionBuilder) => WInstruction[]): void {
-        if (this.body !== undefined) throw new Error(`Wasm function already defined`);
-        [this.body, this._locals] = WFunctionBuilder.build(this, bodyFn);
+        if (this._body !== undefined) throw new Error(`Wasm function already defined`);
+        [this._body, this._locals] = WFunctionBuilder.build(this, bodyFn);
     }
 
     toBytes(): byte[] {
-        if (this.body === undefined) throw new Error(`Wasm function body not defined`);
+        if (this._body === undefined) throw new Error(`Wasm function body not defined`);
 
         // RLE is used to compress locals
         const locals: [count: bigint, type: ValueType][] = [];
@@ -59,13 +59,18 @@ export class WFunction {
 
         // encode function body
         const code: byte[] = encodeVec(locals.map(x => [...encodeU32(x[0]), x[1]])); // locals
-        code.push(...this.body); // expression
+        code.push(...this._body.encoded); // expression
         code.unshift(...encodeU32(BigInt(code.length)));
         return code;
     }
 
     get locals(): ReadonlyArray<ValueType> {
         return this._locals;
+    }
+
+    get body(): WExpression {
+        if (!this._body) throw new Error("Wasm function body is not yet defined");
+        return this._body;
     }
 }
 
@@ -135,12 +140,12 @@ export class WFunctionBuilder {
         throw "Local not found?";
     }
 
-    static build(fn: WFunction, bodyFn: (b: WFunctionBuilder) => WInstruction[]): [byte[], ValueType[]] {
+    static build(fn: WFunction, bodyFn: (b: WFunctionBuilder) => WInstruction[]): [WExpression, ValueType[]] {
         const builder = new WFunctionBuilder(fn);
         const expression = new WExpression(null, 0, builder);
         expression.push(...bodyFn(builder));
         optimize(expression);
-        return [expression.encoded, builder.locals.map(x => x.type)];
+        return [expression, builder.locals.map(x => x.type)];
     }
 }
 

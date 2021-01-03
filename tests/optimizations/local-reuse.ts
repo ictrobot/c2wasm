@@ -3,7 +3,7 @@ import {compileSnippet} from "../../src/compile";
 import {i32Type} from "../../src/wasm";
 
 test("scoped local reuse", async t => {
-    const module = await compileSnippet(`
+    const module = compileSnippet(`
         import void action(int a);
         
         void test() {

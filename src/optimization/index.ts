@@ -37,7 +37,8 @@ optimizers.push({
     name: "peephole optimizations",
     enabled: () => true,
     run: (expr) => {
-        peepholeMulti(expr, peepholeOptimizers.filter(x => x.enabled(getFlags())).map(x => [x.run, x.peepholeSize]));
+        const flags = getFlags();
+        peepholeMulti(expr, peepholeOptimizers.filter(x => x.enabled(flags)).map(x => [x.run, x.peepholeSize]));
     }
 });
 
