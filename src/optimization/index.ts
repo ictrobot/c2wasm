@@ -1,10 +1,11 @@
-import {WExpression, Instructions, f32Type, f64Type, i32Type} from "../wasm";
+import {WExpression, Instructions} from "../wasm";
 import {labelidx} from "../wasm/base_types";
 import {WLocal} from "../wasm/functions";
 import {InstrInstance} from "../wasm/instr_helpers";
 import {deadCodeElimination} from "./dead_code";
 import {getFlags} from "./flags";
-import {Optimizer, peephole} from "./optimizer";
+import {Optimizer} from "./optimizer";
+import {peephole, peepholeMulti, peepholeOptimizers} from "./peephole";
 
 const optimizers: Optimizer[] = [];
 
@@ -33,75 +34,16 @@ optimizers.push({
 );
 
 optimizers.push({
-    name: "[local.set, local.get] => [local.tee]",
-    enabled: (flags) => flags.peephole_local_tee,
+    name: "peephole optimizations",
+    enabled: () => true,
     run: (expr) => {
-        peephole(expr, ([instr1, instr2]) => {
-            if (instr1.name !== "local.set" || instr2.name !== "local.get") return;
-            const resource = instr1.writes[0];
-            if (!(resource instanceof WLocal) || instr2.reads[0] !== resource) return;
-            return [Instructions.local.tee(resource)];
-        }, 2);
-    }
-});
-
-optimizers.push({
-    name: "?.const, ?.const, ?.mul",
-    enabled: (flags) => flags.peephole_mul,
-    run: (expr) => {
-        peephole(expr, ([instr1, instr2, instr3]) => {
-            // eslint-disable-next-line eqeqeq
-            if (instr1.type !== "constant" || instr2.type !== "constant") return;
-            if (!instr3.name.endsWith(".mul")) return;
-            if (instr1.result === f32Type) {
-                return [Instructions.f32.const(Number(instr1.args.value) * Number(instr2.args.value))];
-            } else if (instr1.result === f64Type) {
-                return [Instructions.f64.const(Number(instr1.args.value) * Number(instr2.args.value))];
-            }
-
-            const value = BigInt(instr1.args.value) * BigInt(instr2.args.value);
-            if (instr1.result === i32Type) {
-                return [Instructions.i32.const(emulateOverflow(32, value))];
-            } else {
-                return [Instructions.i64.const(emulateOverflow(64, value))];
-            }
-        }, 3);
-    }
-});
-
-
-optimizers.push({
-    name: "?.const 0, ?.add",
-    enabled: (flags) => flags.peephole_add_0,
-    run: (expr) => {
-        peephole(expr, ([instr1, instr2]) => {
-            // eslint-disable-next-line eqeqeq
-            if (instr1.type !== "constant" || instr1.args.value != 0) return;
-            if (instr2.name.endsWith(".add")) return [];
-        }, 2);
-    }
-});
-
-
-optimizers.push({
-    name: "i32.const, i32.add, i32.const, i32.add",
-    enabled: (flags) => flags.peephole_combine_adds,
-    run: (expr) => {
-        peephole(expr, ([instr1, instr2, instr3, instr4]) => {
-            // eslint-disable-next-line eqeqeq
-            if (instr1.type !== "constant" || instr3.type !== "constant") return;
-            if (instr2.name !== "i32.add" || instr4.name !== "i32.add") return;
-            return [
-                Instructions.i32.const(emulateOverflow(32, BigInt(instr1.args.value) + BigInt(instr3.args.value))),
-                Instructions.i32.add()
-            ];
-        }, 4);
+        peepholeMulti(expr, peepholeOptimizers.filter(x => x.enabled(getFlags())).map(x => [x.run, x.peepholeSize]));
     }
 });
 
 optimizers.push({
     name: "remove unused blocks and loops",
-    enabled: (flags) => flags.peephole_remove_blocks,
+    enabled: (flags) => flags.unused_blocks,
     run: (expr) => {
         peephole(expr, ([instr]) => {
             if (instr.type !== "structured" || instr.name === "if" || instr.args.type !== null) return;
@@ -133,7 +75,7 @@ optimizers.push({
 
 optimizers.push({
     name: "Remove unused locals",
-    enabled: (flags) => flags.peephole_unused_locals,
+    enabled: (flags) => flags.unused_locals,
     run: (expr) => {
         const usedLocals = new Set<WLocal>();
         for (const resource of expr.writes) {
@@ -176,9 +118,4 @@ function branchedTo(instr: InstrInstance, depth = -1n): boolean {
     if (expression.instructions.some(child => branchedTo(child, depth + 1n))) return true;
     if (expression2 === undefined) return false;
     return expression2.instructions.some(child => branchedTo(child, depth + 1n));
-}
-
-function emulateOverflow(bits: number, value: bigint) {
-    const bitmask = 2n ** BigInt(bits) - 1n;
-    return value & bitmask;
 }
