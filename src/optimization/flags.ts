@@ -2,7 +2,7 @@ const DEFAULT = {
     generation_try_constant_expr: true,
 
     peephole_local_tee: true,
-    peephole_mul: true,
+    peephole_constants_add_mul: true,
     peephole_add_0: true,
     peephole_combine_adds: true,
 
