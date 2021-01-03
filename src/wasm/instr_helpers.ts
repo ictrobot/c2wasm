@@ -1,8 +1,8 @@
-import {byte} from "./base_types";
+import {byte, labelidx} from "./base_types";
 import {encodeU32} from "./encoding";
 import {WFunctionBuilder, WLocal} from "./functions";
 import {WGlobal} from "./global";
-import {ValueType, i32Type} from "./wtypes";
+import {ValueType, i32Type, encodeVec} from "./wtypes";
 
 type ReadResource = "memory" | WLocal | WGlobal;
 type WriteResource = "jump" | "arbitraryCode" | ReadResource;
@@ -32,7 +32,7 @@ export interface BaseInstance {
     readonly writes: ReadonlyArray<WriteResource>;
 }
 
-export type InstrInstance = ZeroArgInstance | ConstantInstance<bigint | number> | MemInstance | IdxInstance | StructureInstance;
+export type InstrInstance = ZeroArgInstance | ConstantInstance<bigint | number> | MemInstance | IdxInstance | TableInstance | StructureInstance;
 
 // Zero argument instructions
 interface ZeroArgInstance extends BaseInstance {
@@ -143,6 +143,26 @@ export function idxArg<T extends bigint>(name: string, opcode: number[], suffix:
             type: "index", args: {value},
             parameters, result,
             reads, writes
+        };
+    };
+}
+
+interface TableInstance extends BaseInstance {
+    type: "table";
+    args: {defaultValue: bigint, valueTable: bigint[]};
+}
+
+export function brTableInstr(opcode: number): (defaultLbl: Index<labelidx>, lblArray: Index<labelidx>[]) => InstrContext<TableInstance> {
+    return (defaultLbl, lblArray) => context => {
+        const defaultValue = getIndex(defaultLbl, context.depth);
+        const valueTable = lblArray.map(x => getIndex(x, context.depth));
+        const encoded = [opcode as byte, ...encodeVec(valueTable.map(encodeU32)), ...encodeU32(defaultValue)];
+
+        return {
+            name: "br_table", encoded,
+            type: "table", args: {defaultValue, valueTable},
+            parameters: [i32Type], result: null,
+            reads: [], writes: ["jump"]
         };
     };
 }

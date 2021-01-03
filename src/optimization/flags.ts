@@ -1,5 +1,6 @@
 const DEFAULT = {
     generation_try_constant_expr: true,
+    generation_switch_br_table: false,
 
     peephole_local_tee: true,
     peephole_constants_add_mul: true,

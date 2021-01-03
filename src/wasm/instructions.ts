@@ -1,6 +1,6 @@
 import {labelidx, funcidx, typeidx, localidx, globalidx} from "./base_types";
 import {encodeF32, encodeF64, encodeInt64Constant, encodeInt32Constant} from "./encoding";
-import {zeroArgs, blockLoopInstr, ifInstr, idxArg, zeroArgsSpecial, memArg, constantArg, PartialInstr} from "./instr_helpers";
+import {zeroArgs, blockLoopInstr, ifInstr, idxArg, zeroArgsSpecial, memArg, constantArg, PartialInstr, brTableInstr} from "./instr_helpers";
 import {i32Type, i64Type, f32Type, f64Type} from "./wtypes";
 
 export type WInstruction = PartialInstr;
@@ -23,7 +23,7 @@ export const Instructions = {
         parameters: [], result: null,
         reads: [], writes: ["jump"]
     })),
-    // br_table: {...},
+    br_table: brTableInstr(0x0E),
     return: zeroArgsSpecial("return", [0x0F], ({builder}) => ({
         parameters: builder.type[1], result: null,
         reads: [], writes: ["jump"]

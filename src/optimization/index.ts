@@ -54,12 +54,20 @@ optimizers.push({
             const replacement = instr.args.expression;
             // however we must decrement the values of branch instructions inside the block which branch outside
             peephole(replacement, ([child], depth) => {
-                if (child.type !== "index" || child.args.value < depth) return;
+                if (child.type === "index") {
+                    if (child.args.value < depth) return;
 
-                if (child.name === "br") {
-                    return [Instructions.br(child.args.value - 1n as labelidx)];
-                } else if (child.name === "br_if") {
-                    return [Instructions.br_if(child.args.value - 1n as labelidx)];
+                    if (child.name === "br") {
+                        return [Instructions.br(child.args.value - 1n as labelidx)];
+                    } else if (child.name === "br_if") {
+                        return [Instructions.br_if(child.args.value - 1n as labelidx)];
+                    }
+                } else if (child.type === "table" && child.name === "br_table") {
+                    const {defaultValue, valueTable} = child.args;
+                    return [Instructions.br_table(
+                        (defaultValue < depth ? defaultValue : defaultValue - 1n) as labelidx,
+                        valueTable.map(v => (v < depth ? v : v - 1n) as labelidx)
+                    )];
                 }
             }, 1);
 
@@ -112,6 +120,9 @@ optimizers.push({
 function branchedTo(instr: InstrInstance, depth = -1n): boolean {
     if (instr.type === "index" && instr.name.startsWith("br")) {
         return instr.args.value === depth;
+    }
+    if (instr.type === "table" && instr.name === "br_table") {
+        return instr.args.defaultValue === depth || instr.args.valueTable.some(x => x === depth);
     }
     if (instr.type !== "structured") return false;
 

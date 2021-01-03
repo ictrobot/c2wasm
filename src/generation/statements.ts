@@ -1,7 +1,8 @@
+import {getFlags} from "../optimization/flags";
 import {CConstant} from "../tree/expressions";
 import * as c from "../tree/statements";
 import {CArithmetic, CPointer} from "../tree/types";
-import {Instructions} from "../wasm";
+import {Instructions, i32Type, i64Type} from "../wasm";
 import {labelidx} from "../wasm/base_types";
 import {WInstruction} from "../wasm/instructions";
 import {subExpr, condition, expressionGeneration, gInstr} from "./expressions";
@@ -101,21 +102,53 @@ function _switch(ctx: WFnGenerator, s: c.CSwitch): WInstruction[] {
             Instructions.local.set(value)
         ];
 
-        // build up jump table
+        let defaultIndex = s.children.findIndex(x => x.default);
+        if (defaultIndex === -1) defaultIndex = s.children.length;
+
         const checks: WInstruction[] = [];
-        let depth = 0;
+        // check if we can use br_table
+        let minValue = 2n ** 65n, maxValue = -minValue, numCases = 0;
         for (const child of s.children) {
             for (const sCase of child.cases) {
-                if (sCase.type instanceof CPointer) throw new GenError("Invalid switch case", ctx, s.node);
-                const constant = new CConstant(s.node, sCase.type, sCase.value);
-                checks.push(Instructions.local.get(value), ...subExpr(ctx, constant, s.expression.type), gInstr(type, "eq"));
-                checks.push(Instructions.br_if(depth));
+                if (sCase.value > maxValue) maxValue = BigInt(sCase.value);
+                if (sCase.value < minValue) minValue = BigInt(sCase.value);
+                numCases++;
             }
-            depth++;
         }
-        // add default
-        const defaultIndex = s.children.findIndex(x => x.default);
-        checks.push(Instructions.br(defaultIndex === -1 ? depth : defaultIndex));
+        if (maxValue - minValue <= Math.min(2 ** 16, numCases * 8) && getFlags().generation_switch_br_table) { // basic heuristic
+            // use br_table
+            checks.push(Instructions.local.get(value));
+            if (minValue < 0 || minValue > 16) { // adjust to start at zero
+                const typeInstrs = type === i32Type ? Instructions.i32 : Instructions.i64;
+                checks.push(typeInstrs.const(minValue), typeInstrs.sub());
+            } else {
+                minValue = 0n;
+            }
+            if (type === i64Type) checks.push(Instructions.i32.wrap_i64());
+
+            // build actual jump table
+            const table: number[] = Array(Number(maxValue - minValue) + 1).fill(defaultIndex);
+            for (const [depth, child] of s.children.entries()) {
+                for (const sCase of child.cases) {
+                    table[Number(sCase.value) - Number(minValue)] = depth;
+                }
+            }
+
+            checks.push(Instructions.br_table(defaultIndex, table));
+
+        } else {
+            // use manual jump table
+            for (const [depth, child] of s.children.entries()) {
+                for (const sCase of child.cases) {
+                    if (sCase.type instanceof CPointer) throw new GenError("Invalid switch case", ctx, s.node);
+                    const constant = new CConstant(s.node, sCase.type, sCase.value);
+                    checks.push(Instructions.local.get(value), ...subExpr(ctx, constant, s.expression.type), gInstr(type, "eq"));
+                    checks.push(Instructions.br_if(depth));
+                }
+            }
+            // add default
+            checks.push(Instructions.br(defaultIndex));
+        }
 
         // case bodies
         let block = Instructions.block(null, checks);
