@@ -18,7 +18,7 @@ export type OptimizationFlags = {[k in keyof typeof DEFAULT]: boolean};
 let current: OptimizationFlags = DEFAULT;
 
 export function setFlags(flags: Partial<OptimizationFlags> | null): void {
-    if (flags === null) {
+    if (!flags) {
         current = DEFAULT;
     } else {
         current = {...current, ...flags};

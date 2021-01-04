@@ -1,6 +1,8 @@
+import {flag} from "arg";
 import {compress, decompress} from "lzutf8";
 import wabt from "wabt";
-import {compile} from "../src/compile";
+import {compile, compileSnippet} from "../src/compile";
+import {setFlags, getFlags} from "../src/optimization/flags";
 import {ModuleBuilder} from "../src/wasm";
 
 const testInput = `
@@ -54,9 +56,11 @@ wabt().then(wabt => {
         <div>
             <textarea id="textInput" rows="20" style="width: 100%; resize: vertical">${testInput}</textarea>
             <div style="position: absolute; right: 2px">
-                <button id="copy">Copy URL</button>
-                <button id="run">Run!</button>
+                <button id="flagsButton">Flags</button>
+                <button id="copyButton">Copy URL</button>
+                <button id="runButton">Run!</button>
             </div>
+            <div id="flags" style="display: none"></div>
             <pre id="output"></pre>
         </div>
     `);
@@ -64,10 +68,10 @@ wabt().then(wabt => {
 
         const textInput = window.document.getElementById("textInput") as HTMLTextAreaElement;
         const output = window.document.getElementById("output") as HTMLPreElement;
-        const run = window.document.getElementById("run") as HTMLButtonElement;
-        const copyURL = window.document.getElementById("copy") as HTMLButtonElement;
 
-        run.addEventListener("click", async () => {
+        // running Wasm
+        const runButton = window.document.getElementById("runButton") as HTMLButtonElement;
+        runButton.addEventListener("click", async () => {
             if (module === undefined) return;
             output.textContent = "Output:\n\n";
 
@@ -96,12 +100,8 @@ wabt().then(wabt => {
             }
         });
 
-        if (window.location.hash.length) {
-            const hash = window.location.hash.substring(1);
-            textInput.value = decompress(hash, {inputEncoding: "Base64", outputEncoding: "String"});
-        }
-
-        const handler = () => {
+        // compiling Wasm
+        const recompile = () => {
             const files = new Map<string, string>();
             files.set("main.c", textInput.value);
 
@@ -116,19 +116,83 @@ wabt().then(wabt => {
             output.textContent = toWat(module);
 
             if (module.functions.find(x => x.exportName === "main") === undefined) {
-                run.disabled = true;
+                runButton.disabled = true;
                 module = undefined;
             } else {
-                run.disabled = false;
+                runButton.disabled = false;
             }
         };
-        textInput.addEventListener("input", handler);
-        handler();
+        textInput.addEventListener("input", recompile);
+        recompile();
 
-        copyURL.addEventListener("click", async () => {
+        // Optimization flags
+        const flagsButton = window.document.getElementById("flagsButton") as HTMLButtonElement;
+        flagsButton.addEventListener("click", () => flagsDiv.style.display = flagsDiv.style.display === "none" ? "" : "none");
+
+        const flagsDiv = window.document.getElementById("flags") as HTMLDivElement;
+        const updateCheckboxes = () => {
+            const flags = getFlags();
+            for (const [flagName, checkbox] of Object.entries(flagCheckboxes)) {
+                checkbox.checked = flags[flagName as keyof typeof flags];
+            }
+        };
+
+        const flagCheckboxes = Object.fromEntries(Object.keys(getFlags()).map(flagName => {
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.value = "true";
+            checkbox.id = flagName;
+            flagsDiv.appendChild(checkbox);
+            const label = document.createElement("label");
+            label.innerText = label.htmlFor = flagName;
+            flagsDiv.appendChild(label);
+            flagsDiv.appendChild(document.createElement("br"));
+
+            checkbox.addEventListener("change", () => {
+                setFlags({[flagName]: checkbox.checked});
+                updateCheckboxes();
+                recompile();
+            });
+
+            return [flagName, checkbox];
+        }));
+        updateCheckboxes();
+
+        const flagDefaults = document.createElement("button");
+        flagDefaults.innerText = "Default Flags";
+        flagDefaults.addEventListener("click", () => {
+            setFlags(null);
+            updateCheckboxes();
+            recompile();
+        });
+        flagsDiv.appendChild(flagDefaults);
+
+        const flagsNone = document.createElement("button");
+        flagsNone.innerText = "None";
+        flagsNone.addEventListener("click", () => {
+            setFlags(Object.fromEntries(Object.keys(getFlags()).map(x => [x, false])));
+            updateCheckboxes();
+            recompile();
+        });
+        flagsDiv.appendChild(flagsNone);
+        flagsDiv.appendChild(document.createElement("hr"));
+
+        // URL copying
+        if (window.location.hash.length) {
+            const hash = window.location.hash.substring(1);
+            textInput.value = decompress(hash, {inputEncoding: "Base64", outputEncoding: "String"});
+        }
+
+        const copyURLButton = window.document.getElementById("copyButton") as HTMLButtonElement;
+        copyURLButton.addEventListener("click", async () => {
             const baseURL = window.location.href.split("#")[0];
             const base64 = compress(textInput.value, {outputEncoding: "Base64"});
             await navigator.clipboard.writeText(baseURL + "#" + base64);
+        });
+
+        // add some base functions to the window which can then be accessed via dev tools
+        (window as any).c2wasm = Object.seal({
+            getFlags, setFlags, compile, compileSnippet
         });
     } else {
         const files = new Map<string, string>();
