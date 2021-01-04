@@ -21,8 +21,8 @@ export function peephole(expr: WExpression, fn: PeepholeCallback, size: number, 
 
     for (const instruction of expr.instructions) {
         if (instruction.type === "structured") {
-            peephole(instruction.args.expression, fn, size, depth + 1);
-            if (instruction.args.expression2) peephole(instruction.args.expression2, fn, size, depth + 1);
+            peephole(instruction.immediate.expression, fn, size, depth + 1);
+            if (instruction.immediate.expression2) peephole(instruction.immediate.expression2, fn, size, depth + 1);
         }
     }
 }
@@ -47,8 +47,8 @@ export function peepholeMulti(expr: WExpression, fns: [fn: PeepholeCallback, siz
 
     for (const instruction of expr.instructions) {
         if (instruction.type === "structured") {
-            peepholeMulti(instruction.args.expression, fns, depth + 1);
-            if (instruction.args.expression2) peepholeMulti(instruction.args.expression2, fns, depth + 1);
+            peepholeMulti(instruction.immediate.expression, fns, depth + 1);
+            if (instruction.immediate.expression2) peepholeMulti(instruction.immediate.expression2, fns, depth + 1);
         }
     }
 }
@@ -70,7 +70,7 @@ peepholeOptimizers.push({
     enabled: (flags) => flags.peephole_add_0,
     run: ([instr1, instr2]) => {
         // eslint-disable-next-line eqeqeq
-        if (instr1.type !== "constant" || instr1.args.value != 0) return;
+        if (instr1.type !== "constant" || instr1.immediate.value != 0) return;
         if (instr2.name.endsWith(".add")) return [];
     },
     peepholeSize: 2
@@ -86,20 +86,20 @@ peepholeOptimizers.push({
         let value;
         if (instr3.name.endsWith(".add")) {
             if (instr1.result === f32Type) {
-                return [Instructions.f32.const(Number(instr1.args.value) + Number(instr2.args.value))];
+                return [Instructions.f32.const(Number(instr1.immediate.value) + Number(instr2.immediate.value))];
             } else if (instr1.result === f64Type) {
-                return [Instructions.f64.const(Number(instr1.args.value) + Number(instr2.args.value))];
+                return [Instructions.f64.const(Number(instr1.immediate.value) + Number(instr2.immediate.value))];
             }
 
-            value = BigInt(instr1.args.value) + BigInt(instr2.args.value);
+            value = BigInt(instr1.immediate.value) + BigInt(instr2.immediate.value);
         } else if (instr3.name.endsWith(".mul")) {
             if (instr1.result === f32Type) {
-                return [Instructions.f32.const(Number(instr1.args.value) * Number(instr2.args.value))];
+                return [Instructions.f32.const(Number(instr1.immediate.value) * Number(instr2.immediate.value))];
             } else if (instr1.result === f64Type) {
-                return [Instructions.f64.const(Number(instr1.args.value) * Number(instr2.args.value))];
+                return [Instructions.f64.const(Number(instr1.immediate.value) * Number(instr2.immediate.value))];
             }
 
-            value = BigInt(instr1.args.value) * BigInt(instr2.args.value);
+            value = BigInt(instr1.immediate.value) * BigInt(instr2.immediate.value);
         } else {
             return;
         }
@@ -121,7 +121,7 @@ peepholeOptimizers.push({
         if (instr1.type !== "constant" || instr3.type !== "constant") return;
         if (instr2.name !== "i32.add" || instr4.name !== "i32.add") return;
         return [
-            Instructions.i32.const(emulateInt(32n, BigInt(instr1.args.value) + BigInt(instr3.args.value))),
+            Instructions.i32.const(emulateInt(32n, BigInt(instr1.immediate.value) + BigInt(instr3.immediate.value))),
             Instructions.i32.add()
         ];
     },

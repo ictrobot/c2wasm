@@ -37,8 +37,8 @@ export function deadCodeElimination(expr: WExpression, usedLocals = new Set<WLoc
                     }
                 }
 
-                deadCodeElimination(instr.args.expression, usedLocals);
-                if (instr.args.expression2) deadCodeElimination(instr.args.expression2, usedLocals);
+                deadCodeElimination(instr.immediate.expression, usedLocals);
+                if (instr.immediate.expression2) deadCodeElimination(instr.immediate.expression2, usedLocals);
 
                 if (instr.name === "loop") continue;
             }

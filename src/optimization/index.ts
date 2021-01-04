@@ -47,23 +47,23 @@ optimizers.push({
     enabled: (flags) => flags.unused_blocks,
     run: (expr) => {
         peephole(expr, ([instr]) => {
-            if (instr.type !== "structured" || instr.name === "if" || instr.args.type !== null) return;
+            if (instr.type !== "structured" || instr.name === "if" || instr.immediate.type !== null) return;
             if (branchedTo(instr)) return;
 
             // we can remove the block/loop as nothing branches to it
-            const replacement = instr.args.expression;
+            const replacement = instr.immediate.expression;
             // however we must decrement the values of branch instructions inside the block which branch outside
             peephole(replacement, ([child], depth) => {
                 if (child.type === "index") {
-                    if (child.args.value < depth) return;
+                    if (child.immediate.value < depth) return;
 
                     if (child.name === "br") {
-                        return [Instructions.br(child.args.value - 1n as labelidx)];
+                        return [Instructions.br(child.immediate.value - 1n as labelidx)];
                     } else if (child.name === "br_if") {
-                        return [Instructions.br_if(child.args.value - 1n as labelidx)];
+                        return [Instructions.br_if(child.immediate.value - 1n as labelidx)];
                     }
                 } else if (child.type === "table" && child.name === "br_table") {
-                    const {defaultValue, valueTable} = child.args;
+                    const {defaultValue, valueTable} = child.immediate;
                     return [Instructions.br_table(
                         (defaultValue < depth ? defaultValue : defaultValue - 1n) as labelidx,
                         valueTable.map(v => (v < depth ? v : v - 1n) as labelidx)
@@ -104,7 +104,7 @@ optimizers.push({
         // now have to re-encode any local instructions
         peephole(expr, ([instr]) => {
             if (instr.type !== "index" || !instr.name.startsWith("local.")) return;
-            const local = oldLocals[Number(instr.args.value)];
+            const local = oldLocals[Number(instr.immediate.value)];
 
             if (instr.name === "local.get") {
                 return [Instructions.local.get(local)];
@@ -119,14 +119,14 @@ optimizers.push({
 
 function branchedTo(instr: InstrInstance, depth = -1n): boolean {
     if (instr.type === "index" && instr.name.startsWith("br")) {
-        return instr.args.value === depth;
+        return instr.immediate.value === depth;
     }
     if (instr.type === "table" && instr.name === "br_table") {
-        return instr.args.defaultValue === depth || instr.args.valueTable.some(x => x === depth);
+        return instr.immediate.defaultValue === depth || instr.immediate.valueTable.some(x => x === depth);
     }
     if (instr.type !== "structured") return false;
 
-    const {expression, expression2} = instr.args;
+    const {expression, expression2} = instr.immediate;
     if (expression.instructions.some(child => branchedTo(child, depth + 1n))) return true;
     if (expression2 === undefined) return false;
     return expression2.instructions.some(child => branchedTo(child, depth + 1n));

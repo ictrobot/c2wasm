@@ -18,7 +18,7 @@ export type PartialInstr = InstrContext<InstrInstance>;
 export interface BaseInstance {
     readonly name: string;
     readonly type: string;
-    readonly args: object;
+    readonly immediate: object;
 
     /* Instruction as bytes */
     encoded: ReadonlyArray<byte>;
@@ -37,14 +37,14 @@ export type InstrInstance = ZeroArgInstance | ConstantInstance<bigint | number> 
 // Zero argument instructions
 interface ZeroArgInstance extends BaseInstance {
     type: "zeroArg";
-    args: {};
+    immediate: {};
 }
 
 export function zeroArgs(name: string, opcode: number[], parameters: ReadonlyArray<ValueType>, result: ValueType | null,
                          reads: ReadResource[] = [], writes: WriteResource[] = []): () => InstrContext<ZeroArgInstance> {
     const instr: ZeroArgInstance = {
         name,
-        type: "zeroArg", args: {},
+        type: "zeroArg", immediate: {},
         encoded: opcode as byte[],
         parameters, result,
         reads, writes
@@ -57,7 +57,7 @@ export function zeroArgsSpecial(name: string, opcode: number[], specialFn: Instr
     return () => (context) => {
         const {parameters, result, reads, writes} = specialFn(context);
         return {
-            name, type: "zeroArg", args: {},
+            name, type: "zeroArg", immediate: {},
             encoded: opcode as byte[],
             parameters, result,
             reads, writes
@@ -68,7 +68,7 @@ export function zeroArgsSpecial(name: string, opcode: number[], specialFn: Instr
 // Arithmetic constant instructions
 interface ConstantInstance<T extends bigint | number> extends BaseInstance {
     type: "constant";
-    args: {value: T};
+    immediate: {value: T};
     result: ValueType;
 }
 
@@ -76,7 +76,7 @@ export function constantArg<T extends bigint | number>(name: string, opcode: num
                                                        encodeFn: (x: T) => byte[],
                                                        result: ValueType): (x: T) => InstrContext<ConstantInstance<T>> {
     return (value) => () => ({
-        name, type: "constant", args: {value},
+        name, type: "constant", immediate: {value},
         encoded: [...opcode as byte[], ...encodeFn(value)],
         parameters: [], result,
         reads: [], writes: []
@@ -86,7 +86,7 @@ export function constantArg<T extends bigint | number>(name: string, opcode: num
 // Memory argument instructions
 interface MemInstance extends BaseInstance {
     type: "memory";
-    args: {align: bigint, offset: bigint};
+    immediate: {align: bigint, offset: bigint};
 }
 
 export function memArg(name: string, opcode: number[],
@@ -99,7 +99,7 @@ export function memArg(name: string, opcode: number[],
 
         return () => ({
             name, encoded,
-            type: "memory", args: args,
+            type: "memory", immediate: args,
             parameters: type === "load" ? [i32Type] : [i32Type, valueType],
             result: type === "load" ? valueType : null,
             reads: type === "load" ? ["memory"] : [],
@@ -115,7 +115,7 @@ export function memArg(name: string, opcode: number[],
 type Index<T extends bigint> = number | T | {getIndex(depth: number): T};
 interface IdxInstance extends BaseInstance {
     type: "index";
-    args: {value: bigint};
+    immediate: {value: bigint};
 }
 
 function getIndex<T extends bigint>(idx: Index<T>, depth: number): T {
@@ -140,7 +140,7 @@ export function idxArg<T extends bigint>(name: string, opcode: number[], suffix:
 
         return {
             name, encoded,
-            type: "index", args: {value},
+            type: "index", immediate: {value},
             parameters, result,
             reads, writes
         };
@@ -149,7 +149,7 @@ export function idxArg<T extends bigint>(name: string, opcode: number[], suffix:
 
 interface TableInstance extends BaseInstance {
     type: "table";
-    args: {defaultValue: bigint, valueTable: bigint[]};
+    immediate: {defaultValue: bigint, valueTable: bigint[]};
 }
 
 export function brTableInstr(opcode: number): (defaultLbl: Index<labelidx>, lblArray: Index<labelidx>[]) => InstrContext<TableInstance> {
@@ -160,7 +160,7 @@ export function brTableInstr(opcode: number): (defaultLbl: Index<labelidx>, lblA
 
         return {
             name: "br_table", encoded,
-            type: "table", args: {defaultValue, valueTable},
+            type: "table", immediate: {defaultValue, valueTable},
             parameters: [i32Type], result: null,
             reads: [], writes: ["jump"]
         };
@@ -172,13 +172,13 @@ type StructureInstance = BlockLoopInstance | IfInstance;
 interface BlockLoopInstance extends BaseInstance {
     type: "structured";
     name: "block" | "loop";
-    args: {type: ValueType | null, expression: WExpression, expression2: undefined};
+    immediate: {type: ValueType | null, expression: WExpression, expression2: undefined};
 }
 
 interface IfInstance extends BaseInstance {
     type: "structured";
     name: "if";
-    args: {type: ValueType | null, expression: WExpression, expression2: WExpression | undefined};
+    immediate: {type: ValueType | null, expression: WExpression, expression2: WExpression | undefined};
 }
 
 function encodeBlockType(t: ValueType | null): byte[] {
@@ -197,7 +197,7 @@ export function blockLoopInstr(opcode: number, name: "block" | "loop"): (type: V
             get encoded() {
                 return [opcode as byte, ...encodeBlockType(type), ...expression.encoded];
             },
-            get args() {
+            get immediate() {
                 return {type, expression, expression2: undefined};
             },
             get reads() {
@@ -229,7 +229,7 @@ export function ifInstr(opcode: number, elseOpcode: number): (type: ValueType | 
                 }
                 return instr;
             },
-            get args() {
+            get immediate() {
                 return {type, expression, expression2};
             },
             get reads() {
