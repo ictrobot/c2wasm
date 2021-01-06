@@ -1,11 +1,11 @@
+import {ParseTreeValidationError, pt} from "../../parsing";
 import {CFuncDefinition, CArgument, CFuncDeclaration, CVarDefinition, CVarDeclaration} from "../declarations";
 import {CAssignment, CIdentifier, CExpression, CInitializer, CStringLiteral, CConstant, CArrayPointer} from "../expressions";
 import {INTERNAL_SCOPE} from "../internal_scope";
 import {Scope} from "../scope";
-import {CStatement, CCompoundStatement, CExpressionStatement, CNop, CIf, CForLoop, CWhileLoop, CDoLoop, CSwitch, CBreak, CContinue, CReturn} from "../statements";
+import {CStatement, CCompoundStatement, CExpressionStatement, CNop, CIf, CForLoop, CWhileLoop, CDoLoop, CSwitch, CBreak, CContinue, CReturn, CGoto, CLabelledStatement} from "../statements";
 import {ExpressionTypeError} from "../type_checking";
 import {CFuncType, CVoid, CArray, CArithmetic, CPointer} from "../types";
-import {ParseTreeValidationError, pt} from "../../parsing";
 import {ptExpression, evalIntegerConstant} from "./expr_transform";
 import {getDeclaratorName, getDeclaratorType, getType} from "./type_transform";
 
@@ -177,9 +177,15 @@ function checkReturns(statement: CStatement | undefined): boolean {
     } else if (statement instanceof CCompoundStatement) {
         for (let i = 0; i < statement.statements.length; i++) {
             if (checkReturns(statement.statements[i])) {
-                if (i !== statement.statements.length - 1) {
-                    // we've found a return inside the compound statement but it's not at the end, so there are statements
-                    // which will never be executed
+                if (i + 1 < statement.statements.length) {
+                    // statements after return
+
+                    if (statement.statements[i + 1] === statement.scope.labelledStatement?.body) {
+                        // this is okay as the following statement is labelled, so can jump there
+                        continue; // check code after jumping to the label returns
+                    }
+
+                    // not okay - no way to reach statements after return
                     throw new ParseTreeValidationError(statement.statements[i + 1].node, "Statement after return");
                 }
                 return true;
@@ -234,6 +240,16 @@ function ptStatement(node: pt.Statement, parent: CStatement): CStatement {
         s.body = ptStatement(node.body, s);
         return s;
 
+    } else if (node instanceof pt.GotoStatement) {
+        let p: CStatement | CFuncDefinition = parent; // find which statement this goto is targeting
+        while (p.scope.labelledStatement?.label !== node.target) {
+            if (p.parent instanceof CFuncDefinition) {
+                throw new ParseTreeValidationError(node, "No properly structured control flow target for goto statement");
+            }
+            p = p.parent;
+        }
+        return new CGoto(node, p.scope.labelledStatement, parent);
+
     } else if (node instanceof pt.ContinueStatement) {
         let p: CStatement = parent; // find which statement this node is continuing
         while (!(p instanceof CForLoop || p instanceof CWhileLoop || p instanceof CDoLoop)) {
@@ -282,7 +298,18 @@ function ptStatement(node: pt.Statement, parent: CStatement): CStatement {
 /** Transform compound statements */
 function ptCompound(node: pt.CompoundStatement, parent: CStatement | CFuncDefinition): CCompoundStatement {
     const c = parent instanceof CFuncDefinition ? parent.body : new CCompoundStatement(node, parent);
-    for (const child of node.body) _compoundBody(child, c);
+
+    // need to check for labelled statements first to allow jumping forward
+    const labelled = node.body.filter(x => x instanceof pt.Statement && x.label !== undefined) as pt.Statement[];
+    if (labelled.length > 1) {
+        throw new ParseTreeValidationError(labelled[0], "Only one labelled statement is supported per block", labelled[1]);
+    } else if (labelled.length === 1) {
+        c.scope.labelledStatement = new CLabelledStatement(labelled[0], labelled[0].label as string);
+    }
+
+    for (const child of node.body) {
+        _compoundBody(child, c);
+    }
     return c;
 }
 
@@ -294,7 +321,13 @@ function _compoundBody(child: pt.Declaration | pt.Statement, c: CCompoundStateme
             c.statements.push(new CExpressionStatement(assignment.node, assignment, c));
         }
     } else {
-        c.statements.push(ptStatement(child, c));
+        const statement = ptStatement(child, c);
+        c.statements.push(statement);
+
+        if (child.label !== undefined && c.scope.labelledStatement?.node === child) {
+            // now store the statement
+            c.scope.labelledStatement.body = statement;
+        }
     }
 }
 

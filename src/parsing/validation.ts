@@ -21,8 +21,8 @@ export function validate<T extends Iterable<ParseNode>>(nodeList: T, parents: Pa
 export class ParseTreeValidationError extends CError {
     readonly name = "TreeValidationError";
 
-    constructor(node: ParseNode | undefined, message: string) {
-        super(node && node.loc ? `Line ${node.loc.first_line + 1}: ${message}` : message, node);
+    constructor(node: ParseNode | undefined, message: string, node2?: ParseNode) {
+        super(node && node.loc ? `Line ${node.loc.first_line + 1}: ${message}` : message, node, node2);
     }
 }
 

@@ -8,7 +8,7 @@ import {ExpressionTypeError, asArithmeticOrPointer} from "./type_checking";
 export type CStatement =
     CCompoundStatement | CExpressionStatement | CNop |
     CIf | CForLoop | CWhileLoop | CDoLoop | CSwitch |
-    CContinue | CBreak | CReturn;
+    CGoto | CContinue | CBreak | CReturn;
 
 export class CCompoundStatement {
     readonly scope: Scope;
@@ -87,6 +87,15 @@ export class CDoLoop {
     }
 }
 
+export class CGoto {
+    constructor(readonly node: pt.GotoStatement, readonly target: CLabelledStatement, readonly parent: CStatement) {
+    }
+
+    get scope(): Scope {
+        return this.parent.scope;
+    }
+}
+
 export class CSwitch {
     children: {cases: CValue[], body: CCompoundStatement, default: boolean}[] = [];
 
@@ -141,5 +150,13 @@ export class CReturn {
 
     get scope(): Scope {
         return this.parent.scope;
+    }
+}
+
+// not a CStatement, used to store labelled statements in Scopes
+export class CLabelledStatement {
+    body?: CStatement;
+
+    constructor(readonly node: pt.Statement, readonly label: string) {
     }
 }

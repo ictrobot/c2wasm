@@ -383,8 +383,8 @@ statement
     ;
 
 labeled_statement
-//  : identifier ':' statement                                                          {{ throw new JisonParserError("Unsupported rule: labeled_statement (goto)"); }}
-    : CASE constant_expression ':' statement                                            -> new t.CaseStatement(@$, $2, $4)
+    : identifier ':' statement                                                          -> $3.setLabel($1)
+    | CASE constant_expression ':' statement                                            -> new t.CaseStatement(@$, $2, $4)
     | DEFAULT ':' statement                                                             -> new t.DefaultStatement(@$, $3)
     ;
 
@@ -424,8 +424,8 @@ iteration_statement
     ;
 
 jump_statement
-//  : GOTO identifier ';'                                                               {{ throw new JisonParserError("Unsupported rule: jump_statement"); }}
-    : CONTINUE ';'                                                                      -> new t.ContinueStatement(@$)
+    : GOTO identifier ';'                                                               -> new t.GotoStatement(@$, $2)
+    | CONTINUE ';'                                                                      -> new t.ContinueStatement(@$)
     | BREAK ';'                                                                         -> new t.BreakStatement(@$)
     | RETURN ';'                                                                        -> new t.ReturnStatement(@$)
     | RETURN expression ';'                                                             -> new t.ReturnStatement(@$, $2)

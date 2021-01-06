@@ -450,6 +450,12 @@ export type Initializer = Expression | ReadonlyArray<Initializer>;
 
 export abstract class Statement extends ParseNode {
     private readonly _statement: boolean = true;
+    label?: string;
+
+    setLabel(label: string): this {
+        this.label = label;
+        return this;
+    }
 }
 
 export class IfStatement extends Statement {
@@ -578,6 +584,14 @@ export class DoWhileLoop extends Statement {
     *children(): IterableIterator<ParseNode> {
         yield this.body;
         yield this.test;
+    }
+}
+
+export class GotoStatement extends Statement {
+    readonly type = "gotoStatement";
+
+    constructor(loc: Location, readonly target: string) {
+        super(loc);
     }
 }
 

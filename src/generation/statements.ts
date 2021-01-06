@@ -13,10 +13,29 @@ import {valueType} from "./type_conversion";
 
 function _compoundStatement(ctx: WFnGenerator, s: c.CCompoundStatement): WInstruction[] {
     const [instr, finishCallback] = storageSetupScope(ctx, s.scope);
-    const body = s.statements.flatMap(s2 => statementGeneration(ctx, s2));
-    body.unshift(...instr);
+    if (s.scope.labelledStatement === undefined) {
+        instr.push(...s.statements.flatMap(s2 => statementGeneration(ctx, s2)));
+    } else {
+        // place all the instructions before the labelled statement in a block to enable jumping forward
+        const blockStatements: c.CStatement[] = [];
+        // place all the instructions after and including the labelled statement in a loop to enable jumping back
+        const loopStatements: c.CStatement[] = [];
+        for (const statement of s.statements) {
+            if (loopStatements.length > 0 || s.scope.labelledStatement.body === statement) {
+                loopStatements.push(statement);
+            } else {
+                blockStatements.push(statement);
+            }
+        }
+
+        // only need to store the break depth once as they are at the same depth
+        instr.push(
+            Instructions.block(null, blockStatements.flatMap(s2 => statementGeneration(ctx, s2)), storeBreakDepth(s.scope.labelledStatement)),
+            Instructions.loop(null, loopStatements.flatMap(s2 => statementGeneration(ctx, s2)))
+        );
+    }
     finishCallback();
-    return body;
+    return instr;
 }
 
 function _expressionStatement(ctx: WFnGenerator, s: c.CExpressionStatement): WInstruction[] {
@@ -163,6 +182,18 @@ function _switch(ctx: WFnGenerator, s: c.CSwitch): WInstruction[] {
     });
 }
 
+function _goto(ctx: WFnGenerator, s: c.CGoto): WInstruction[] {
+    return [Instructions.br({
+        getIndex(depth: number): labelidx {
+            const statement = s.target as any as Record<typeof breakDepthSymbol, number | undefined>;
+            const targetDepth = statement[breakDepthSymbol];
+            if (targetDepth === undefined) throw new GenError("Failed to find target depth", ctx, s.node);
+
+            return BigInt(depth - targetDepth) as labelidx;
+        }
+    })];
+}
+
 function _continue(ctx: WFnGenerator, s: c.CContinue): WInstruction[] {
     return [Instructions.br({
         getIndex(depth: number): labelidx {
@@ -203,6 +234,7 @@ export function statementGeneration(ctx: WFnGenerator, s: c.CStatement): WInstru
     else if (s instanceof c.CWhileLoop) return _whileLoop(ctx, s);
     else if (s instanceof c.CDoLoop) return _doLoop(ctx, s);
     else if (s instanceof c.CSwitch) return _switch(ctx, s);
+    else if (s instanceof c.CGoto) return _goto(ctx, s);
     else if (s instanceof c.CContinue) return _continue(ctx, s);
     else if (s instanceof c.CBreak) return _break(ctx, s);
     else return _return(ctx, s);
@@ -212,7 +244,7 @@ export function statementGeneration(ctx: WFnGenerator, s: c.CStatement): WInstru
 const breakDepthSymbol = Symbol("break depth");
 const continueDepthSymbol = Symbol("continue depth");
 
-function storeBreakDepth<T extends c.CForLoop | c.CWhileLoop | c.CDoLoop | c.CSwitch>(s: T): (c: {depth: number}) => void {
+function storeBreakDepth<T extends c.CForLoop | c.CWhileLoop | c.CDoLoop | c.CSwitch | c.CLabelledStatement>(s: T): (c: {depth: number}) => void {
     const statement = s as Record<typeof breakDepthSymbol, any>;
     return ({depth}) => {
         // passed the instruction's context, so the depth of the structured instruction is depth + 1

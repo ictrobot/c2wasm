@@ -2,6 +2,7 @@ import {CError} from "../c_error";
 import type {ParseNode} from "../parsing";
 import type {CDeclaration} from "./declarations";
 import {CFuncDeclaration, CFuncDefinition, CVarDeclaration, CVarDefinition} from "./declarations";
+import type {CLabelledStatement} from "./statements";
 import type {CCompound, CType} from "./types";
 
 /**
@@ -16,6 +17,7 @@ export class Scope {
     private tags = new Map<string, CCompound>(); // names of structs, unions & enums
     private identifiers = new Map<string, CDeclaration>(); // names of variables and functions
     private typedefs = new Map<string, CType>();
+    labelledStatement?: CLabelledStatement;
 
     constructor(readonly node?: ParseNode,
                 readonly parent?: Scope,
