@@ -161,7 +161,7 @@ wabt().then(wabt => {
         const flagDefaults = document.createElement("button");
         flagDefaults.innerText = "Default Flags";
         flagDefaults.addEventListener("click", () => {
-            setFlags(null);
+            setFlags("default");
             updateCheckboxes();
             recompile();
         });
@@ -170,7 +170,7 @@ wabt().then(wabt => {
         const flagsNone = document.createElement("button");
         flagsNone.innerText = "None";
         flagsNone.addEventListener("click", () => {
-            setFlags(Object.fromEntries(Object.keys(getFlags()).map(x => [x, false])));
+            setFlags("none");
             updateCheckboxes();
             recompile();
         });

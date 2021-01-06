@@ -8,11 +8,11 @@ function optimizationTest(title: string,
                           fn: (t: ExecutionContext, defaultModule: ModuleBuilder, flagsModule: ModuleBuilder) => void,
                           src: string) {
     test(title, t => {
-        setFlags(null);
+        setFlags("default");
         const defaultModule = compileSnippet(src);
         setFlags(flags);
         const flagsModule = compileSnippet(src);
-        setFlags(null); // restore flags
+        setFlags("default"); // restore flags
 
         fn(t, defaultModule, flagsModule);
     });

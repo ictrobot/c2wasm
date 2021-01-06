@@ -17,11 +17,13 @@ export type OptimizationFlags = {[k in keyof typeof DEFAULT]: boolean};
 
 let current: OptimizationFlags = DEFAULT;
 
-export function setFlags(flags: Partial<OptimizationFlags> | null): void {
-    if (!flags) {
-        current = DEFAULT;
-    } else {
+export function setFlags(flags: Partial<OptimizationFlags> | "none" | "default"): void {
+    if (typeof flags === "object") {
         current = {...current, ...flags};
+    } else if (flags === "default") {
+        current = DEFAULT;
+    } else if (flags === "none") {
+        current = {...current, ...Object.fromEntries(Object.keys(DEFAULT).map(name => [name, false]))};
     }
 }
 
