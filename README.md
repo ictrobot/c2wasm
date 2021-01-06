@@ -8,7 +8,7 @@ Other demos:
 - [intermediate representation](https://ictrobot.github.io/c2wasm/ctree.html)
 
 ## Features
-Compiles most of c89 excluding goto, nested typedefs and with reduced standard library support.
+Compiles most of c89 excluding nested typedefs and with reduced standard library and goto support.
 
 Also supports the following c99 features:
 - Declarations anywhere inside blocks
