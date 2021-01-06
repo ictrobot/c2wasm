@@ -1,7 +1,5 @@
 import {WExpression, Instructions} from "../wasm";
-import {labelidx} from "../wasm/base_types";
 import {WLocal} from "../wasm/functions";
-import {InstrInstance} from "../wasm/instr_helpers";
 import {deadCodeElimination} from "./dead_code";
 import {getFlags} from "./flags";
 import {Optimizer} from "./optimizer";
@@ -17,62 +15,11 @@ export function optimize(expr: WExpression): void {
 }
 
 optimizers.push({
-    name: "return",
-    enabled: () => true,
-    run: (expr) => {
-        if (expr.builder.type[1].length > 0) {
-            // if function returns something
-            if (expr.get(-1).name === "return") {
-                // final return can be implicit
-                expr.pop();
-            } else if (expr.stack.length === 0) {
-                // no return at end of function or value left on stack, must return elsewhere
-                expr.push(Instructions.unreachable());
-            }
-        }
-    }}
-);
-
-optimizers.push({
     name: "peephole optimizations",
     enabled: () => true,
     run: (expr) => {
         const flags = getFlags();
         peepholeMulti(expr, peepholeOptimizers.filter(x => x.enabled(flags)).map(x => [x.run, x.peepholeSize]));
-    }
-});
-
-optimizers.push({
-    name: "remove unused blocks and loops",
-    enabled: (flags) => flags.unused_blocks,
-    run: (expr) => {
-        peephole(expr, ([instr]) => {
-            if (instr.type !== "structured" || instr.name === "if" || instr.immediate.type !== null) return;
-            if (branchedTo(instr)) return;
-
-            // we can remove the block/loop as nothing branches to it
-            const replacement = instr.immediate.expression;
-            // however we must decrement the values of branch instructions inside the block which branch outside
-            peephole(replacement, ([child], depth) => {
-                if (child.type === "index") {
-                    if (child.immediate.value < depth) return;
-
-                    if (child.name === "br") {
-                        return [Instructions.br(child.immediate.value - 1n as labelidx)];
-                    } else if (child.name === "br_if") {
-                        return [Instructions.br_if(child.immediate.value - 1n as labelidx)];
-                    }
-                } else if (child.type === "table" && child.name === "br_table") {
-                    const {defaultValue, valueTable} = child.immediate;
-                    return [Instructions.br_table(
-                        (defaultValue < depth ? defaultValue : defaultValue - 1n) as labelidx,
-                        valueTable.map(v => (v < depth ? v : v - 1n) as labelidx)
-                    )];
-                }
-            }, 1);
-
-            return replacement.instructions.slice();
-        }, 1);
     }
 });
 
@@ -117,17 +64,19 @@ optimizers.push({
     }
 });
 
-function branchedTo(instr: InstrInstance, depth = -1n): boolean {
-    if (instr.type === "index" && instr.name.startsWith("br")) {
-        return instr.immediate.value === depth;
-    }
-    if (instr.type === "table" && instr.name === "br_table") {
-        return instr.immediate.defaultValue === depth || instr.immediate.valueTable.some(x => x === depth);
-    }
-    if (instr.type !== "structured") return false;
-
-    const {expression, expression2} = instr.immediate;
-    if (expression.instructions.some(child => branchedTo(child, depth + 1n))) return true;
-    if (expression2 === undefined) return false;
-    return expression2.instructions.some(child => branchedTo(child, depth + 1n));
-}
+optimizers.push({
+    name: "return",
+    enabled: () => true,
+    run: (expr) => {
+        if (expr.builder.type[1].length > 0) {
+            // if function returns something
+            if (expr.get(-1).name === "return") {
+                // final return can be implicit
+                expr.pop();
+            } else if (expr.stack.length === 0) {
+                // no return at end of function or value left on stack, must return elsewhere
+                expr.push(Instructions.unreachable());
+            }
+        }
+    }}
+);

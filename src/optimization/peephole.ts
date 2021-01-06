@@ -1,4 +1,5 @@
 import {Instructions, f32Type, f64Type, i32Type, WExpression} from "../wasm";
+import {labelidx} from "../wasm/base_types";
 import {WLocal} from "../wasm/functions";
 import {InstrInstance, PartialInstr} from "../wasm/instr_helpers";
 import {OptimizationFlags} from "./flags";
@@ -128,7 +129,75 @@ peepholeOptimizers.push({
     peepholeSize: 4
 });
 
+peepholeOptimizers.push({
+    name: "remove unused blocks and loops",
+    enabled: (flags) => flags.peephole_unused_blocks,
+    run: ([instr]) => {
+        if (instr.type !== "structured" || instr.name === "if" || instr.immediate.type !== null) return;
+        if (branchedTo(instr)) return;
+
+        return eliminateStructuredInstruction(instr.immediate.expression);
+    },
+    peepholeSize: 1
+});
+
+peepholeOptimizers.push({
+    name: "remove constant ifs",
+    enabled: (flags) => flags.peephole_constant_if,
+    run: ([instr1, instr2]) => {
+        if (instr1.type !== "constant" || instr1.result !== i32Type) return;
+        if (instr2.type !== "structured" || instr2.name !== "if") return;
+
+        // eslint-disable-next-line eqeqeq
+        if (instr1.immediate.value != 0) {
+            return eliminateStructuredInstruction(instr2.immediate.expression);
+        } else {
+            if (instr2.immediate.expression2) return eliminateStructuredInstruction(instr2.immediate.expression2);
+            return [];
+        }
+    },
+    peepholeSize: 2
+});
+
 function emulateInt(bits: bigint, value: bigint) {
     const bitmask = (2n ** bits) - 1n;
     return value & bitmask;
+}
+
+function branchedTo(instr: InstrInstance, depth = -1n): boolean {
+    if (instr.type === "index" && instr.name.startsWith("br")) {
+        return instr.immediate.value === depth;
+    }
+    if (instr.type === "table" && instr.name === "br_table") {
+        return instr.immediate.defaultValue === depth || instr.immediate.valueTable.some(x => x === depth);
+    }
+    if (instr.type !== "structured") return false;
+
+    const {expression, expression2} = instr.immediate;
+    if (expression.instructions.some(child => branchedTo(child, depth + 1n))) return true;
+    if (expression2 === undefined) return false;
+    return expression2.instructions.some(child => branchedTo(child, depth + 1n));
+}
+
+export function eliminateStructuredInstruction(expr: WExpression): InstrInstance[] {
+    // decrement the values of branch instructions which branch outside
+    peephole(expr, ([child], depth) => {
+        if (child.type === "index") {
+            if (child.immediate.value < depth) return;
+
+            if (child.name === "br") {
+                return [Instructions.br(child.immediate.value - 1n as labelidx)];
+            } else if (child.name === "br_if") {
+                return [Instructions.br_if(child.immediate.value - 1n as labelidx)];
+            }
+        } else if (child.type === "table" && child.name === "br_table") {
+            const {defaultValue, valueTable} = child.immediate;
+            return [Instructions.br_table(
+                (defaultValue < depth ? defaultValue : defaultValue - 1n) as labelidx,
+                valueTable.map(v => (v < depth ? v : v - 1n) as labelidx)
+            )];
+        }
+    }, 1);
+
+    return expr.instructions.slice();
 }
