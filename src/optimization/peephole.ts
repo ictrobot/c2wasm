@@ -163,7 +163,7 @@ peepholeOptimizers.push({
 
         // replace constant if with a block with the body of the corresponding clause which is needed encase the
         // if statement was branched too, otherwise `peephole_unused_blocks` will remove it
-        return [Instructions.block(null, body.instructions.slice())];
+        return [Instructions.block(instr2.immediate.type, body.instructions.slice())];
     },
     peepholeSize: 2
 });
