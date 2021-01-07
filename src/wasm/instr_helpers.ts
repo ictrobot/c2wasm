@@ -186,7 +186,7 @@ function encodeBlockType(t: ValueType | null): byte[] {
     return [t];
 }
 
-export function blockLoopInstr(opcode: number, name: "block" | "loop"): (type: ValueType | null, body: PartialInstr[], contextFn?: InstrContext<void>) => InstrContext<BlockLoopInstance> {
+export function blockLoopInstr(opcode: number, name: "block" | "loop"): (type: ValueType | null, body: (PartialInstr | InstrInstance)[], contextFn?: InstrContext<void>) => InstrContext<BlockLoopInstance> {
     return (type, body, contextFn) => (context) => {
         if (contextFn) contextFn(context); // used to store depth
 
@@ -213,7 +213,7 @@ export function blockLoopInstr(opcode: number, name: "block" | "loop"): (type: V
     };
 }
 
-export function ifInstr(opcode: number, elseOpcode: number): (type: ValueType | null, body: PartialInstr[], elseBody?: PartialInstr[], contextFn?: InstrContext<void>) => InstrContext<IfInstance> {
+export function ifInstr(opcode: number, elseOpcode: number): (type: ValueType | null, body: (PartialInstr | InstrInstance)[], elseBody?: (PartialInstr | InstrInstance)[], contextFn?: InstrContext<void>) => InstrContext<IfInstance> {
     return (type, body, elseBody, contextFn) => (context) => {
         if (contextFn) contextFn(context); // used to store depth
 
@@ -266,7 +266,7 @@ export class WExpression {
     constructor(private readonly parent: StructureInstance | null, readonly depth: number, readonly builder: WFunctionBuilder) {
     }
 
-    push(...items: PartialInstr[]): void {
+    push(...items: (PartialInstr | InstrInstance)[]): void {
         for (const instrFn of items) {
             this._instructions.push(this.createInstr(instrFn, this._stack));
         }
@@ -286,7 +286,7 @@ export class WExpression {
         return instr;
     }
 
-    unshift(...items: PartialInstr[]): void {
+    unshift(...items: (PartialInstr | InstrInstance)[]): void {
         const stack: ValueType[] = []; // new instructions going at start of expression, so stack will be empty
         const instr: InstrInstance[] = [];
         for (const instrFn of items) {
@@ -307,14 +307,7 @@ export class WExpression {
         instructions.forEach(x => this.stackManipulation(x, stack));
 
         // new instructions
-        for (const newInstr of items) {
-            if (typeof newInstr === "function") {
-                instructions.push(this.createInstr(newInstr, stack));
-            } else {
-                this.stackManipulation(newInstr, stack);
-                instructions.push(newInstr);
-            }
-        }
+        items.forEach(newInstr => instructions.push(this.createInstr(newInstr, stack)));
 
         // instructions after
         try {
@@ -345,13 +338,15 @@ export class WExpression {
         if (instr.result) stack.push(instr.result);
     }
 
-    private createInstr(instrFn: PartialInstr, stack: ValueType[]): InstrInstance {
-        // get instance of the instruction
-        const instr = instrFn({
-            depth: this.depth,
-            builder: this.builder,
-            stack
-        });
+    private createInstr(instr: PartialInstr | InstrInstance, stack: ValueType[]): InstrInstance {
+        if (typeof instr === "function") {
+            // PartialInstr - get instance of the instruction
+            instr = instr({
+                depth: this.depth,
+                builder: this.builder,
+                stack
+            });
+        }
         this.stackManipulation(instr, stack);
         return instr;
     }

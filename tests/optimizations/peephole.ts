@@ -30,3 +30,23 @@ int test() {
     return a;
 }
 `);
+
+// regression test for peephole_constant_if - check it doesn't completely remove constant if instructions which are
+// branched too, which are generated when `break` is used inside a (constant condition) while loop.
+test("peephole_constant_if regression1", async t => {
+    const {test} = await compileSnippet(`
+int test(int a) {
+  while (1) {
+    if (a >= 10) break;
+    if (a >= 20) {
+      // clearly this shouldn't happen - so there is a problem
+      return -1;
+    }
+    a++;
+  }
+  return a;
+}`).execute({}) as {test: (n: number) => number};
+
+    t.is(test(1), 10);
+    t.is(test(24), 24);
+});

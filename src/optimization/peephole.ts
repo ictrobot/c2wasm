@@ -148,13 +148,22 @@ peepholeOptimizers.push({
         if (instr1.type !== "constant" || instr1.result !== i32Type) return;
         if (instr2.type !== "structured" || instr2.name !== "if") return;
 
+        let body;
         // eslint-disable-next-line eqeqeq
         if (instr1.immediate.value != 0) {
-            return eliminateStructuredInstruction(instr2.immediate.expression);
+            // if statement always true
+            body = instr2.immediate.expression;
+        } else if (instr2.immediate.expression2) {
+            // if statement always false and else clause present
+            body = instr2.immediate.expression2;
         } else {
-            if (instr2.immediate.expression2) return eliminateStructuredInstruction(instr2.immediate.expression2);
+            // always false and no else clause
             return [];
         }
+
+        // replace constant if with a block with the body of the corresponding clause which is needed encase the
+        // if statement was branched too, otherwise `peephole_unused_blocks` will remove it
+        return [Instructions.block(null, body.instructions.slice())];
     },
     peepholeSize: 2
 });
