@@ -1,4 +1,6 @@
 # c2wasm
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fictrobot%2Fc2wasm.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fictrobot%2Fc2wasm?ref=badge_shield)
+
 
 [Compiler demo](https://ictrobot.github.io/c2wasm/)
 
@@ -21,3 +23,6 @@ Also supports the following c99 features:
 Files in `src/c_library/impl/libraries` have their own licenses inside each folder.
 
 Files in `tests/benchmark/*/` also have their own licenses.
+
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fictrobot%2Fc2wasm.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fictrobot%2Fc2wasm?ref=badge_large)
