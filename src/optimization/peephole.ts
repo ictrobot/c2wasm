@@ -31,6 +31,15 @@ export function peephole(expr: WExpression, fn: PeepholeCallback, size: number, 
 export function peepholeMulti(expr: WExpression, fns: [fn: PeepholeCallback, size: number][], depth = 0): void {
     const maxSize = fns.map(x => x[1]).reduce((a, b) => Math.min(a, b), 1);
 
+    // optimize inside structured instructions first in case this eliminates branches etc which enable
+    // more optimizations to occur at this level
+    for (const instruction of expr.instructions) {
+        if (instruction.type === "structured") {
+            peepholeMulti(instruction.immediate.expression, fns, depth + 1);
+            if (instruction.immediate.expression2) peepholeMulti(instruction.immediate.expression2, fns, depth + 1);
+        }
+    }
+
     for (let i = 0; i < expr.instructions.length; i++) {
         for (const [fn, size] of fns) {
             if (i + size > expr.instructions.length) continue;
@@ -43,13 +52,6 @@ export function peepholeMulti(expr: WExpression, fns: [fn: PeepholeCallback, siz
                 if (i < -1) i = -1;
                 break;
             }
-        }
-    }
-
-    for (const instruction of expr.instructions) {
-        if (instruction.type === "structured") {
-            peepholeMulti(instruction.immediate.expression, fns, depth + 1);
-            if (instruction.immediate.expression2) peepholeMulti(instruction.immediate.expression2, fns, depth + 1);
         }
     }
 }
