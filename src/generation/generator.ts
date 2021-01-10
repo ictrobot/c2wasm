@@ -26,7 +26,7 @@ export class WGenerator {
 
     constructor(linker: Linker) {
         this.module = new ModuleBuilder();
-        this.shadowStackPtr = this.module.global(i32Type, true, 0n);
+        this.shadowStackPtr = this.module.global(i32Type, true, 0n, "__sp");
 
         const staticInitializers = [];
         for (const variable of linker.emitVariables) {
