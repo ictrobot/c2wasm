@@ -11,15 +11,17 @@ type GeneralTypeDecl = {
 };
 
 /** helper function for specifier & declarator type */
-export function getType(o: GeneralTypeDecl, scope: Scope): CType {
+export function getType(o: GeneralTypeDecl, scope: Scope, arrayAsPtr = false): CType {
     let type = getSpecifierType(o.typeInfo, scope);
     if (o.typeInfo.qualifierList.length) type = addQualifier(type, o.typeInfo.qualifierList[0]);
-    if (o.declarator) type = getDeclaratorType(type, o.declarator, scope);
+    if (o.declarator) type = getDeclaratorType(type, o.declarator, scope, arrayAsPtr);
     return type;
 }
 
 /** transform the CType from a type specifier into the declarator type */
-export function getDeclaratorType(type: CType, declarator: pt.Declarator | pt.AbstractDeclarator, scope: Scope): CType {
+export function getDeclaratorType(type: CType, declarator: pt.Declarator | pt.AbstractDeclarator,
+                                  scope: Scope, arrayAsPtr = false): CType {
+
     let d: pt.Declarator | pt.AbstractDeclarator | undefined = declarator;
 
     while (d && !(d instanceof pt.IdentifierDeclarator)) {
@@ -37,6 +39,10 @@ export function getDeclaratorType(type: CType, declarator: pt.Declarator | pt.Ab
                 type.length = Number(evalIntegerConstant(d.length, scope).value);
                 if (type.length <= 0) throw new ParseTreeValidationError(d.length, "Invalid array length");
             }
+            if (arrayAsPtr) {
+                // used in function arguments
+                type = new CPointer(d, type.type);
+            }
 
             d = d.body;
         } else { // d instanceof pt.(Abstract)FunctionDeclarator
@@ -44,7 +50,7 @@ export function getDeclaratorType(type: CType, declarator: pt.Declarator | pt.Ab
             let parameterNames = undefined;
 
             for (const param of d.args ?? []) {
-                const type = getType(param, scope);
+                const type = getType(param, scope, true);
                 if (type instanceof CFuncType) {
                     throw new ParseTreeValidationError(param, "Functions cannot be parameters");
                 }
