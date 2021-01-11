@@ -66,15 +66,27 @@ export class Preprocessor extends PreprocessorBase {
         return output;
     }
 
-    expandDefinitions(line: string): string {
+    expandDefinitions(line: string, definitions = this.definitions): string {
         let output = "";
         while (line.length > 0) {
             const token = this.consumeAny(line);
             if (token?.type === "identifier") {
-                const def = this.definitions.get(token.value);
+                const def = definitions.get(token.value);
                 if (def !== undefined) {
                     const e = def.expand(token.remainingLine);
-                    output += e.output;
+
+                    // "once a given identifier has been replaced in a given expansion,
+                    // it is not replaced if it turns up again during rescanning"
+                    const newDefinitions = new Map(definitions);
+                    newDefinitions.delete(token.value);
+
+                    let output1 = e.output, output2 = "";
+                    while (output1 !== output2) {
+                        output2 = output1;
+                        output1 = this.expandDefinitions(output1, newDefinitions);
+                    }
+
+                    output += output1;
                     line = e.line;
                     continue;
                 }
