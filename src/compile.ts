@@ -3,7 +3,10 @@ import {WGenerator} from "./generation";
 import {Linker} from "./linker";
 import {ModuleBuilder} from "./wasm";
 
-export function compile(files: ReadonlyMap<string, string> | string, library: () => Linker | undefined = stdLibrary): ModuleBuilder {
+export function compile(files: ReadonlyMap<string, string> | string,
+                        customDefinitions?: {[key: string]: string},
+                        library: () => Linker | undefined = stdLibrary): ModuleBuilder {
+
     if (typeof files === "string") {
         const f = new Map<string, string>();
         f.set("main.c", files);
@@ -11,7 +14,7 @@ export function compile(files: ReadonlyMap<string, string> | string, library: ()
     }
 
     // "linker" also calls preprocessor, lexer, parser and pt transformation into IR
-    const linker = new Linker(files);
+    const linker = new Linker(files, true, customDefinitions);
     if (library) {
         linker.link(library());
     } else {

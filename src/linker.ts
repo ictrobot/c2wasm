@@ -17,11 +17,11 @@ export class Linker {
     private _linkables = new Map<string, ExternalFunction | ExternalVariable>();
     private _linked = false;
 
-    constructor(readonly files: ReadonlyMap<string, string>, standardHeaders: boolean = true) {
+    constructor(readonly files: ReadonlyMap<string, string>, standardHeaders: boolean = true, customDefinitions?: {[key: string]: string}) {
         for (const [path, code] of files.entries()) {
             if (!path.endsWith(".c")) continue;
 
-            const preprocessor = new Preprocessor(path, standardHeaders);
+            const preprocessor = new Preprocessor(path, standardHeaders, customDefinitions);
             for (const [p2, c2] of files.entries()) preprocessor.userFiles.set(p2, c2);
             const processed = preprocessor.process(code);
             try {

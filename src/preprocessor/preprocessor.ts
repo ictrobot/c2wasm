@@ -9,7 +9,7 @@ export class Preprocessor extends PreprocessorBase {
     libraryFiles: Map<string, string>; // #include <...>
     userFiles = new Map<string, string>(); // #include "..."
 
-    constructor(readonly filename: string, standardHeaders: boolean = true) {
+    constructor(readonly filename: string, standardHeaders: boolean = true, customDefinitions?: {[key: string]: string}) {
         super();
         if (standardHeaders) {
             this.libraryFiles = new Map<string, string>(LIBRARY_HEADERS);
@@ -18,6 +18,12 @@ export class Preprocessor extends PreprocessorBase {
         }
 
         this.definitions.set("__FILE__", new Definition(this, "__FILE__", [{value: `"${filename}"`}], []));
+
+        if (customDefinitions) {
+            for (const [key, value] of Object.entries(customDefinitions)) {
+                this.definitions.set(key, new Definition(this, key, [{value}], []));
+            }
+        }
     }
 
     process(text: string, filename: string = this.filename): string {
