@@ -187,7 +187,8 @@ function unaryPlusMinus(ctx: WFnGenerator, e: c.CUnaryPlusMinus, discard: boolea
         if (type === f32Type || type === f64Type) {
             instr.push(fInstr(type, "neg"));
         } else {
-            instr.push(gConst(type, -1), gInstr(type, "mul"));
+            instr.unshift(gConst(type, 0));
+            instr.push(gInstr(type, "sub"));
         }
     }
     return instr;
