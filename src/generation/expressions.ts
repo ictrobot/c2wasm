@@ -382,9 +382,14 @@ function assignment(ctx: WFnGenerator, e: c.CAssignment, discard: boolean): WIns
         }
 
         // try to convert "body" into instructions, then remove the instructions which load the lhs to create transformation
-        const transform = expressionGeneration(ctx, body, false);
+        const exprBody = expressionGeneration(ctx, body, false);
         const lhs = expressionGeneration(ctx, e.lhs, false);
-        return storageUpdate(ctx, e.lhs.type, e.lhs, transform.slice(lhs.length), !discard);
+
+        const transform = exprBody.slice(lhs.length);
+        // conversion must be added to wrap result correctly as integer promotion etc may have taken place in the body.
+        transform.push(...conversion(body.type, e.lhs.type));
+
+        return storageUpdate(ctx, e.lhs.type, e.lhs, transform, !discard);
     } else if (e.rhs instanceof c.CInitializer) {
         const instr: WInstruction[] = [];
 
