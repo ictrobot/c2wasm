@@ -38,3 +38,14 @@ double copysign(double d1, double d2) {
 double round(double d) {
     return f64_nearest(d);
 }
+
+// other functions
+double exp(double d) {
+    double sum = 1 + d, factorial = 1, power = d;
+    for (int k = 2; k <= 5; k++) {
+        power *= d;
+        factorial *= k;
+        sum += power / factorial;
+    }
+    return sum;
+}

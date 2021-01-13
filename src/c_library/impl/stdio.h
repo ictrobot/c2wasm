@@ -48,6 +48,7 @@ int setvbuf(FILE *stream, char *buf, int mode, size_t size);
 void setbuf(FILE *stream, char *buf);
 
 // printf functions
+int fprintf(FILE *stream, const char *format, ...);
 // scanf functions
 
 int fgetc(FILE *stream);

@@ -25,7 +25,7 @@ double round(double); // nearest
 //double sinh(double);
 //double tanh(double);
 //
-//double exp(double);
+double exp(double);
 //double ldexp(double, int);
 //double frexp(double, int *);
 //double log(double);
@@ -34,3 +34,6 @@ double round(double); // nearest
 //
 //double pow(double, double);
 //double fmod(double, double);
+
+#define INFINITY (1./0)
+#define NAN (0./0)
