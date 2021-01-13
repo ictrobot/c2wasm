@@ -4,9 +4,7 @@ import {Linker} from "./linker";
 import {ModuleBuilder} from "./wasm";
 
 export function compile(files: ReadonlyMap<string, string> | string,
-                        customDefinitions?: {[key: string]: string},
-                        library: () => Linker | undefined = stdLibrary): ModuleBuilder {
-
+                        customDefinitions?: {[key: string]: string}): ModuleBuilder {
     if (typeof files === "string") {
         const f = new Map<string, string>();
         f.set("main.c", files);
@@ -15,11 +13,7 @@ export function compile(files: ReadonlyMap<string, string> | string,
 
     // "linker" also calls preprocessor, lexer, parser and pt transformation into IR
     const linker = new Linker(files, true, customDefinitions);
-    if (library) {
-        linker.link(library());
-    } else {
-        linker.link();
-    }
+    linker.link(stdLibrary(customDefinitions));
 
     const generator = new WGenerator(linker);
     return generator.module;
@@ -35,11 +29,13 @@ export function compileSnippet(source: string): ModuleBuilder {
     return new WGenerator(linker).module;
 }
 
-let _standardLibrary: Linker | undefined;
-export function stdLibrary(): Linker {
-    if (!_standardLibrary) {
-        _standardLibrary = new Linker(STANDARD_LIBRARY);
-        _standardLibrary.link();
+const _standardLibrary = new Map<string, Linker>();
+export function stdLibrary(customDefinitions?: {[key: string]: string}): Linker {
+    const definitionsJson = JSON.stringify(customDefinitions);
+    let lib = _standardLibrary.get(definitionsJson);
+    if (!lib) {
+        lib = new Linker(STANDARD_LIBRARY, true, customDefinitions);
+        lib.link();
     }
-    return _standardLibrary;
+    return lib;
 }
