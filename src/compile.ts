@@ -36,6 +36,7 @@ export function stdLibrary(customDefinitions?: {[key: string]: string}): Linker 
     if (!lib) {
         lib = new Linker(STANDARD_LIBRARY, true, customDefinitions);
         lib.link();
+        _standardLibrary.set(definitionsJson, lib);
     }
     return lib;
 }

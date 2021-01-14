@@ -1,4 +1,3 @@
-import {flag} from "arg";
 import {compress, decompress} from "lzutf8";
 import wabt from "wabt";
 import {compile, compileSnippet} from "../src/compile";
