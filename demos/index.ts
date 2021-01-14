@@ -123,7 +123,6 @@ wabt().then(wabt => {
             }
         };
         textInput.addEventListener("input", recompile);
-        recompile();
 
         // Optimization flags
         const flagsButton = window.document.getElementById("flagsButton") as HTMLButtonElement;
@@ -194,6 +193,8 @@ wabt().then(wabt => {
         (window as any).c2wasm = Object.seal({
             getFlags, setFlags, compile, compileSnippet
         });
+
+        recompile();
     } else {
         const files = new Map<string, string>();
         files.set("main.c", testInput);
