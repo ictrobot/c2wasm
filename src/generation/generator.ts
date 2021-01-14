@@ -1,4 +1,5 @@
 import type {Linker} from "../linker";
+import {getFlags} from "../optimization/flags";
 import {CFuncDefinition, CFuncDeclaration} from "../tree/declarations";
 import type {CExpression} from "../tree/expressions";
 import type {CStatement} from "../tree/statements";
@@ -68,8 +69,9 @@ export class WGenerator {
         const fnGenerator = new WFnGenerator(this, b, s.name);
         const body = fnGenerator.statement(s.body);
 
-        if (fnGenerator.shadowStackUsage > 0) {
+        if (fnGenerator.shadowStackUsage > 0 && getFlags().generation_zero_shadow_stack) {
             // use memory.fill to ensure shadow stack space is 0 before fn runs
+            // not technically needed as automatic variables do not have default initializers
             body.unshift(
                 Instructions.global.get(this.shadowStackPtr),
                 Instructions.i32.const(0),
