@@ -51,7 +51,7 @@ function draw(fn: WFunction) {
         for (; j < all.length; j++) {
             if (all[j].flowNext.size !== 1) break;
             const [next] = [...all[j].flowNext];
-            if (next.flowPrevious.size > 1) break;
+            if (next !== all[j + 1] || next.flowPrevious.size > 1) break;
         }
 
         const names: string[] = [];
