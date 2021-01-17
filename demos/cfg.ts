@@ -1,6 +1,6 @@
 import {Network, Node, Edge, Options} from "vis-network";
 import {compile} from "../src/compile";
-import {expr2flow, Flow} from "../src/optimization/flow/control_flow";
+import {controlFlow, Flow} from "../src/optimization/flow/control_flow";
 import {ModuleBuilder, WFunction} from "../src/wasm";
 
 if (typeof window === 'undefined' || !window.document) throw new Error("Must be ran in a web browser");
@@ -37,7 +37,7 @@ const networkOptions: Options = {
 };
 
 function draw(fn: WFunction) {
-    const {all, exit} = expr2flow(fn.body);
+    const {all, exit} = controlFlow(fn.body);
     const nodes: Node[] = [
         {id: 0, label: "Start", color: "green", borderWidth: 3},
         {id: 1, label: "End", color: "red", borderWidth: 3},

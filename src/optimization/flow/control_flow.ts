@@ -12,41 +12,23 @@ function _expr2flow(expr: WExpression,
     allFlows.push(...flows);
     flows.push(followingFlow);
 
-    // link instrPrevious, instrNext, instrChild
-    for (let i = 0; i < instructions.length; i++) {
-        const flowBefore = flows[i - 1] as InstrFlow | undefined;
-        const flowCurrent = flows[i] as InstrFlow;
-        const flowNext = flows[i + 1] as Flow; // only possible non-InstrFlow is the final item in the flows list
-
-        if (flowNext.type === "instr") flowCurrent.instrNext = flowNext;
-        if (flowBefore?.type === "instr") flowCurrent.instrPrevious = flowBefore;
-
-        const instr = instructions[i];
-        if (instr.type === "structured") {
-            if (instr.name === "loop") {
-                // br to a loop jumps back to the loop
-                brTargets.unshift(flowCurrent);
-            } else {
-                // br to an if or block jumps to the first instruction after the loop
-                brTargets.unshift(flowNext);
-            }
-
-            flowCurrent.instrChild = _expr2flow(instr.immediate.expression, allFlows, brTargets, flowNext, exitFlow);
-            if (instr.immediate.expression2) {
-                flowCurrent.instrChild2 = _expr2flow(instr.immediate.expression2, allFlows, brTargets, flowNext, exitFlow);
-            }
-
-            brTargets.shift();
-        }
-    }
-
-    // link the flows
     for (let i = 0; i < instructions.length; i++) {
         const instr = instructions[i];
         const flow = flows[i] as InstrFlow;
 
         if (instr.type === "structured" && instr.name === "if") {
-            const child1 = flow.instrChild, child2 = flow.instrChild2;
+            // br to if jumps to the first instruction after the loop
+            brTargets.unshift(flows[i + 1]);
+
+            const child1 = _expr2flow(instr.immediate.expression, allFlows, brTargets, flows[i + 1], exitFlow);
+
+            let child2 = undefined;
+            if (instr.immediate.expression2) {
+                child2 = _expr2flow(instr.immediate.expression2, allFlows, brTargets, flows[i + 1], exitFlow);
+            }
+
+            brTargets.shift();
+
             if (child1) flow.flowNext.add(child1);
             if (child2) flow.flowNext.add(child2);
             if ((!child1 || !child2) && flows[i + 1]) {
@@ -55,7 +37,11 @@ function _expr2flow(expr: WExpression,
             }
 
         } else if (instr.type === "structured") {
-            const child = flow.instrChild;
+            // br to a loop jumps back to the loop, br to block jumps to the first instruction after the loop
+            brTargets.unshift(instr.name === "loop" ? flow : flows[i + 1]);
+            const child = _expr2flow(instr.immediate.expression, allFlows, brTargets, flows[i + 1], exitFlow);
+            brTargets.shift();
+
             if (child) {
                 flow.flowNext.add(child);
             } else if (flows[i + 1]) {
@@ -94,10 +80,10 @@ function _expr2flow(expr: WExpression,
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function expr2flow(expr: WExpression) {
+export function controlFlow(expr: WExpression) {
     const allFlows: Flow[] = [];
-    const entryFlow: Flow & {type: "entry"} = {type: "entry", flowPrevious: new Set(), flowNext: new Set()};
-    const exitFlow: Flow & {type: "exit"} = {type: "exit", flowPrevious: new Set(), flowNext: new Set()};
+    const entryFlow: Flow & {type: "entry"} = {type: "entry", instr: undefined, flowPrevious: new Set(), flowNext: new Set()};
+    const exitFlow: Flow & {type: "exit"} = {type: "exit", instr: undefined, flowPrevious: new Set(), flowNext: new Set()};
 
     if (!expr.writes.includes("arbitraryCode")) {
         const initialFlow = _expr2flow(expr, allFlows, [], exitFlow, exitFlow);
@@ -121,21 +107,18 @@ export interface InstrFlow {
     type: "instr"
     instr: InstrInstance;
 
-    // previous Wasm instruction
-    instrPrevious?: InstrFlow;
-    // next Wasm instruction
-    instrNext?: InstrFlow;
-    // if instr is structured, the start of its subexpressions
-    instrChild?: InstrFlow, instrChild2?: InstrFlow;
-
     // instructions which could be the previous executed instruction
     flowPrevious: Set<Flow>;
     // instructions which could be the next executed instruction
     flowNext: Set<Flow>;
 }
 
-export type Flow = InstrFlow | {
+export interface MarkerFlow {
     type: "entry" | "exit";
+    instr: undefined;
+
     flowPrevious: Set<Flow>;
     flowNext: Set<Flow>;
-};
+}
+
+export type Flow = InstrFlow | MarkerFlow;

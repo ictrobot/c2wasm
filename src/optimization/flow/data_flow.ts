@@ -1,5 +1,5 @@
 import type {WExpression} from "../../wasm";
-import {expr2flow, InstrFlow} from "./control_flow";
+import {controlFlow, InstrFlow} from "./control_flow";
 
 export type Definition = {
     readonly local: bigint,
@@ -8,7 +8,7 @@ export type Definition = {
 } & ({type: "arg"} | {type: "local.set" | "local.tee", flow: InstrFlow});
 
 export function reachingDefinitions(expr: WExpression): Definition[] {
-    const {all} = expr2flow(expr);
+    const {all} = controlFlow(expr);
     if (all.length === 0) return [];
 
     const reachingDefs = new Map<InstrFlow, Set<Definition>>();
@@ -58,10 +58,6 @@ export function reachingDefinitions(expr: WExpression): Definition[] {
         if (flowDef) {
             for (const existing of S) {
                 if (flowDef.local === existing.local) {
-                    // @ts-ignore
-                    if (flowDef.local === 6n && existing.type === "local.set" && [...existing.flow.flowPrevious][0].instr.encoded[1] === 8) {
-                        // debugger;
-                    }
                     S.delete(existing);
                 }
             } // S = IN[n] - KILL[n]
