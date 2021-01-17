@@ -1,5 +1,5 @@
-import {WExpression} from "../wasm";
-import {InstrInstance} from "../wasm/instr_helpers";
+import {WExpression} from "../../wasm";
+import {InstrInstance} from "../../wasm/instr_helpers";
 
 function _expr2flow(expr: WExpression,
                     allFlows: Flow[],
@@ -101,7 +101,10 @@ export function expr2flow(expr: WExpression) {
 
     if (!expr.writes.includes("arbitraryCode")) {
         const initialFlow = _expr2flow(expr, allFlows, [], exitFlow, exitFlow);
-        if (initialFlow) entryFlow.flowNext.add(initialFlow);
+        if (initialFlow) {
+            entryFlow.flowNext.add(initialFlow);
+            initialFlow.flowPrevious.add(entryFlow);
+        }
 
         // populate flowPrevious
         for (const flow of allFlows) {
@@ -112,10 +115,6 @@ export function expr2flow(expr: WExpression) {
     }
 
     return {entry: entryFlow, exit: exitFlow, all: allFlows.filter(x => x.type === "instr") as InstrFlow[]};
-}
-
-export function flow2expr(flow: InstrFlow, expr2modify: WExpression): void {
-    // TODO
 }
 
 export interface InstrFlow {
