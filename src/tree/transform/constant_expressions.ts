@@ -182,9 +182,8 @@ export function evalExpression(e: CExpression, extra?: ExtraFn): CValue | undefi
 
 export function evalInteger(e: CExpression, extra?: ExtraFn): undefined | CValue & {readonly value: bigint} {
     const v = evalExpression(e, extra);
-    if (!v) return undefined;
-    if (v.type instanceof CArithmetic && v.type.type !== "float") return {value: BigInt(v.value), type: v.type};
-    throw new ExpressionTypeError(e.node, "expected constant integer expression");
+    if (v?.type instanceof CArithmetic && v.type.type !== "float") return {value: BigInt(v.value), type: v.type};
+    return undefined;
 }
 
 function normalizeType(v: CValue): CValue {
@@ -205,7 +204,7 @@ function normalizeType(v: CValue): CValue {
                 } else if (v.value < v.type.minValue) {
                     value = BigInt(v.type.minValue);
                 } else {
-                    value = BigInt(v.value);
+                    value = BigInt(Math.trunc(v.value));
                 }
             } else {
                 value = v.value;
