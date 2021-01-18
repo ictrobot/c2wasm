@@ -2,6 +2,7 @@ import {WExpression, Instructions} from "../wasm";
 import {WLocal} from "../wasm/functions";
 import {deadCodeElimination} from "./dead_code";
 import {getFlags} from "./flags";
+import {constantPropagation} from "./flow/constants";
 import {Optimizer} from "./optimizer";
 import {peephole, peepholeMulti, peepholeOptimizers} from "./peephole";
 
@@ -14,13 +15,21 @@ export function optimize(expr: WExpression): void {
     }
 }
 
+function peepholeOptimizations(expr: WExpression) {
+    const flags = getFlags();
+    peepholeMulti(expr, peepholeOptimizers.filter(x => x.enabled(flags)).map(x => [x.run, x.peepholeSize]));
+}
+
 optimizers.push({
-    name: "peephole optimizations",
+    name: "Peephole optimizations",
     enabled: () => true,
-    run: (expr) => {
-        const flags = getFlags();
-        peepholeMulti(expr, peepholeOptimizers.filter(x => x.enabled(flags)).map(x => [x.run, x.peepholeSize]));
-    }
+    run: peepholeOptimizations
+});
+
+optimizers.push({
+    name: "Constant propagation",
+    enabled: (flags) => flags.constant_propagation,
+    run: constantPropagation
 });
 
 optimizers.push({
@@ -62,6 +71,12 @@ optimizers.push({
             }
         }, 1);
     }
+});
+
+optimizers.push({
+    name: "Peephole optimizations 2nd pass",
+    enabled: (flags) => flags.peephole_2nd_pass,
+    run: peepholeOptimizations
 });
 
 optimizers.push({

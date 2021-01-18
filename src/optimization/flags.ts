@@ -11,7 +11,10 @@ const DEFAULT = {
     peephole_unused_blocks: true,
 
     unused_locals: true,
+    constant_propagation: true,
     dead_code_elimination: true,
+
+    peephole_2nd_pass: true,
 } as const;
 
 export type OptimizationFlags = {[k in keyof typeof DEFAULT]: boolean};

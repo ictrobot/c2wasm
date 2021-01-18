@@ -37,12 +37,12 @@ const networkOptions: Options = {
 };
 
 function draw(fn: WFunction) {
-    const {all, exit} = controlFlow(fn.body);
+    const {all, entry, exit} = controlFlow(fn.body);
     const nodes: Node[] = [
         {id: 0, label: "Start", color: "green", borderWidth: 3},
         {id: 1, label: "End", color: "red", borderWidth: 3},
     ];
-    const edges: Edge[] = [{from: 0, to: 2}];
+    const edges: Edge[] = [];
     const nodeMap = new Map<Flow, number>();
     nodeMap.set(exit, 1);
 
@@ -64,6 +64,11 @@ function draw(fn: WFunction) {
             id: nodes.length,
             label: names.join("\n")
         });
+    }
+
+    for (const entries of entry.flowNext) {
+        const node = nodeMap.get(entries);
+        if (node) edges.push({from: 0, to: node});
     }
 
     for (const flow1 of all) {

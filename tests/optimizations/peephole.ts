@@ -8,19 +8,19 @@ function optimizationTest(title: string,
                           fn: (t: ExecutionContext, defaultModule: ModuleBuilder, flagsModule: ModuleBuilder) => void,
                           src: string) {
     test(title, t => {
-        setFlags("default");
-        const defaultModule = compileSnippet(src);
+        setFlags("none");
+        const originalModule = compileSnippet(src);
         setFlags(flags);
         const flagsModule = compileSnippet(src);
         setFlags("default"); // restore flags
 
-        fn(t, defaultModule, flagsModule);
+        fn(t, originalModule, flagsModule);
     });
 }
 
-optimizationTest("peephole_local_tee", {peephole_local_tee: false}, (t, withOptimization, without) => {
-    const withoutInstrNames = without.functions[0].body.instructions.map(x => x.name);
-    const withInstrNames = withOptimization.functions[0].body.instructions.map(x => x.name);
+optimizationTest("peephole_local_tee", {peephole_local_tee: true}, (t, withoutOpt, withOpt) => {
+    const withoutInstrNames = withoutOpt.functions[0].body.instructions.map(x => x.name);
+    const withInstrNames = withOpt.functions[0].body.instructions.map(x => x.name);
 
     t.deepEqual(withoutInstrNames, ["i32.const", "local.set", "local.get"]);
     t.deepEqual(withInstrNames, ["i32.const", "local.tee"]);
