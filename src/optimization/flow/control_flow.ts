@@ -82,6 +82,28 @@ export function controlFlow(expr: WExpression): {entry: MarkerFlow, exit: Marker
     return {entry: entryFlow, exit: exitFlow, all: allFlows.filter(x => x.type === "instr") as InstrFlow[]};
 }
 
+export function simplifiedControlFlow(expr: WExpression, filter: (instr: InstrInstance) => boolean): ReturnType<typeof controlFlow> {
+    const {entry, exit, all} = controlFlow(expr);
+    const newAll: InstrFlow[] = [];
+
+    for (const flow of all) {
+        if (flow.flowPrevious.size === 1 && flow.flowNext.size === 1 && !filter(flow.instr)) {
+            const previous = [...flow.flowPrevious][0];
+            const next = [...flow.flowNext][0];
+
+            previous.flowNext.delete(flow);
+            previous.flowNext.add(next);
+
+            next.flowPrevious.delete(flow);
+            next.flowPrevious.add(previous);
+        } else {
+            newAll.push(flow);
+        }
+    }
+
+    return {entry, exit, all: newAll};
+}
+
 export interface InstrFlow {
     type: "instr"
     instr: InstrInstance;

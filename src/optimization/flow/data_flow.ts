@@ -1,5 +1,5 @@
 import type {WExpression} from "../../wasm";
-import {controlFlow, InstrFlow} from "./control_flow";
+import {InstrFlow, simplifiedControlFlow} from "./control_flow";
 
 export type Definition = {
     readonly local: bigint,
@@ -8,7 +8,7 @@ export type Definition = {
 } & ({type: "arg"} | {type: "local.set" | "local.tee", flow: InstrFlow});
 
 export function reachingDefinitions(expr: WExpression): Definition[] {
-    const {all} = controlFlow(expr);
+    const {all} = simplifiedControlFlow(expr, instr => instr.name.startsWith("local."));
     if (all.length === 0) return [];
 
     const reachingDefs = new Map<InstrFlow, Set<Definition>>();
