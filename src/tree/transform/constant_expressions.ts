@@ -3,36 +3,62 @@ import {CExpression, CConstant, CIdentifier, CSizeof, CBitwiseNot, CLogicalNot, 
 import {ExpressionTypeError} from "../type_checking";
 import {CArithmetic, CSizeT, CPointer} from "../types";
 
-type ExtraFn = (e: CExpression) => CValue;
+type ExtraFn = (e: CExpression, evalExpr: (e: CExpression) => CValue | undefined, fail: (e: CExpression) => undefined) => CValue | undefined;
+
+const CONSTANT = Symbol("constant");
 
 export function constExpression(e: CExpression, extra?: ExtraFn): CValue {
-    if (e instanceof CConstant) {
+    const v = evalExpression(e, extra);
+    if (v) return v;
+    throw new ExpressionTypeError(e.node, "constant expression");
+}
+
+export function constInteger(e: CExpression, extra?: ExtraFn): CValue & {readonly value: bigint} {
+    const v = evalInteger(e, extra);
+    if (v) return v;
+    throw new ExpressionTypeError(e.node, "constant integer expression");
+}
+
+function fail(e: CExpression): undefined {
+    (e as object as {[CONSTANT]: boolean})[CONSTANT] = false;
+    return undefined;
+}
+
+export function evalExpression(e: CExpression, extra?: ExtraFn): CValue | undefined {
+    if (!((e as object as { [CONSTANT]: boolean })[CONSTANT] ?? true)) {
+        return undefined; // cache on expr if failed previously to speed up flags.generation_try_constant_expr
+    } else if (e instanceof CConstant) {
         return {value: e.value, type: e.type};
     } else if (e instanceof CIdentifier && e.value instanceof CVarDefinition && e.value.type.qualifier === "const" && e.value.staticValue instanceof CConstant) {
-        return constExpression(e.value.staticValue, extra);
+        return evalExpression(e.value.staticValue, extra);
 
     } else if (e instanceof CSizeof) {
         return normalizeType({value: e.body.bytes, type: CSizeT});
 
     } else if (e instanceof CUnaryPlusMinus) {
-        const v = constExpression(e.body, extra);
+        const v = evalExpression(e.body, extra);
+        if (!v) return fail(e);
         return e.op === "+" ? v : {value: -v.value, type: e.type};
 
     } else if (e instanceof CBitwiseNot) {
-        const v = constInteger(e.body, extra);
+        const v = evalInteger(e.body, extra);
+        if (!v) return fail(e);
         return normalizeType({value: ~v.value, type: v.type});
 
     } else if (e instanceof CLogicalNot) {
-        const v = constExpression(e.body, extra);
+        const v = evalExpression(e.body, extra);
+        if (!v) return fail(e);
         // eslint-disable-next-line eqeqeq
         return {value: v.value == 0 ? 1n : 0n, type: CArithmetic.S32};
 
     } else if (e instanceof CCast && (e.type instanceof CArithmetic || e.type instanceof CPointer)) {
-        const v = constExpression(e.body, extra);
+        const v = evalExpression(e.body, extra);
+        if (!v) return fail(e);
         return normalizeType({value: v.value, type: e.type});
 
     } else if (e instanceof CMulDiv) {
-        const lhs = constExpression(e.lhs, extra), rhs = constExpression(e.rhs, extra);
+        const lhs = evalExpression(e.lhs, extra), rhs = evalExpression(e.rhs, extra);
+        if (!lhs || !rhs) return fail(e);
         if (e.op === "*") {
             if (e.type.type === "float") {
                 return {value: Number(lhs.value) * Number(rhs.value), type: e.type};
@@ -46,11 +72,13 @@ export function constExpression(e: CExpression, extra?: ExtraFn): CValue {
         }
 
     } else if (e instanceof CMod) {
-        const lhs = constInteger(e.lhs, extra), rhs = constInteger(e.rhs, extra);
+        const lhs = evalInteger(e.lhs, extra), rhs = evalInteger(e.rhs, extra);
+        if (!lhs || !rhs) return fail(e);
         return normalizeType({value: lhs.value % rhs.value, type: e.type});
 
     } else if (e instanceof CAddSub && e.type instanceof CArithmetic) {
-        const lhs = constExpression(e.lhs, extra), rhs = constExpression(e.rhs, extra);
+        const lhs = evalExpression(e.lhs, extra), rhs = evalExpression(e.rhs, extra);
+        if (!lhs || !rhs) return fail(e);
         if (e.op === "+") {
             if (e.type.type === "float") {
                 return {value: Number(lhs.value) + Number(rhs.value), type: e.type};
@@ -64,14 +92,16 @@ export function constExpression(e: CExpression, extra?: ExtraFn): CValue {
         }
 
     } else if (e instanceof CShift) {
-        const lhs = constInteger(e.lhs, extra), rhs = constInteger(e.rhs, extra);
+        const lhs = evalInteger(e.lhs, extra), rhs = evalInteger(e.rhs, extra);
+        if (!lhs || !rhs) return fail(e);
         if (e.dir === "left") {
             return normalizeType({value: lhs.value << rhs.value, type: e.type});
         }
         return normalizeType({value: lhs.value >> rhs.value, type: e.type});
 
     } else if (e instanceof CRelational) {
-        const lhs = constExpression(e.lhs, extra), rhs = constExpression(e.rhs, extra);
+        const lhs = evalExpression(e.lhs, extra), rhs = evalExpression(e.rhs, extra);
+        if (!lhs || !rhs) return fail(e);
         if (e.op === "LT") {
             return {value: lhs.value < rhs.value ? 1n : 0n, type: CArithmetic.S32};
         } else if (e.op === "GT") {
@@ -83,7 +113,8 @@ export function constExpression(e: CExpression, extra?: ExtraFn): CValue {
         }
 
     } else if (e instanceof CEquality) {
-        const lhs = constExpression(e.lhs, extra), rhs = constExpression(e.rhs, extra);
+        const lhs = evalExpression(e.lhs, extra), rhs = evalExpression(e.rhs, extra);
+        if (!lhs || !rhs) return fail(e);
         if (e.op === "==") {
             // eslint-disable-next-line eqeqeq
             return {value: lhs.value == rhs.value ? 1n : 0n, type: CArithmetic.S32};
@@ -93,7 +124,8 @@ export function constExpression(e: CExpression, extra?: ExtraFn): CValue {
         }
 
     } else if (e instanceof CBitwiseAndOr) {
-        const lhs = constInteger(e.lhs, extra), rhs = constInteger(e.rhs, extra);
+        const lhs = evalInteger(e.lhs, extra), rhs = evalInteger(e.rhs, extra);
+        if (!lhs || !rhs) return fail(e);
         if (e.op === "and") {
             return normalizeType({value: lhs.value & rhs.value, type: e.type});
         } else if (e.op === "or") {
@@ -103,42 +135,54 @@ export function constExpression(e: CExpression, extra?: ExtraFn): CValue {
         }
 
     } else if (e instanceof CLogicalAndOr) {
-        const lhs = constExpression(e.lhs, extra);
+        const lhs = evalExpression(e.lhs, extra);
+        if (!lhs) return fail(e);
         if (e.op === "and") {
             // eslint-disable-next-line eqeqeq
-            if (lhs.value != 0 && constExpression(e.rhs, extra).value != 0) {
-                return {value: 1n, type: CArithmetic.S32};
+            if (lhs.value != 0) {
+                const rhs = evalExpression(e.rhs, extra);
+                if (!rhs) return fail(e);
+                // eslint-disable-next-line eqeqeq
+                if (rhs.value != 0) return {value: 1n, type: CArithmetic.S32};
             }
             return {value: 0n, type: CArithmetic.S32};
         } else {
             // eslint-disable-next-line eqeqeq
-            if (lhs.value != 0 || constExpression(e.rhs, extra).value != 0) {
-                return {value: 1n, type: CArithmetic.S32};
-            }
+            if (lhs.value != 0) return {value: 1n, type: CArithmetic.S32};
+            const rhs = evalExpression(e.rhs, extra);
+            if (!rhs) return fail(e);
+            // eslint-disable-next-line eqeqeq
+            if (rhs.value != 0) return {value: 1n, type: CArithmetic.S32};
             return {value: 0n, type: CArithmetic.S32};
         }
 
     } else if (e instanceof CConditional && (e.type instanceof CArithmetic || e.type instanceof CPointer)) {
-        const test = constExpression(e.test, extra);
-        let value: CValue;
+        const test = evalExpression(e.test, extra);
+        if (!test) return fail(e);
+        let value: CValue | undefined;
         // eslint-disable-next-line eqeqeq
         if (test.value != 0) {
-            value = constExpression(e.trueValue, extra);
+            value = evalExpression(e.trueValue, extra);
         } else {
-            value = constExpression(e.falseValue, extra);
+            value = evalExpression(e.falseValue, extra);
         }
+        if (!value) return fail(e);
         return normalizeType({value: value.value, type: e.type});
 
     }
 
     // for adding addressof support etc for static initializers
-    if (extra !== undefined) return extra(e);
+    if (extra !== undefined) {
+        const v = extra(e, (e2) => evalExpression(e2, extra), fail);
+        if (v) return v;
+    }
 
-    throw new ExpressionTypeError(e.node, "constant expression");
+    fail(e);
 }
 
-export function constInteger(e: CExpression, extra?: ExtraFn): CValue & {readonly value: bigint} {
-    const v = constExpression(e, extra);
+export function evalInteger(e: CExpression, extra?: ExtraFn): undefined | CValue & {readonly value: bigint} {
+    const v = evalExpression(e, extra);
+    if (!v) return undefined;
     if (v.type instanceof CArithmetic && v.type.type !== "float") return {value: BigInt(v.value), type: v.type};
     throw new ExpressionTypeError(e.node, "expected constant integer expression");
 }

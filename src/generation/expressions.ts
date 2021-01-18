@@ -2,7 +2,7 @@ import {getFlags} from "../optimization/flags";
 import {CFuncDefinition, CFuncDeclaration} from "../tree/declarations";
 import {CIdentifier} from "../tree/expressions";
 import * as c from "../tree/expressions";
-import {constExpression} from "../tree/transform/constant_expressions";
+import {evalExpression} from "../tree/transform/constant_expressions";
 import {CType, CArithmetic, CPointer, CArray, CSizeT, CUnion, CStruct, CFuncType, integerPromotion} from "../tree/types";
 import {i32Type, Instructions, i64Type, f32Type, f64Type, ValueType} from "../wasm";
 import {WInstruction} from "../wasm/instructions";
@@ -434,12 +434,8 @@ function comma(ctx: WFnGenerator, e: c.CComma, discard: boolean): WInstruction[]
 export function expressionGeneration(ctx: WFnGenerator, e: c.CExpression, discard: boolean): WInstruction[] {
     if (!discard && e.type instanceof CArithmetic && !(e instanceof c.CConstant) && getFlags().generation_try_constant_expr) {
         // try to evaluate as constant expression
-        try {
-            const value = constExpression(e);
-            return constant(ctx, new c.CConstant(e.node, e.type, value.value), false);
-        } catch (e) {
-            // failed - not a constant expression
-        }
+        const value = evalExpression(e);
+        if (value) return constant(ctx, new c.CConstant(e.node, e.type, value.value), false);
     }
 
     if (e instanceof c.CConstant) return constant(ctx, e, discard);

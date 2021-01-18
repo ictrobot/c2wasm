@@ -1,7 +1,6 @@
 import {ParseNode} from "../parsing";
 import {CConstant, CInitializer, CArrayPointer, CStringLiteral, CExpression, CValue, CCast, CAddressOf, CIdentifier, CAddSub, CDereference} from "../tree/expressions";
 import {constExpression, normalizeValueType} from "../tree/transform/constant_expressions";
-import {ExpressionTypeError} from "../tree/type_checking";
 import {CArithmetic, CArray, CUnion, CStruct, CSizeT, CPointer, CType} from "../tree/types";
 import {byte} from "../wasm/base_types";
 import {GenError} from "./gen_error";
@@ -20,52 +19,47 @@ export function staticInitializer(ctx: WGenerator, init: CExpression | CInitiali
         return stringLiteral(init);
     } else {
         if (targetType && !init.type.equals(targetType)) init = new CCast(init.node, targetType, init);
-        const value = constExpression(init, staticExpressions(ctx));
+        const value = constExpression(init, (e: CExpression, evalExpr, fail) => {
+            if (e instanceof CAddressOf && e.body instanceof CIdentifier) {
+                let addr: number | bigint | undefined;
+                if (e.body.value.declType === "variable") {
+                    addr = getStaticAddress(e.body.value);
+                } else {
+                    addr = ctx.indirectIndex(e.body.value);
+                }
+                if (addr !== undefined) return normalizeValueType({value: addr, type: e.type});
+
+            } else if (e instanceof CAddressOf && e.body instanceof CDereference) { // &x[3] turns into &*(x + 3)
+                const v = evalExpr(e.body.body);
+                if (!v) return fail(e);
+                return normalizeValueType({value: v.value, type: e.type});
+
+            } else if (e instanceof CIdentifier && e.value.declType === "function") { // implicit function to pointer conversion
+                const addr = ctx.indirectIndex(e.value);
+                return normalizeValueType({value: addr, type: new CPointer(e.node, e.type)});
+
+            } else if (e instanceof CArrayPointer && e.arrayIdentifier instanceof CIdentifier) { // implicit array to pointer conversion
+                const addr = getStaticAddress(e.arrayIdentifier.value);
+                if (addr !== undefined) return normalizeValueType({value: addr, type: new CPointer(e.node, e.type)});
+
+            } else if (e instanceof CArrayPointer && e.arrayIdentifier instanceof CStringLiteral) {
+                // allocate a new string literal and return pointer
+                const addr = ctx.nextStaticAddr; // chars 1 byte aligned
+                const stringBytes = stringLiteral(e.arrayIdentifier);
+                ctx.module.dataSegment(addr, stringBytes);
+                ctx.nextStaticAddr += stringBytes.length;
+                return normalizeValueType({value: addr, type: e.type});
+
+            } else if (e instanceof CAddSub && e.type instanceof CPointer) { // pointer arithmetic
+                const lhs = evalExpr(e.lhs), rhs = evalExpr(e.rhs);
+                if (!lhs || !rhs) return fail(e);
+                const lhsValue = lhs.type instanceof CPointer ? BigInt(lhs.value) : BigInt(e.type.type.bytes) * BigInt(lhs.value);
+                const rhsValue = rhs.type instanceof CPointer ? BigInt(rhs.value) : BigInt(e.type.type.bytes) * BigInt(rhs.value);
+                return normalizeValueType({value: lhsValue + rhsValue, type: e.type});
+            }
+        });
         return constant(value, init.node);
     }
-}
-
-function staticExpressions(ctx: WGenerator): (e: CExpression) => CValue {
-    const extra = (e: CExpression) => {
-        if (e instanceof CAddressOf && e.body instanceof CIdentifier) {
-            let addr: number | bigint | undefined;
-            if (e.body.value.declType === "variable") {
-                addr = getStaticAddress(e.body.value);
-            } else {
-                addr = ctx.indirectIndex(e.body.value);
-            }
-            if (addr !== undefined) return normalizeValueType({value: addr, type: e.type});
-
-        } else if (e instanceof CAddressOf && e.body instanceof CDereference) { // &x[3] turns into &*(x + 3)
-            const v = constExpression(e.body.body, extra);
-            return normalizeValueType({value: v.value, type: e.type});
-
-        } else if (e instanceof CIdentifier && e.value.declType === "function") { // implicit function to pointer conversion
-            const addr = ctx.indirectIndex(e.value);
-            return normalizeValueType({value: addr, type: new CPointer(e.node, e.type)});
-
-        } else if (e instanceof CArrayPointer && e.arrayIdentifier instanceof CIdentifier) { // implicit array to pointer conversion
-            const addr = getStaticAddress(e.arrayIdentifier.value);
-            if (addr !== undefined) return normalizeValueType({value: addr, type: new CPointer(e.node, e.type)});
-
-        } else if (e instanceof CArrayPointer && e.arrayIdentifier instanceof CStringLiteral) {
-            // allocate a new string literal and return pointer
-            const addr = ctx.nextStaticAddr; // chars 1 byte aligned
-            const stringBytes = stringLiteral(e.arrayIdentifier);
-            ctx.module.dataSegment(addr, stringBytes);
-            ctx.nextStaticAddr += stringBytes.length;
-            return normalizeValueType({value: addr, type: e.type});
-
-        } else if (e instanceof CAddSub && e.type instanceof CPointer) { // pointer arithmetic
-            const lhs = constExpression(e.lhs, extra), rhs = constExpression(e.rhs, extra);
-            const lhsValue = lhs.type instanceof CPointer ? BigInt(lhs.value) : BigInt(e.type.type.bytes) * BigInt(lhs.value);
-            const rhsValue = rhs.type instanceof CPointer ? BigInt(rhs.value) : BigInt(e.type.type.bytes) * BigInt(rhs.value);
-            return normalizeValueType({value: lhsValue + rhsValue, type: e.type});
-        }
-
-        throw new ExpressionTypeError(e.node, "constant expression");
-    };
-    return extra;
 }
 
 function encode(bytes: number, method: (d: DataView) => void): byte[] {
