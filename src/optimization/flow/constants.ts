@@ -12,7 +12,7 @@ export function constantPropagation(expr: WExpression): void {
 
         if (def.possibleUses.length === 0) {
             // never used so drop the assignment
-            if (dropAssignment(def.flow)) return constantPropagation(expr);
+            dropAssignment(def.flow);
             continue;
         }
 
@@ -33,17 +33,15 @@ export function constantPropagation(expr: WExpression): void {
 
         if (def.definiteUses.length === def.possibleUses.length) {
             // can remove the assignment if no extra possible uses
-            if (dropAssignment(def.flow)) return constantPropagation(expr);
+            dropAssignment(def.flow);
         }
     }
 }
 
-function dropAssignment(f: InstrFlow): boolean /* if removed instr so indices now invalid */ {
+function dropAssignment(f: InstrFlow) {
     if (f.instr.name === "local.tee") {
-        f.expr.replace(f.instrIndex, f.instrIndex + 1, /* nothing */);
-        return true;
+        f.expr.replace(f.instrIndex, f.instrIndex + 1, Instructions.nop()); // use nop to avoid changing indices
     } else if (f.instr.name === "local.set") {
         f.expr.replace(f.instrIndex, f.instrIndex + 1, Instructions.drop());
     }
-    return false;
 }
