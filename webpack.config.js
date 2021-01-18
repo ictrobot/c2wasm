@@ -48,27 +48,30 @@ module.exports = (env, argv) => {
     };
     if (argv.mode === "development") return [demos];
 
-    const lib = {
-        entry: "./src/index.ts",
-        output: {
-            filename: "c2wasm.js",
-            path: path.resolve(__dirname, 'dist/'),
-            library: "c2wasm",
-            libraryTarget: "umd"
-        },
-        resolve: {
-            extensions: [".ts", ".js"],
-            fallback: {fs: false}
-        },
-        module: {
-            rules: [{test: /\.ts$/, loader: "ts-loader"}]
-        },
-        target: "es2020",
-        optimization: {
-            minimizer
-        },
-        devtool: "source-map"
-    };
+    function lib(mode) {
+        return {
+            entry: "./src/index.ts",
+            output: {
+                filename: `${mode}.js`,
+                path: path.resolve(__dirname, 'dist/'),
+                library: "c2wasm",
+                libraryTarget: "umd"
+            },
+            resolve: {
+                extensions: [".ts", ".js"],
+                fallback: {fs: false}
+            },
+            module: {
+                rules: [{test: /\.ts$/, loader: "ts-loader"}]
+            },
+            target: "es2020",
+            optimization: {
+                minimizer
+            },
+            externals: mode !== "bundle" ? ["moo"] : [],
+            devtool: "source-map"
+        };
+    }
 
-    return [demos, lib];
+    return [demos, lib("c2wasm"), lib("bundle")];
 }
