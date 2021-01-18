@@ -2,7 +2,8 @@
   "name": "c2wasm",
   "version": "0.0.1",
   "description": "C Compiler To WebAssembly",
-  "main": "index.js",
+  "main": "dist/c2wasm.js",
+  "types": "src/c2wasm.d.ts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ictrobot/c2wasm.git"
@@ -15,7 +16,6 @@
   "license": "MIT",
   "scripts": {
     "test": "ts-node src/c_library/standard_library.ts && tsc && ava --timeout 1m",
-    "start": "node --experimental-wasm-bigint -r ts-node/register src/main.ts",
     "parser": "jison src/parsing/c_grammar.jison -o src/parsing/gen/c_grammar.js --default-action=none,merge",
     "lint": "eslint .",
     "stdlib": "ts-node src/c_library/standard_library.ts",

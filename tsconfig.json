@@ -79,7 +79,8 @@
   "exclude": [
     "build",
     "dist",
-    "*.json" /* Ignore non-nested JSON files e.g. package.json */
+    "*.json", /* Ignore non-nested JSON files e.g. package.json */
+    "src/c2wasm.d.ts"
   ],
   "include": [
     "**/*.ts",
