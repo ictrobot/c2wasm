@@ -80,7 +80,7 @@
     "build",
     "dist",
     "*.json", /* Ignore non-nested JSON files e.g. package.json */
-    "src/c2wasm.d.ts"
+    "src/index.d.ts"
   ],
   "include": [
     "**/*.ts",

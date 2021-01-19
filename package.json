@@ -1,9 +1,9 @@
 {
   "name": "@ictrobot/c2wasm",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "C Compiler To WebAssembly",
   "main": "dist/c2wasm.js",
-  "types": "src/c2wasm.d.ts",
+  "types": "src/index.d.ts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ictrobot/c2wasm.git"

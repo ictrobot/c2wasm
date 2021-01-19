@@ -4,7 +4,7 @@ export class Files {
     private nameMap = new Map<string, number>();
     private fileNameBuffer = "";
 
-    constructor(output: (char: string) => void, input?: () => string, files?: Map<string, Uint8Array>) {
+    constructor(output: (char: string) => void, input?: () => string, files?: Map<string, Uint8Array | FileLike>) {
         // handle 0 - stdin
         if (input) {
             const currentInput: number[] = [];
@@ -37,8 +37,13 @@ export class Files {
 
         if (files) {
             for (const [fname, contents] of files.entries()) {
-                const file = new File();
-                file.setBytes([...contents]);
+                let file;
+                if (contents instanceof Uint8Array) {
+                    file = new File();
+                    file.bytes = [...contents];
+                } else {
+                    file = contents;
+                }
                 this.handleMap.set(this.nextHandle, file);
                 this.nameMap.set(fname, this.nextHandle++);
             }
@@ -122,6 +127,9 @@ export class Files {
             this.nameMap.set(filename, handle);
             this.handleMap.set(handle, new File());
         }
+        // reset position
+        this.handleMap.get(handle)?.set_pos(0n);
+
         return handle;
     }
 
@@ -137,6 +145,11 @@ export class Files {
             __move: this.__move.bind(this),
             __get_fhandle: this.__get_fhandle.bind(this)
         };
+    }
+
+    public getContents(filename: string): Uint8Array | undefined {
+        const file = this.handleMap.get(this.nameMap.get(filename) ?? -Infinity);
+        if (file instanceof File) return new Uint8Array(file.bytes);
     }
 }
 
@@ -179,8 +192,12 @@ class File implements FileLike {
         return true;
     }
 
-    setBytes(bytes: number[]) {
-        this._bytes = bytes;
+    get bytes(): number[] {
+        return this._bytes;
+    }
+
+    set bytes(value: number[]) {
+        this._bytes = value;
         this._pos = 0n;
     }
 }
