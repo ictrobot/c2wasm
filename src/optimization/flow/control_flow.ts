@@ -1,7 +1,7 @@
 import {WExpression} from "../../wasm";
 import {InstrInstance} from "../../wasm/instr_helpers";
 
-export function controlFlow(expr: WExpression): {entry: MarkerFlow, exit: MarkerFlow, all: InstrFlow[]} {
+export function controlFlow(expr: WExpression): ControlFlowGraph {
     const entryFlow: MarkerFlow = {type: "entry", instr: undefined, flowPrevious: new Set(), flowNext: new Set()};
     const exitFlow: MarkerFlow = {type: "exit", instr: undefined, flowPrevious: new Set(), flowNext: new Set()};
     const allFlows: Flow[] = [entryFlow, exitFlow];
@@ -82,7 +82,7 @@ export function controlFlow(expr: WExpression): {entry: MarkerFlow, exit: Marker
     return {entry: entryFlow, exit: exitFlow, all: allFlows.filter(x => x.type === "instr") as InstrFlow[]};
 }
 
-export function simplifiedControlFlow(expr: WExpression, filter: (instr: InstrInstance) => boolean): ReturnType<typeof controlFlow> {
+export function simplifiedControlFlow(expr: WExpression, filter: (instr: InstrInstance) => boolean): ControlFlowGraph {
     const {entry, exit, all} = controlFlow(expr);
     const newAll: InstrFlow[] = [];
 
@@ -125,3 +125,4 @@ export interface MarkerFlow {
 }
 
 export type Flow = InstrFlow | MarkerFlow;
+export type ControlFlowGraph = {entry: MarkerFlow, exit: MarkerFlow, all: InstrFlow[]};

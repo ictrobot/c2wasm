@@ -2,7 +2,7 @@ import {WExpression, Instructions} from "../wasm";
 import {WLocal} from "../wasm/functions";
 import {deadCodeElimination} from "./dead_code";
 import {getFlags} from "./flags";
-import {constantPropagation} from "./flow/constants";
+import {constantPropagation} from "./flow/reaching_defs";
 import {Optimizer} from "./optimizer";
 import {peephole, peepholeMulti, peepholeOptimizers} from "./peephole";
 
