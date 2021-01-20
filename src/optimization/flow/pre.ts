@@ -186,7 +186,7 @@ function analysis(cfg: ControlFlowGraph, exprs: SubExpr[]) {
         if (insert !== 0n) INSERT.set(i, insert);
 
         const antloc = ANTLOC(i);
-        const replace = (antloc & spavin) + (comp & spantout);
+        const replace = (antloc & spavin) | (comp & spantout);
         if (replace !== 0n) REPLACE.set(i, replace);
 
         const spavout = SPAVOUT.get(i) ?? 0n, edgeList = [];
