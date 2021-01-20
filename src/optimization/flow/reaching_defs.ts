@@ -1,7 +1,7 @@
 import {gInstr} from "../../generation/expressions";
 import {WExpression, Instructions} from "../../wasm";
 import {InstrFlow, simplifiedControlFlow, Flow} from "./control_flow";
-import {frameworkBits} from "./framework";
+import {framework} from "./framework";
 
 export type Definition = {
     readonly local: bigint,
@@ -48,7 +48,7 @@ export function reachingDefinitions(expr: WExpression): Definition[] {
         }
     }
 
-    frameworkBits(cfg, reachingDefs,"forwards", "union", (f, x) => {
+    framework(cfg, null, reachingDefs,"forwards", "union", (f, x) => {
         const flowDef = flowDefMap.get(f);
         if (flowDef) {
             x &= ~defMask[Number(flowDef.local)];

@@ -4,8 +4,8 @@ import {WFunctionBuilder, WLocal} from "./functions";
 import {WGlobal} from "./global";
 import {ValueType, i32Type, encodeVec} from "./wtypes";
 
-type ReadResource = "memory" | WLocal | WGlobal;
-type WriteResource = "jump" | "arbitraryCode" | ReadResource;
+export type ReadResource = "memory" | WLocal | WGlobal;
+export type WriteResource = "jump" | "arbitraryCode" | ReadResource;
 
 type Context = {
     depth: number;

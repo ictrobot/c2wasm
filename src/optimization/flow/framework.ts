@@ -1,5 +1,57 @@
 import type {ControlFlowGraph, InstrFlow, Flow} from "./control_flow";
 
+export function framework(
+    cfg: ControlFlowGraph,
+    intermediateMap: Map<Flow, bigint> | null,
+    bitMap: Map<Flow, bigint>,
+    direction: "forwards" | "backwards",
+    meetOperation: "union" | "intersection",
+    transferFunction: (f: InstrFlow, x: bigint) => bigint,
+    intermediateOverride?: (f: InstrFlow, x: bigint) => bigint
+): void {
+
+    const queue = new Set<InstrFlow>();
+
+    for (const starting of (direction === "forwards" ? cfg.entry.flowNext : cfg.exit.flowPrevious)) {
+        if (starting.instr) queue.add(starting);
+    }
+
+    let next: IteratorResult<InstrFlow, InstrFlow>;
+    while ((next = queue.keys().next()).value) {
+        const flow = next.value;
+        queue.delete(flow);
+
+        let X = meetOperation === "union" ? 0n : -1n;
+        for (const before of (direction === "forwards" ? flow.flowPrevious : flow.flowNext)) {
+            const beforeBits = bitMap.get(before as InstrFlow) ?? 0n;
+
+            if (meetOperation === "union") {
+                X |= beforeBits;
+            } else { // intersection
+                X &= beforeBits;
+            }
+        }
+
+        // used by PRE to force some values to false if not safe
+        if (intermediateOverride) X = intermediateOverride(flow, X);
+        // also used by PRE analysis
+        if (intermediateMap) intermediateMap.set(flow, X);
+
+        X = transferFunction(flow, X);
+
+        if (X !== bitMap.get(flow)) {
+            bitMap.set(flow, X);
+
+            for (const after of (direction === "forwards" ? flow.flowNext : flow.flowPrevious)) {
+                if (after.instr) queue.add(after);
+            }
+        }
+    }
+}
+
+/*
+// Implementation using JS sets instead of bits
+
 export function framework<T>(
     cfg: ControlFlowGraph,
     setMap: Map<Flow, Set<T>>,
@@ -53,50 +105,6 @@ export function framework<T>(
     }
 }
 
-export function frameworkBits(
-    cfg: ControlFlowGraph,
-    bitMap: Map<Flow, bigint>,
-    direction: "forwards" | "backwards",
-    meetOperation: "union" | "intersection",
-    transferFunction: (f: InstrFlow, x: bigint) => bigint
-): void {
-
-    const queue = new Set<InstrFlow>();
-
-    for (const starting of (direction === "forwards" ? cfg.entry.flowNext : cfg.exit.flowPrevious)) {
-        if (starting.instr) queue.add(starting);
-    }
-
-    let next: IteratorResult<InstrFlow, InstrFlow>;
-    while ((next = queue.keys().next()).value) {
-        const flow = next.value;
-        queue.delete(flow);
-
-        let X = undefined;
-        for (const before of (direction === "forwards" ? flow.flowPrevious : flow.flowNext)) {
-            const beforeSet = bitMap.get(before as InstrFlow) ?? 0n;
-
-            if (X === undefined) {
-                X = beforeSet;
-            } else if (meetOperation === "union") {
-                X |= beforeSet;
-            } else { // intersection
-                X &= beforeSet;
-            }
-        }
-
-        X = transferFunction(flow, X ?? 0n);
-
-        if (X !== bitMap.get(flow)) {
-            bitMap.set(flow, X);
-
-            for (const after of (direction === "forwards" ? flow.flowNext : flow.flowPrevious)) {
-                if (after.instr) queue.add(after);
-            }
-        }
-    }
-}
-
 function setEquals<T>(a: Set<T>, b?: Set<T>): boolean {
     if (!b || a.size !== b.size) return false;
     for (const x of a) {
@@ -104,3 +112,4 @@ function setEquals<T>(a: Set<T>, b?: Set<T>): boolean {
     }
     return true;
 }
+*/
