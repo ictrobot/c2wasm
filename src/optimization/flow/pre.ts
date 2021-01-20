@@ -1,8 +1,8 @@
-import {WExpression, ValueType} from "../../wasm";
+import {WExpression, ValueType, Instructions} from "../../wasm";
 import {WLocal} from "../../wasm/functions";
 import {WGlobal} from "../../wasm/global";
-import {InstrInstance, ReadResource} from "../../wasm/instr_helpers";
-import {InstrFlow, controlFlow, ControlFlowGraph} from "./control_flow";
+import {InstrInstance, ReadResource, PartialInstr} from "../../wasm/instr_helpers";
+import {InstrFlow, controlFlow, ControlFlowGraph, InstrFlowSplicer} from "./control_flow";
 import {framework} from "./framework";
 
 // partial redundancy elimination
@@ -26,6 +26,20 @@ interface SubExpr {
     resources: Set<ReadResource>;
     type: ValueType;
     bit: bigint;
+}
+
+interface ExprResult {
+    expression: SubExpr;
+
+    insertBefore: InstrFlow[]; // INSERT_i
+    insertBetween: [InstrFlow, InstrFlow][]; // INSERT_{i,j}
+    insertAfter: InstrFlow[]; // from edge insertion minimization
+    insertInstructions: (InstrInstance | PartialInstr)[];
+
+    replacementFlows: InstrFlow[]; // REPLACE
+    replacementInstructions: (InstrInstance | PartialInstr)[];
+
+    fnLengthChange: number;
 }
 
 function subExprMatches(s1: SubExpr, s2: SubExpr): boolean {
@@ -65,7 +79,7 @@ function expressions(top: WExpression): SubExpr[] {
                 if (instr.result) stack.unshift(instr.result);
                 for (const resource of instr.reads) resources.add(resource);
 
-                if (stack.length === 1 && (j - i) > 2) {
+                if (stack.length === 1 && (j - i) >= 2) {
                     const position = {start: i, end: j, expr};
                     const subExpr: SubExpr = {
                         positions: [position],
@@ -200,6 +214,97 @@ function analysis(cfg: ControlFlowGraph, exprs: SubExpr[]) {
     return {INSERT, INSERT_EDGE, REPLACE};
 }
 
+function processResults(exprs: SubExpr[], {INSERT, INSERT_EDGE, REPLACE}: ReturnType<typeof analysis>): ExprResult[] {
+    // convert the results from bits
+    const results: ExprResult[] = [];
+    for (const exp of exprs) {
+        const insertBefore: InstrFlow[] = [];
+        for (const [i, bits] of INSERT.entries()) {
+            if (bits & exp.bit) insertBefore.push(i);
+        }
+
+        const insertBetween: [InstrFlow, InstrFlow][] = [];
+        for (const [i, list] of INSERT_EDGE.entries()) {
+            for (const [j, bits] of list) {
+                if (bits & exp.bit) insertBetween.push([i, j]);
+            }
+        }
+
+        const replacementFlows: InstrFlow[] = [];
+        for (const [i, bits] of REPLACE.entries()) {
+            if (bits & exp.bit) replacementFlows.push(i);
+        }
+
+        if (insertBefore.length + insertBetween.length && replacementFlows.length) {
+            const local = replacementFlows[0].expr.builder.addLocal(exp.type);
+            const insertInstructions = [...exp.instructions, Instructions.local.set(local)];
+            const replacementInstructions = [Instructions.local.get(local)];
+
+            results.push({
+                expression: exp,
+                insertBefore, insertBetween, insertAfter: [],
+                insertInstructions,
+                replacementFlows,
+                replacementInstructions,
+                fnLengthChange: 0
+            });
+        }
+    }
+
+    for (const result of results) {
+        // minimizing edge insertions
+        for (const i of new Set(result.insertBetween.map(([i]) => i))) {
+            const check = [...i.flowNext].every(j =>
+                j.instr && (result.insertBetween.find(([i2, j2]) => i === i2 && j === j2) || result.insertBefore.includes(j))
+            );
+            if (check) {
+                // remove [i, *j] from edges and [*j] from nodes
+                result.insertBetween = result.insertBetween.filter(([i2]) => i !== i2);
+                result.insertBefore = result.insertBefore.filter(j2 => !i.flowNext.has(j2));
+
+                result.insertAfter.push(i);
+            }
+        }
+
+        // calculate how this result would change the length of the function
+        const inserted = result.insertInstructions.length * ((result.insertBefore.length) + (result.insertBetween.length) + (result.insertAfter.length));
+        const removed = (result.expression.instructions.length - result.replacementInstructions.length) * result.replacementFlows.length;
+        result.fnLengthChange = inserted - removed;
+    }
+    return results;
+}
+
+function eliminateOverlapping(results: ExprResult[]): void {
+    // as expressions(...) returns all subexpressions in functions, need to chose which results to action
+
+    // prioritize expression replacements which would make the function shorter as these probably replace
+    // longer subexpressions which appear more often
+    results.sort((a, b) => a.fnLengthChange - b.fnLengthChange);
+
+    // filter out expressions we can't do because they overlap with other expressions
+    // (hopefully due to the above sorting we will keep the longer expressions and discard their subexpressions)
+    const modificationRegions: [expr: WExpression, start: number, end: number][] = [];
+    for (let i = 0; i < results.length; i++) {
+        const result = results[i];
+        const expressionLen = result.expression.instructions.length;
+
+        const regions = result.replacementFlows.map(f =>
+            [f.expr, f.instrIndex - expressionLen, f.instrIndex] as [WExpression, number, number]);
+
+        const overlaps = regions.some(([expr1, min1, max1]) =>
+            modificationRegions.some(([expr2, min2, max2]) =>
+                expr1 === expr2 && max1 >= min2 && max2 >= min1
+            ));
+
+        if (overlaps) { // can't process this result as it overlaps with another with higher score
+            results.splice(i, 1);
+            i--;
+        } else {
+            modificationRegions.push(...regions);
+        }
+    }
+}
+
 export function pre(expr: WExpression): void {
     const cfg = controlFlow(expr);
     if (!cfg.all.length) return;
@@ -209,5 +314,41 @@ export function pre(expr: WExpression): void {
     const {INSERT, INSERT_EDGE, REPLACE} = analysis(cfg, exprs);
     if (INSERT.size === 0 && INSERT_EDGE.size === 0 && REPLACE.size === 0) return;
 
-    console.log(INSERT, INSERT_EDGE, REPLACE);
+    const results = processResults(exprs, {INSERT, INSERT_EDGE, REPLACE});
+    eliminateOverlapping(results);
+
+    const ifs = new InstrFlowSplicer(); // keeps tracks of edits and adjust indices
+    for (const result of results) {
+        const exprLength = result.expression.instructions.length;
+        for (const i of result.replacementFlows) { // i is the last node of the expression
+            ifs.splice(i, exprLength, result.replacementInstructions, 1 - exprLength);
+        }
+
+        for (const i of result.insertBefore) {
+            ifs.splice(i, 0, result.insertInstructions, 0);
+        }
+        for (const i of result.insertAfter) {
+            if (i.instr.name.startsWith("br")) {
+                // just insert before instead
+                ifs.splice(i, 0, result.insertInstructions, 0);
+            } else {
+                ifs.splice(i, 0, result.insertInstructions, 1);
+            }
+        }
+
+        for (const [i, j] of result.insertBetween) {
+            if (i.expr === j.expr && i.instrIndex + 1 === j.instrIndex) {
+                // instructions one after each other
+                ifs.splice(j, 0, result.insertInstructions);
+            } else if (ifs.realIndex(i) + 1 === i.expr.instructions.length) {
+                // i at the end of a block
+                ifs.splice(i, 0, result.insertInstructions, i.instr.name.startsWith("br") ? 0 : 1);
+            } else if (i.instr.name.startsWith("br")) {
+                // at a branch
+                ifs.splice(i, 0, result.insertInstructions);
+            } else {
+                throw new Error("Unknown PRE insertion");
+            }
+        }
+    }
 }

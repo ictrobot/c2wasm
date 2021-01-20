@@ -13,6 +13,7 @@ const DEFAULT = {
     unused_locals: true,
     constant_propagation: true,
     dead_code_elimination: true,
+    partial_redundancy_elimination: true,
 
     peephole_2nd_pass: true,
 } as const;

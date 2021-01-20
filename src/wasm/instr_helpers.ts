@@ -297,7 +297,7 @@ export class WExpression {
     }
 
     replace(start: number, end: number, ...items: (PartialInstr | InstrInstance)[]): void {
-        if (start < 0 || end < start || start >= this._instructions.length) {
+        if (start < 0 || end < start || start > this._instructions.length) {
             throw new Error("Invalid replacement indices");
         }
 

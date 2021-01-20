@@ -1,5 +1,5 @@
 import {WExpression} from "../../wasm";
-import {InstrInstance} from "../../wasm/instr_helpers";
+import {InstrInstance, PartialInstr} from "../../wasm/instr_helpers";
 
 export function controlFlow(expr: WExpression): ControlFlowGraph {
     const entryFlow: MarkerFlow = {type: "entry", instr: undefined, flowPrevious: new Set(), flowNext: new Set()};
@@ -102,6 +102,37 @@ export function simplifiedControlFlow(expr: WExpression, filter: (instr: InstrIn
     }
 
     return {entry, exit, all: newAll};
+}
+
+// keeps track of edits and offsets the precomputed indices on instr flows accordingly
+export class InstrFlowSplicer {
+    private offsetsMap = new Map<WExpression, {index: number, offset: number}[]>();
+
+    splice(flow: InstrFlow, deleteCount: number, replacements: (PartialInstr | InstrInstance)[], beginOffset?: number): void {
+        let offsets = this.offsetsMap.get(flow.expr);
+        if (!offsets) this.offsetsMap.set(flow.expr, offsets = []);
+
+        let instrIndex = flow.instrIndex + (beginOffset ?? 0);
+        for (const {index, offset} of offsets) {
+            if (instrIndex > index) instrIndex += offset;
+        }
+
+        flow.expr.replace(instrIndex, instrIndex + deleteCount, ...replacements);
+
+        const offset = replacements.length - deleteCount;
+        if (offset) offsets.push({index: instrIndex, offset});
+    }
+
+    realIndex(flow: InstrFlow): number {
+        const offsets = this.offsetsMap.get(flow.expr);
+        if (!offsets) return flow.instrIndex;
+
+        let instrIndex = flow.instrIndex;
+        for (const {index, offset} of offsets) {
+            if (instrIndex > index) instrIndex += offset;
+        }
+        return instrIndex;
+    }
 }
 
 export interface InstrFlow {
