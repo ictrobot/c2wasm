@@ -13,6 +13,7 @@ const DEFAULT = {
     partial_redundancy_elimination: true,
     copy_propagation: true,
     dead_code_elimination: true,
+    reallocate_locals: true,
     unused_locals: true,
 
     peephole_2nd_pass: true,
@@ -29,6 +30,13 @@ export function setFlags(flags: Partial<OptimizationFlags> | "none" | "default")
         current = DEFAULT;
     } else if (flags === "none") {
         current = {...current, ...Object.fromEntries(Object.keys(DEFAULT).map(name => [name, false]))};
+    }
+
+    // ensure valid configuration of flags
+    if (current.reallocate_locals && !current.copy_propagation) {
+        // realloc_locals presumes that variables are dead if not accessed, so copy_propagation
+        // is required to remove definitions which are never used.
+        current = {...current, copy_propagation: true};
     }
 }
 

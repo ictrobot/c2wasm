@@ -1,4 +1,5 @@
 import {optimize} from "../optimization";
+import {getFlags} from "../optimization/flags";
 import {funcidx, localidx, byte, tableidx} from "./base_types";
 import {encodeU32} from "./encoding";
 import {WExpression, WInstruction} from "./instructions";
@@ -105,6 +106,10 @@ export class WFunctionBuilder {
     }
 
     freeTempLocal(local: WLocal): void {
+        if (getFlags().reallocate_locals) {
+            // don't actually reuse variables - we will reallocate locals later
+            return;
+        }
         this._freeTempLocals.push(local);
     }
 
@@ -112,6 +117,11 @@ export class WFunctionBuilder {
         // WARNING! this will invalidate any instructions already encoded
         const index = this._locals.indexOf(local);
         if (index >= 0) this._locals.splice(index, 1);
+    }
+
+    wipeLocals(): void {
+        // WARNING! this will invalidate any instructions already encoded
+        this._locals.splice(0, this._locals.length);
     }
 
     get args(): ReadonlyArray<WLocal> {

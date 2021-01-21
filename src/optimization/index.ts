@@ -2,10 +2,11 @@ import {WExpression, Instructions} from "../wasm";
 import {WLocal} from "../wasm/functions";
 import {deadCodeElimination} from "./dead_code";
 import {getFlags} from "./flags";
+import {realloc_locals, remapLocals} from "./flow/local_allocation";
 import {pre} from "./flow/pre";
 import {copyPropagation} from "./flow/reaching_defs";
 import {Optimizer} from "./optimizer";
-import {peephole, peepholeMulti, peepholeOptimizers} from "./peephole";
+import {peepholeMulti, peepholeOptimizers} from "./peephole";
 
 const optimizers: Optimizer[] = [];
 
@@ -46,6 +47,12 @@ optimizers.push({
 });
 
 optimizers.push({
+    name: "Reallocate locals",
+    enabled: (flags) => flags.reallocate_locals,
+    run: realloc_locals
+});
+
+optimizers.push({
     name: "Remove unused locals",
     enabled: (flags) => flags.unused_locals,
     run: (expr) => {
@@ -61,22 +68,13 @@ optimizers.push({
 
         // remove any unused locals from builder
         for (const local of expr.builder.locals.slice()) { // slice needed to avoid modifying whilst iterating
-            if (!usedLocals.has(local)) expr.builder.deleteLocal(local);
+            if (!usedLocals.has(local)) {
+                expr.builder.deleteLocal(local);
+            }
         }
 
         // now have to re-encode any local instructions
-        peephole(expr, ([instr]) => {
-            if (instr.type !== "index" || !instr.name.startsWith("local.")) return;
-            const local = oldLocals[Number(instr.immediate.value)];
-
-            if (instr.name === "local.get") {
-                return [Instructions.local.get(local)];
-            } else if (instr.name === "local.set") {
-                return [Instructions.local.set(local)];
-            } else if (instr.name === "local.tee") {
-                return [Instructions.local.tee(local)];
-            }
-        }, 1);
+        remapLocals(expr, oldLocals);
     }
 });
 
