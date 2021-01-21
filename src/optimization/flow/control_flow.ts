@@ -68,14 +68,12 @@ export function controlFlow(expr: WExpression): ControlFlowGraph {
         return !!initial;
     }
 
-    if (!expr.writes.includes("arbitraryCode")) {
-        _expr2flow(expr, entryFlow, exitFlow);
+    _expr2flow(expr, entryFlow, exitFlow);
 
-        // populate flowPrevious
-        for (const flow of allFlows) {
-            for (const next of flow.flowNext) {
-                next.flowPrevious.add(flow);
-            }
+    // populate flowPrevious
+    for (const flow of allFlows) {
+        for (const next of flow.flowNext) {
+            next.flowPrevious.add(flow);
         }
     }
 

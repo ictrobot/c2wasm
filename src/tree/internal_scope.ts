@@ -12,7 +12,8 @@ const fakeParseNode: ParseNode = new class extends ParseNode {
 }();
 
 export const INTERNAL_FNS = {
-    /** For executing arbitrary Wasm
+    /** For executing arbitrary Wasm. Should NOT contain control flow as the code will not be processed
+     * by optimizations. Similarly, locals should only be accessed as parameters as they map be remapped.
      *
      * __wasm_push__([#parameters], [parameter1], [parameter2], ..., [byte1], [byte2]...);
      */
@@ -22,28 +23,28 @@ export const INTERNAL_FNS = {
         new CFuncType(fakeParseNode, new CVoid(), [CArithmetic.U32], undefined, true),
         "internal"
     ),
-    /** For executing arbitrary Wasm returning i32 */
+    /** For executing arbitrary Wasm* returning i32 */
     wasm_i32: new CFuncDeclaration(
         fakeParseNode,
         "__wasm_i32__",
         new CFuncType(fakeParseNode, CArithmetic.U32, [CArithmetic.U32], undefined, true),
         "internal"
     ),
-    /** For executing arbitrary Wasm returning i64 */
+    /** For executing arbitrary Wasm* returning i64 */
     wasm_i64: new CFuncDeclaration(
         fakeParseNode,
         "__wasm_i64__",
         new CFuncType(fakeParseNode, CArithmetic.U64, [CArithmetic.U32], undefined, true),
         "internal"
     ),
-    /** For executing arbitrary Wasm returning f32 */
+    /** For executing arbitrary Wasm* returning f32 */
     wasm_f32: new CFuncDeclaration(
         fakeParseNode,
         "__wasm_f32__",
         new CFuncType(fakeParseNode, CArithmetic.Fp32, [CArithmetic.U32], undefined, true),
         "internal"
     ),
-    /** For executing arbitrary Wasm returning f64 */
+    /** For executing arbitrary Wasm* returning f64 */
     wasm_f64: new CFuncDeclaration(
         fakeParseNode,
         "__wasm_f64__",
