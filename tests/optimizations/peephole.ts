@@ -1,22 +1,6 @@
-import test, {ExecutionContext} from "ava";
+import test from "ava";
 import {compileSnippet} from "../../src/compile";
-import {setFlags, OptimizationFlags} from "../../src/optimization/flags";
-import {ModuleBuilder} from "../../src/wasm";
-
-function optimizationTest(title: string,
-                          flags: Partial<OptimizationFlags>,
-                          fn: (t: ExecutionContext, defaultModule: ModuleBuilder, flagsModule: ModuleBuilder) => void,
-                          src: string) {
-    test(title, t => {
-        setFlags("none");
-        const originalModule = compileSnippet(src);
-        setFlags(flags);
-        const flagsModule = compileSnippet(src);
-        setFlags("default"); // restore flags
-
-        fn(t, originalModule, flagsModule);
-    });
-}
+import {optimizationTest} from "./optimizations";
 
 optimizationTest("peephole_local_tee", {peephole_local_tee: true}, (t, withoutOpt, withOpt) => {
     const withoutInstrNames = withoutOpt.functions[0].body.instructions.map(x => x.name);

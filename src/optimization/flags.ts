@@ -10,10 +10,10 @@ const DEFAULT = {
     peephole_constant_if: true,
     peephole_unused_blocks: true,
 
-    unused_locals: true,
+    partial_redundancy_elimination: true,
     copy_propagation: true,
     dead_code_elimination: true,
-    partial_redundancy_elimination: true,
+    unused_locals: true,
 
     peephole_2nd_pass: true,
 } as const;

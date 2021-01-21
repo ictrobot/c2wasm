@@ -274,7 +274,14 @@ function processResults(exprs: SubExpr[], {INSERT, INSERT_EDGE, REPLACE}: Return
                 result.insertBetween = result.insertBetween.filter(([i2]) => i !== i2);
                 result.insertBefore = result.insertBefore.filter(j2 => !i.flowNext.has(j2));
 
-                result.insertAfter.push(i);
+                if (i.instr.type === "structured") {
+                    // the structured nodes appear in the flow graph at the start of their blocks, and the algorithm
+                    // wants to insert after that flow graph, NOT after the whole structured instruction.
+                    result.insertBefore.push(i);
+                    // so instead insert before, which is safe as structured instructions only side effects are jumping
+                } else {
+                    result.insertAfter.push(i);
+                }
             }
         }
 
