@@ -3,68 +3,68 @@ import {WExpression, Instructions} from "../../wasm";
 import {InstrFlow, simplifiedControlFlow, Flow} from "./control_flow";
 import {framework} from "./framework";
 
-export type Definition = {
+type DUChain = { // def-use chain
     readonly local: bigint,
     possibleUses: InstrFlow[], // instructions which reference this definition
     definiteUses: InstrFlow[], // instructions which reference this definition and no other possible definition
     bit: bigint,
 } & ({type: "arg"} | {type: "local.set" | "local.tee", flow: InstrFlow});
 
-export function reachingDefinitions(expr: WExpression): Definition[] {
+function reachingDefinitions(expr: WExpression): { definitions: DUChain[], reaching: Map<Flow, bigint>, localMasks: bigint[] } {
     const cfg = simplifiedControlFlow(expr, instr => instr.name.startsWith("local."));
 
-    const reachingDefs = new Map<Flow, bigint>();
-    const flowDefMap = new Map<InstrFlow, Definition>();
-    const allDefinitions: Definition[] = [];
+    const reaching = new Map<Flow, bigint>();
+    const flowDefMap = new Map<InstrFlow, DUChain>();
+    const duChains: DUChain[] = [];
 
     // masks containing the bits for each local allowing quick killing of all a locals definitions
-    const defMask: bigint[] = Array(expr.builder.args.length + expr.builder.locals.length).fill(0n);
+    const localMasks: bigint[] = Array(expr.builder.args.length + expr.builder.locals.length).fill(0n);
 
     // entry definitions are the function parameters
     let entryDefinitions = 0n;
     for (let i = 0n; i < expr.builder.args.length; i++) {
-        const d: Definition = {
+        const d: DUChain = {
             local: i, type: "arg",
             possibleUses: [], definiteUses: [],
-            bit: 1n << BigInt(allDefinitions.length)
+            bit: 1n << BigInt(duChains.length)
         };
         entryDefinitions |= d.bit;
-        defMask[Number(i)] |= d.bit;
-        allDefinitions.push(d);
+        localMasks[Number(i)] |= d.bit;
+        duChains.push(d);
     }
-    reachingDefs.set(cfg.entry, entryDefinitions);
+    reaching.set(cfg.entry, entryDefinitions);
 
     // definition objects for each of local.set/tee instructions
     for (const f of cfg.all) {
         if (f.instr.type === "index" && (f.instr.name === "local.set" || f.instr.name === "local.tee")) {
-            const d: Definition = {
+            const d: DUChain = {
                 local: f.instr.immediate.value, type: f.instr.name,
                 possibleUses: [], definiteUses: [],
-                flow: f, bit: 1n << BigInt(allDefinitions.length)
+                flow: f, bit: 1n << BigInt(duChains.length)
             };
-            defMask[Number(d.local)] |= d.bit;
+            localMasks[Number(d.local)] |= d.bit;
             flowDefMap.set(f, d);
-            allDefinitions.push(d);
+            duChains.push(d);
         }
     }
 
-    framework(cfg, null, reachingDefs,"forwards", "union", (f, x) => {
+    framework(cfg, null, reaching,"forwards", "union", (f, x) => {
         const flowDef = flowDefMap.get(f);
         if (flowDef) {
-            x &= ~defMask[Number(flowDef.local)];
+            x &= ~localMasks[Number(flowDef.local)];
             x |= flowDef.bit;
         }
         return x;
     });
 
-    // fill in usage info on each definition
-    for (const [flow, defs] of reachingDefs.entries()) {
+    // fill in usage info
+    for (const [flow, defs] of reaching.entries()) {
         if (!flow.instr || flow.instr.type !== "index" || flow.instr.name !== "local.get") continue;
         const local = flow.instr.immediate.value;
 
         const localDefs = [];
-        for (let i = 0, bits = defs & defMask[Number(local)]; bits; i++) {
-            if (bits & 1n) localDefs.push(allDefinitions[i]);
+        for (let i = 0, bits = defs & localMasks[Number(local)]; bits; i++) {
+            if (bits & 1n) localDefs.push(duChains[i]);
             bits >>= 1n;
         }
 
@@ -74,11 +74,11 @@ export function reachingDefinitions(expr: WExpression): Definition[] {
         localDefs.forEach(d => d.possibleUses.push(flow));
     }
 
-    return allDefinitions;
+    return {definitions: duChains, reaching, localMasks};
 }
 
-export function constantPropagation(expr: WExpression): void {
-    const definitions = reachingDefinitions(expr);
+export function copyPropagation(expr: WExpression): void {
+    const {definitions, reaching, localMasks} = reachingDefinitions(expr);
     if (!definitions.length) return; // couldn't analyze
 
     for (const def of definitions) {
@@ -90,19 +90,37 @@ export function constantPropagation(expr: WExpression): void {
             continue;
         }
 
-        // check if there are definite uses which we would be able to inline
+        // check if there are definite uses which we would be able to inline / propagate
         if (def.definiteUses.length === 0) continue;
 
-        // check if assigned a constant
         const prevInstr = def.flow.expr.instructions[def.flow.instrIndex - 1];
-        if (!prevInstr || prevInstr.type !== "constant") continue;
+        if (prevInstr?.type === "constant") {
+            // constant propagation
+            const replacement = gInstr(def.flow.instr.parameters[0], "const", prevInstr.immediate.value);
 
-        const constantValue = prevInstr.immediate.value;
-        const constantInstr = gInstr(def.flow.instr.parameters[0], "const", constantValue);
+            for (const use of def.definiteUses) {
+                use.expr.replace(use.instrIndex, use.instrIndex + 1, replacement);
+            }
+        } else if (prevInstr?.type === "index" && (prevInstr.name === "local.get" || prevInstr.name === "local.tee")) {
+            // copy propagation
+            const getFlow = [...def.flow.flowPrevious].find(f => f.instr && f.instrIndex === def.flow.instrIndex - 1 && f.expr === def.flow.expr);
+            if (!getFlow) continue; // needed to look up the valid definitions
+            const getLocal = Number(prevInstr.immediate.value);
+            const getDefs = (reaching.get(getFlow) ?? 0n) & localMasks[getLocal];
 
-        // inline constant in all the definite uses
-        for (const use of def.definiteUses) {
-            use.expr.replace(use.instrIndex, use.instrIndex + 1, constantInstr);
+            const replacement = Instructions.local.get(getLocal);
+            let replacedAll = true;
+            for (const use of def.definiteUses) {
+                if (getDefs === ((reaching.get(use) ?? 0n) & localMasks[getLocal])) {
+                    // have to be careful to only replace where the same definition of getLocal is validate
+                    use.expr.replace(use.instrIndex, use.instrIndex + 1, replacement);
+                } else {
+                    replacedAll = false; // getLocal has been redefined so can't replace
+                }
+            }
+            if (!replacedAll) continue;
+        } else {
+            continue;
         }
 
         if (def.definiteUses.length === def.possibleUses.length) {

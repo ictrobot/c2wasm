@@ -3,7 +3,7 @@ import {WLocal} from "../wasm/functions";
 import {deadCodeElimination} from "./dead_code";
 import {getFlags} from "./flags";
 import {pre} from "./flow/pre";
-import {constantPropagation} from "./flow/reaching_defs";
+import {copyPropagation} from "./flow/reaching_defs";
 import {Optimizer} from "./optimizer";
 import {peephole, peepholeMulti, peepholeOptimizers} from "./peephole";
 
@@ -28,9 +28,15 @@ optimizers.push({
 });
 
 optimizers.push({
-    name: "Constant propagation",
-    enabled: (flags) => flags.constant_propagation,
-    run: constantPropagation
+    name: "Partial redundancy elimination",
+    enabled: (flags) => flags.partial_redundancy_elimination,
+    run: pre
+});
+
+optimizers.push({
+    name: "Copy propagation",
+    enabled: (flags) => flags.copy_propagation,
+    run: copyPropagation
 });
 
 optimizers.push({
@@ -72,12 +78,6 @@ optimizers.push({
             }
         }, 1);
     }
-});
-
-optimizers.push({
-    name: "Partial redundancy elimination",
-    enabled: (flags) => flags.partial_redundancy_elimination,
-    run: pre
 });
 
 optimizers.push({
