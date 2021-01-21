@@ -6,17 +6,17 @@ export function framework(
     bitMap: Map<Flow, bigint>,
     direction: "forwards" | "backwards",
     meetOperation: "union" | "intersection",
-    transferFunction: (f: InstrFlow, x: bigint) => bigint,
-    intermediateOverride?: (f: InstrFlow, x: bigint) => bigint
+    transferFunction: (f: Flow, x: bigint) => bigint,
+    intermediateOverride?: (f: Flow, x: bigint) => bigint
 ): void {
 
-    const queue = new Set<InstrFlow>();
+    const queue = new Set<Flow>();
 
     for (const starting of (direction === "forwards" ? cfg.entry.flowNext : cfg.exit.flowPrevious)) {
         if (starting.instr) queue.add(starting);
     }
 
-    let next: IteratorResult<InstrFlow, InstrFlow>;
+    let next: IteratorResult<Flow, Flow>;
     while ((next = queue.keys().next()).value) {
         const flow = next.value;
         queue.delete(flow);

@@ -2,7 +2,7 @@ import {WExpression, ValueType, Instructions} from "../../wasm";
 import {WLocal} from "../../wasm/functions";
 import {WGlobal} from "../../wasm/global";
 import {InstrInstance, ReadResource, PartialInstr} from "../../wasm/instr_helpers";
-import {InstrFlow, controlFlow, ControlFlowGraph, InstrFlowSplicer} from "./control_flow";
+import {InstrFlow, controlFlow, ControlFlowGraph, InstrFlowSplicer, Flow} from "./control_flow";
 import {framework} from "./framework";
 
 // partial redundancy elimination
@@ -104,7 +104,7 @@ function expressions(top: WExpression): SubExpr[] {
     return expressions;
 }
 
-function transparent(cfg: ControlFlowGraph, expressions: SubExpr[]): (f: InstrFlow) => bigint {
+function transparent(cfg: ControlFlowGraph, expressions: SubExpr[]): (f: Flow) => bigint {
     const fullyTransparent = (1n << BigInt(expressions.length)) - 1n;
     const transpMap = new Map<InstrFlow, bigint>();
     for (const f of cfg.all) {
@@ -120,10 +120,10 @@ function transparent(cfg: ControlFlowGraph, expressions: SubExpr[]): (f: InstrFl
         } // structured instructions are themselves transparent
         transpMap.set(f, flags);
     }
-    return (f) => transpMap.get(f) ?? fullyTransparent;
+    return (f) => transpMap.get(f as InstrFlow) ?? fullyTransparent;
 }
 
-function computed(cfg: ControlFlowGraph, expressions: SubExpr[]): (f: InstrFlow) => bigint {
+function computed(cfg: ControlFlowGraph, expressions: SubExpr[]): (f: Flow) => bigint {
     const computedMap = new Map<InstrFlow, bigint>();
     for (const f of cfg.all) {
         let flags = 0n;
@@ -136,7 +136,7 @@ function computed(cfg: ControlFlowGraph, expressions: SubExpr[]): (f: InstrFlow)
 
         computedMap.set(f, flags);
     }
-    return (f) => computedMap.get(f) ?? 0n;
+    return (f) => computedMap.get(f as InstrFlow) ?? 0n;
 }
 
 function analysis(cfg: ControlFlowGraph, exprs: SubExpr[]) {
@@ -145,7 +145,7 @@ function analysis(cfg: ControlFlowGraph, exprs: SubExpr[]) {
     const ANTLOC = COMP; // since this implementation has no basic blocks, ANTLOC = COMP ?
 
     // Step 1: Compute AVIN/AVOUT and ANTIN/ANTOUT for all nodes.
-    const AVIN = new Map<InstrFlow, bigint>(), AVOUT = new Map<InstrFlow, bigint>();
+    const AVIN = new Map<Flow, bigint>(), AVOUT = new Map<Flow, bigint>();
     framework(cfg,
         AVIN,
         AVOUT,
@@ -154,7 +154,7 @@ function analysis(cfg: ControlFlowGraph, exprs: SubExpr[]) {
         (f, x) => COMP(f) | (x & TRANSP(f))
     );
 
-    const ANTOUT = new Map<InstrFlow, bigint>(), ANTIN = new Map<InstrFlow, bigint>();
+    const ANTOUT = new Map<Flow, bigint>(), ANTIN = new Map<Flow, bigint>();
     framework(cfg,
         ANTOUT,
         ANTIN,
@@ -164,14 +164,14 @@ function analysis(cfg: ControlFlowGraph, exprs: SubExpr[]) {
     );
 
     // Step 2: Compute SAFEIN/SAFEOUT for all nodes.
-    const SAFEIN = new Map<InstrFlow, bigint>(), SAFEOUT = new Map<InstrFlow, bigint>();
+    const SAFEIN = new Map<Flow, bigint>(), SAFEOUT = new Map<Flow, bigint>();
     for (const f of cfg.all) {
         SAFEIN.set(f, (AVIN.get(f) ?? 0n) | (ANTIN.get(f) ?? 0n));
         SAFEOUT.set(f, (AVOUT.get(f) ?? 0n) | (ANTOUT.get(f) ?? 0n));
     }
 
     // Step 3: Compute SPAVIN/SPAVOUT and SPANTIN/SPANTOUT for all nodes.
-    const SPAVIN = new Map<InstrFlow, bigint>(), SPAVOUT = new Map<InstrFlow, bigint>();
+    const SPAVIN = new Map<Flow, bigint>(), SPAVOUT = new Map<Flow, bigint>();
     framework(cfg,
         SPAVIN,
         SPAVOUT,
@@ -181,7 +181,7 @@ function analysis(cfg: ControlFlowGraph, exprs: SubExpr[]) {
         (f, x) => x & (SAFEIN.get(f) ?? 0n)
     );
 
-    const SPANTOUT = new Map<InstrFlow, bigint>(), SPANTIN = new Map<InstrFlow, bigint>();
+    const SPANTOUT = new Map<Flow, bigint>(), SPANTIN = new Map<Flow, bigint>();
     framework(cfg,
         SPANTOUT,
         SPANTIN,
@@ -192,9 +192,9 @@ function analysis(cfg: ControlFlowGraph, exprs: SubExpr[]) {
     );
 
     // Step 4: Compute points of insertions and replacements INSERT, INSERT(i,j), and REPLACE.
-    const INSERT = new Map<InstrFlow, bigint>(), REPLACE = new Map<InstrFlow, bigint>();
-    const INSERT_EDGE = new Map<InstrFlow, [InstrFlow, bigint][]>();
-    for (const i of cfg.all) {
+    const INSERT = new Map<Flow, bigint>(), REPLACE = new Map<Flow, bigint>();
+    const INSERT_EDGE = new Map<Flow, [Flow, bigint][]>();
+    for (const i of [cfg.entry, ...cfg.all]) {
         const comp = COMP(i), spavin = (SPAVIN.get(i) ?? 0n), spantout = (SPANTOUT.get(i) ?? 0n);
         const insert = comp & (~spavin) & spantout;
         if (insert !== 0n) INSERT.set(i, insert);
@@ -220,19 +220,31 @@ function processResults(exprs: SubExpr[], {INSERT, INSERT_EDGE, REPLACE}: Return
     for (const exp of exprs) {
         const insertBefore: InstrFlow[] = [];
         for (const [i, bits] of INSERT.entries()) {
-            if (bits & exp.bit) insertBefore.push(i);
+            if (bits & exp.bit) {
+                if (i.instr) {
+                    insertBefore.push(i);
+                } else { // i must be entry
+                    insertBefore.push(...i.flowNext as Set<InstrFlow>);
+                }
+            }
         }
 
         const insertBetween: [InstrFlow, InstrFlow][] = [];
         for (const [i, list] of INSERT_EDGE.entries()) {
             for (const [j, bits] of list) {
-                if (bits & exp.bit) insertBetween.push([i, j]);
+                if (bits & exp.bit) {
+                    if (i.instr && j.instr) {
+                        insertBetween.push([i, j]);
+                    } else { // i must be entry
+                        insertBefore.push(j as InstrFlow);
+                    }
+                }
             }
         }
 
         const replacementFlows: InstrFlow[] = [];
         for (const [i, bits] of REPLACE.entries()) {
-            if (bits & exp.bit) replacementFlows.push(i);
+            if (bits & exp.bit) replacementFlows.push(i as InstrFlow);
         }
 
         if (insertBefore.length + insertBetween.length && replacementFlows.length) {

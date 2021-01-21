@@ -49,7 +49,7 @@ function reachingDefinitions(expr: WExpression): { definitions: DUChain[], reach
     }
 
     framework(cfg, null, reaching,"forwards", "union", (f, x) => {
-        const flowDef = flowDefMap.get(f);
+        const flowDef = flowDefMap.get(f as InstrFlow);
         if (flowDef) {
             x &= ~localMasks[Number(flowDef.local)];
             x |= flowDef.bit;
