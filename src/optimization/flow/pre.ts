@@ -296,9 +296,14 @@ function processResults(exprs: SubExpr[], {INSERT, INSERT_EDGE, REPLACE}: Return
 function eliminateOverlapping(results: ExprResult[]): void {
     // as expressions(...) returns all subexpressions in functions, need to chose which results to action
 
-    // prioritize expression replacements which would make the function shorter as these probably replace
-    // longer subexpressions which appear more often
-    results.sort((a, b) => a.fnLengthChange - b.fnLengthChange);
+    results.sort((a, b) => {
+        // prioritize expression replacements which would make the function shorter as these probably replace
+        // longer subexpressions which appear more often
+        const diff = a.fnLengthChange - b.fnLengthChange;
+        if (diff !== 0) return diff;
+        // after that prioritize longer subexpressions
+        return b.expression.instructions.length - a.expression.instructions.length;
+    });
 
     // filter out expressions we can't do because they overlap with other expressions
     // (hopefully due to the above sorting we will keep the longer expressions and discard their subexpressions)
