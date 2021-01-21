@@ -48,7 +48,8 @@
   "ava": {
     "files": [
       "tests/**/*",
-      "!tests/benchmark"
+      "!tests/benchmark",
+      "!tests/**/index*"
     ],
     "require": [
       "source-map-support/register"

@@ -1,6 +1,6 @@
 import test from "ava";
 import {compileSnippet} from "../../src/compile";
-import {optimizationTest} from "./optimizations";
+import {optimizationTest} from "./index";
 
 optimizationTest("peephole_local_tee", {peephole_local_tee: true}, (t, withoutOpt, withOpt) => {
     const withoutInstrNames = withoutOpt.functions[0].body.instructions.map(x => x.name);
