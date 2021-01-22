@@ -15,7 +15,7 @@ type Context = {
 type InstrContext<T> = (c: Context) => T;
 export type PartialInstr = InstrContext<InstrInstance>;
 
-export interface BaseInstance {
+export interface BaseInstance<T extends BaseInstance<T>> {
     readonly name: string;
     readonly type: string;
     readonly immediate: object;
@@ -30,12 +30,15 @@ export interface BaseInstance {
     readonly reads: ReadonlyArray<ReadResource>;
     /* Resource written to */
     readonly writes: ReadonlyArray<WriteResource>;
+
+    /* deep copy a function without re-evaluate parameters */
+    copy: InstrContext<T>;
 }
 
 export type InstrInstance = ZeroArgInstance | ConstantInstance<bigint | number> | MemInstance | IdxInstance | TableInstance | StructureInstance;
 
 // Zero argument instructions
-interface ZeroArgInstance extends BaseInstance {
+interface ZeroArgInstance extends BaseInstance<ZeroArgInstance> {
     type: "zeroArg";
     immediate: {};
 }
@@ -47,7 +50,11 @@ export function zeroArgs(name: string, opcode: number[], parameters: ReadonlyArr
         type: "zeroArg", immediate: {},
         encoded: opcode as byte[],
         parameters, result,
-        reads, writes
+        reads, writes,
+
+        copy() {
+            return this;
+        }
     };
     return () => () => instr;
 }
@@ -60,15 +67,19 @@ export function zeroArgsSpecial(name: string, opcode: number[], specialFn: Instr
             name, type: "zeroArg", immediate: {},
             encoded: opcode as byte[],
             parameters, result,
-            reads, writes
+            reads, writes,
+
+            copy() {
+                return this;
+            }
         };
     };
 }
 
 // Arithmetic constant instructions
-interface ConstantInstance<T extends bigint | number> extends BaseInstance {
+interface ConstantInstance<T extends bigint | number> extends BaseInstance<ConstantInstance<T>> {
     type: "constant";
-    immediate: {value: T};
+    immediate: {readonly value: T};
     result: ValueType;
 }
 
@@ -79,14 +90,18 @@ export function constantArg<T extends bigint | number>(name: string, opcode: num
         name, type: "constant", immediate: {value},
         encoded: [...opcode as byte[], ...encodeFn(value)],
         parameters: [], result,
-        reads: [], writes: []
+        reads: [], writes: [],
+
+        copy() {
+            return this;
+        }
     });
 }
 
 // Memory argument instructions
-interface MemInstance extends BaseInstance {
+interface MemInstance extends BaseInstance<MemInstance> {
     type: "memory";
-    immediate: {align: bigint, offset: bigint};
+    immediate: {readonly align: bigint, readonly offset: bigint};
 }
 
 export function memArg(name: string, opcode: number[],
@@ -104,6 +119,10 @@ export function memArg(name: string, opcode: number[],
             result: type === "load" ? valueType : null,
             reads: type === "load" ? ["memory"] : [],
             writes: type === "load" ? [] : ["memory"],
+
+            copy() {
+                return this;
+            }
         });
     };
 }
@@ -113,9 +132,9 @@ export function memArg(name: string, opcode: number[],
 // either an index (instance of T), an object with a getter for the index
 // or a plain number to make the api easier to use
 type Index<T extends bigint> = number | T | {getIndex(depth: number): T};
-interface IdxInstance extends BaseInstance {
+interface IdxInstance extends BaseInstance<IdxInstance> {
     type: "index";
-    immediate: {value: bigint};
+    immediate: {readonly value: bigint};
 }
 
 function getIndex<T extends bigint>(idx: Index<T>, depth: number): T {
@@ -142,14 +161,18 @@ export function idxArg<T extends bigint>(name: string, opcode: number[], suffix:
             name, encoded,
             type: "index", immediate: {value},
             parameters, result,
-            reads, writes
+            reads, writes,
+
+            copy() {
+                return this;
+            }
         };
     };
 }
 
-interface TableInstance extends BaseInstance {
+interface TableInstance extends BaseInstance<TableInstance> {
     type: "table";
-    immediate: {defaultValue: bigint, valueTable: bigint[]};
+    immediate: {readonly defaultValue: bigint, readonly valueTable: ReadonlyArray<bigint>};
 }
 
 export function brTableInstr(opcode: number): (defaultLbl: Index<labelidx>, lblArray: Index<labelidx>[]) => InstrContext<TableInstance> {
@@ -162,23 +185,27 @@ export function brTableInstr(opcode: number): (defaultLbl: Index<labelidx>, lblA
             name: "br_table", encoded,
             type: "table", immediate: {defaultValue, valueTable},
             parameters: [i32Type], result: null,
-            reads: [], writes: ["jump"]
+            reads: [], writes: ["jump"],
+
+            copy() {
+                return this;
+            }
         };
     };
 }
 
 // Structured instructions
 type StructureInstance = BlockLoopInstance | IfInstance;
-interface BlockLoopInstance extends BaseInstance {
+interface BlockLoopInstance extends BaseInstance<BlockLoopInstance> {
     type: "structured";
     name: "block" | "loop";
-    immediate: {type: ValueType | null, expression: WExpression, expression2: undefined};
+    immediate: {readonly type: ValueType | null, readonly expression: WExpression, readonly expression2: undefined};
 }
 
-interface IfInstance extends BaseInstance {
+interface IfInstance extends BaseInstance<IfInstance> {
     type: "structured";
     name: "if";
-    immediate: {type: ValueType | null, expression: WExpression, expression2: WExpression | undefined};
+    immediate: {readonly type: ValueType | null, readonly expression: WExpression, readonly expression2: WExpression | undefined};
 }
 
 function encodeBlockType(t: ValueType | null): byte[] {
@@ -187,7 +214,7 @@ function encodeBlockType(t: ValueType | null): byte[] {
 }
 
 export function blockLoopInstr(opcode: number, name: "block" | "loop"): (type: ValueType | null, body: (PartialInstr | InstrInstance)[], contextFn?: InstrContext<void>) => InstrContext<BlockLoopInstance> {
-    return (type, body, contextFn) => (context) => {
+    const constructor = (type: ValueType | null, body: (PartialInstr | InstrInstance)[], contextFn?: InstrContext<void>) => (context: Context) => {
         if (contextFn) contextFn(context); // used to store depth
 
         const instr: BlockLoopInstance = {
@@ -205,16 +232,24 @@ export function blockLoopInstr(opcode: number, name: "block" | "loop"): (type: V
             },
             get writes() {
                 return expression.writes;
+            },
+
+            copy(ctx) {
+                const x = constructor(type, [])(ctx);
+                expression.copyInto(x.immediate.expression);
+                return x;
             }
         };
         const expression = new WExpression(instr, context.depth + 1, context.builder);
         expression.push(...body);
         return instr;
     };
+
+    return constructor;
 }
 
 export function ifInstr(opcode: number, elseOpcode: number): (type: ValueType | null, body: (PartialInstr | InstrInstance)[], elseBody?: (PartialInstr | InstrInstance)[], contextFn?: InstrContext<void>) => InstrContext<IfInstance> {
-    return (type, body, elseBody, contextFn) => (context) => {
+    const constructor = (type: ValueType | null, body: (PartialInstr | InstrInstance)[], elseBody?: (PartialInstr | InstrInstance)[], contextFn?: InstrContext<void>) => (context: Context) => {
         if (contextFn) contextFn(context); // used to store depth
 
         const instr: IfInstance = {
@@ -244,6 +279,13 @@ export function ifInstr(opcode: number, elseOpcode: number): (type: ValueType | 
                 }
                 return expression.writes;
             },
+
+            copy(ctx) {
+                const x = constructor(type, [], expression2 ? [] : undefined)(ctx);
+                expression.copyInto(x.immediate.expression);
+                if (expression2) expression2.copyInto(x.immediate.expression2 as WExpression);
+                return x;
+            }
         };
 
         const expression = new WExpression(instr, context.depth + 1, context.builder);
@@ -255,6 +297,8 @@ export function ifInstr(opcode: number, elseOpcode: number): (type: ValueType | 
         }
         return instr;
     };
+
+    return constructor;
 }
 
 
@@ -325,6 +369,10 @@ export class WExpression {
         } catch (e) {
             throw new Error(`Invalid replacement due to: \n\n${e.stack}\n`);
         }
+    }
+
+    copyInto(target: WExpression): void {
+        for (const instr of this.instructions) target.push(instr.copy);
     }
 
     private stackManipulation(instr: InstrInstance, stack: ValueType[]) {
