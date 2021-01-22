@@ -202,6 +202,10 @@ export class ModuleBuilder {
     _globalLookup(g: globalidx): WGlobal {
         return this._globals[Number(g)];
     }
+
+    _inFunctionTable(f: WFunction | WImportedFunction): boolean {
+        return this._functionTable.indexOf(f) >= 0;
+    }
 }
 
 function encodeSection(id: number, vec: byte[][]): byte[] {

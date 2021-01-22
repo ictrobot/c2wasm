@@ -1,7 +1,7 @@
 import {labelidx, funcidx, typeidx, localidx, globalidx} from "./base_types";
 import {encodeF32, encodeF64, encodeInt64Constant, encodeInt32Constant} from "./encoding";
 import {zeroArgs, blockLoopInstr, ifInstr, idxArg, zeroArgsSpecial, memArg, constantArg, PartialInstr, brTableInstr} from "./instr_helpers";
-import {i32Type, i64Type, f32Type, f64Type} from "./wtypes";
+import {i32Type, i64Type, f32Type, f64Type, ValueType} from "./wtypes";
 
 export type WInstruction = PartialInstr;
 export {WExpression} from "./instr_helpers";
@@ -13,13 +13,12 @@ export const Instructions = {
     block: blockLoopInstr(0x02, "block"),
     loop: blockLoopInstr(0x03, "loop"),
     if: ifInstr(0x04, 0x05),
-    br: idxArg<labelidx>("br", [0x0C], [], () => ({
-        /** TODO: if jumping forward out of block which produces result, br consumes result.
-         *  However this is not used in c2wasm. */
-        parameters: [], result: null,
+    br: idxArg<labelidx, [] | [ValueType]>("br", [0x0C], [], ({extra}) => ({
+        // if this br consumes a result, it must be passed into the function call as it cannot be inferred
+        parameters: extra, result: null,
         reads: [], writes: ["jump"]
     })),
-    br_if: idxArg<labelidx>("br_if",[0x0D], [], () => ({
+    br_if: idxArg<labelidx, []>("br_if",[0x0D], [], () => ({
         parameters: [], result: null,
         reads: [], writes: ["jump"]
     })),
@@ -28,11 +27,11 @@ export const Instructions = {
         parameters: builder.type[1], result: null,
         reads: [], writes: ["jump"]
     })),
-    call: idxArg<funcidx>("call", [0x10], [], ({builder, value}) => {
+    call: idxArg<funcidx, []>("call", [0x10], [], ({builder, value}) => {
         const func = builder.fn.parent._functionLookup(value);
         return {parameters: func.type[0], result: func.type[1][0] ?? null, reads: [], writes: ["jump"]};
     }),
-    call_indirect: idxArg<typeidx>("call_indirect", [0x11], [0x00], ({builder, value}) => {
+    call_indirect: idxArg<typeidx, []>("call_indirect", [0x11], [0x00], ({builder, value}) => {
         const type = builder.fn.parent._typeLookup(value);
         return {parameters: [...type[0], i32Type], result: type[1][0] ?? null, reads: [], writes: ["jump"]};
     }),
@@ -48,25 +47,25 @@ export const Instructions = {
 
     // variable instructions
     local: {
-        get: idxArg<localidx>("local.get", [0x20], [], ({builder, value}) => {
+        get: idxArg<localidx, []>("local.get", [0x20], [], ({builder, value}) => {
             const local = builder.getLocal(value);
             return {parameters: [], result: local.type, reads: [local], writes: []};
         }),
-        set: idxArg<localidx>("local.set", [0x21], [], ({builder, value}) => {
+        set: idxArg<localidx, []>("local.set", [0x21], [], ({builder, value}) => {
             const local = builder.getLocal(value);
             return {parameters: [local.type], result: null, reads: [], writes: [local]};
         }),
-        tee: idxArg<localidx>("local.tee", [0x22], [], ({builder, value}) => {
+        tee: idxArg<localidx, []>("local.tee", [0x22], [], ({builder, value}) => {
             const local = builder.getLocal(value);
             return {parameters: [local.type], result: local.type, reads: [], writes: [local]};
         }),
     } as const,
     global: {
-        get: idxArg<globalidx>("global.get", [0x23], [], ({builder, value}) => {
+        get: idxArg<globalidx, []>("global.get", [0x23], [], ({builder, value}) => {
             const global = builder.fn.parent._globalLookup(value);
             return {parameters: [], result: global.type, reads: [global], writes: []};
         }),
-        set: idxArg<globalidx>("global.set", [0x24], [], ({builder, value}) => {
+        set: idxArg<globalidx, []>("global.set", [0x24], [], ({builder, value}) => {
             const global = builder.fn.parent._globalLookup(value);
             return {parameters: [global.type], result: null, reads: [], writes: [global]};
         }),

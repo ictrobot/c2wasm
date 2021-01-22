@@ -17,6 +17,9 @@ const DEFAULT = {
     unused_locals: true,
 
     peephole_2nd_pass: true,
+
+    // lto
+    inlining: false,
 } as const;
 
 export type OptimizationFlags = {[k in keyof typeof DEFAULT]: boolean};

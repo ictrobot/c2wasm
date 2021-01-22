@@ -1,4 +1,5 @@
 import type {Linker} from "../linker";
+import {ltoOptimize} from "../optimization/lto";
 import {getFlags} from "../optimization/flags";
 import {CFuncDefinition, CFuncDeclaration} from "../tree/declarations";
 import type {CExpression} from "../tree/expressions";
@@ -48,6 +49,8 @@ export class WGenerator {
         }
 
         for (const initializer of staticInitializers) initializer();
+
+        ltoOptimize(this.module);
 
         this.module.emitCallback = () => {
             const shadowStackStart = Math.ceil(this.nextStaticAddr / 1024) * 1024;

@@ -38,7 +38,7 @@ function arbitrary(ctx: WFnGenerator, e: CFunctionCall, result: ValueType | null
             writes: ["arbitraryCode"],
 
             copy() {
-                return this;
+                return () => this;
             }
         })];
 }

@@ -21,8 +21,7 @@ export class WImportedFunction {
 }
 
 export class WFunction {
-    private _body?: WExpression;
-    private _locals: ValueType[] = [];
+    private _builder?: WFunctionBuilder;
 
     constructor(readonly parent: ModuleBuilder, readonly type: FunctionType, readonly exportName?: string) {
     }
@@ -36,12 +35,12 @@ export class WFunction {
     }
 
     define(bodyFn: (b: WFunctionBuilder) => WInstruction[]): void {
-        if (this._body !== undefined) throw new Error(`Wasm function already defined`);
-        [this._body, this._locals] = WFunctionBuilder.build(this, bodyFn);
+        if (this._builder !== undefined) throw new Error(`Wasm function already defined`);
+        this._builder = new WFunctionBuilder(this, bodyFn);
     }
 
     toBytes(): byte[] {
-        if (this._body === undefined) throw new Error(`Wasm function body not defined`);
+        if (this._builder === undefined) throw new Error(`Wasm function body not defined`);
 
         // RLE is used to compress locals
         const locals: [count: bigint, type: ValueType][] = [];
@@ -60,18 +59,18 @@ export class WFunction {
 
         // encode function body
         const code: byte[] = encodeVec(locals.map(x => [...encodeU32(x[0]), x[1]])); // locals
-        code.push(...this._body.encoded); // expression
+        code.push(...this._builder.expr.encoded); // expression
         code.unshift(...encodeU32(BigInt(code.length)));
         return code;
     }
 
     get locals(): ReadonlyArray<ValueType> {
-        return this._locals;
+        return this._builder?.locals?.map(x => x.type) ?? [];
     }
 
     get body(): WExpression {
-        if (!this._body) throw new Error("Wasm function body is not yet defined");
-        return this._body;
+        if (!this._builder) throw new Error("Wasm function body is not yet defined");
+        return this._builder.expr;
     }
 }
 
@@ -79,9 +78,14 @@ export class WFunctionBuilder {
     private readonly _arguments: WLocal[];
     private readonly _locals: WLocal[] = [];
     private readonly _freeTempLocals: WLocal[] = [];
+    readonly expr: WExpression;
 
-    private constructor(readonly fn: WFunction) {
+    constructor(readonly fn: WFunction, bodyFn: (b: WFunctionBuilder) => WInstruction[]) {
         this._arguments = fn.type[0].map(t => new WLocal(this._localidx.bind(this), t, true));
+
+        this.expr = new WExpression(null, 0, this);
+        this.expr.push(...bodyFn(this));
+        optimize(this.expr);
     }
 
     get locals(): ReadonlyArray<WLocal> {
@@ -148,14 +152,6 @@ export class WFunctionBuilder {
         idx = this._locals.indexOf(l);
         if (idx >= 0) return BigInt(this._arguments.length + idx) as localidx;
         throw "Local not found?";
-    }
-
-    static build(fn: WFunction, bodyFn: (b: WFunctionBuilder) => WInstruction[]): [WExpression, ValueType[]] {
-        const builder = new WFunctionBuilder(fn);
-        const expression = new WExpression(null, 0, builder);
-        expression.push(...bodyFn(builder));
-        optimize(expression);
-        return [expression, builder.locals.map(x => x.type)];
     }
 }
 

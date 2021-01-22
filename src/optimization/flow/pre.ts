@@ -2,7 +2,8 @@ import {WExpression, ValueType, Instructions} from "../../wasm";
 import {WLocal} from "../../wasm/functions";
 import {WGlobal} from "../../wasm/global";
 import {InstrInstance, ReadResource, PartialInstr} from "../../wasm/instr_helpers";
-import {InstrFlow, controlFlow, ControlFlowGraph, InstrFlowSplicer, Flow} from "./control_flow";
+import {InstrSplicer} from "../splicer";
+import {InstrFlow, controlFlow, ControlFlowGraph, Flow} from "./control_flow";
 import {framework} from "./framework";
 
 // partial redundancy elimination
@@ -341,7 +342,7 @@ export function pre(expr: WExpression): void {
     const results = processResults(exprs, {INSERT, INSERT_EDGE, REPLACE});
     eliminateOverlapping(results);
 
-    const ifs = new InstrFlowSplicer(); // keeps tracks of edits and adjust indices
+    const ifs = new InstrSplicer(); // keeps tracks of edits and adjust indices
     for (const result of results) {
         const exprLength = result.expression.instructions.length;
         for (const i of result.replacementFlows) { // i is the last node of the expression

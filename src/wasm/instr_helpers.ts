@@ -32,7 +32,7 @@ export interface BaseInstance<T extends BaseInstance<T>> {
     readonly writes: ReadonlyArray<WriteResource>;
 
     /* deep copy a function without re-evaluate parameters */
-    copy: InstrContext<T>;
+    copy(): InstrContext<T>;
 }
 
 export type InstrInstance = ZeroArgInstance | ConstantInstance<bigint | number> | MemInstance | IdxInstance | TableInstance | StructureInstance;
@@ -53,7 +53,7 @@ export function zeroArgs(name: string, opcode: number[], parameters: ReadonlyArr
         reads, writes,
 
         copy() {
-            return this;
+            return () => this;
         }
     };
     return () => () => instr;
@@ -70,7 +70,7 @@ export function zeroArgsSpecial(name: string, opcode: number[], specialFn: Instr
             reads, writes,
 
             copy() {
-                return this;
+                return () => this;
             }
         };
     };
@@ -93,7 +93,7 @@ export function constantArg<T extends bigint | number>(name: string, opcode: num
         reads: [], writes: [],
 
         copy() {
-            return this;
+            return () => this;
         }
     });
 }
@@ -121,7 +121,7 @@ export function memArg(name: string, opcode: number[],
             writes: type === "load" ? [] : ["memory"],
 
             copy() {
-                return this;
+                return () => this;
             }
         });
     };
@@ -149,13 +149,13 @@ function getIndex<T extends bigint>(idx: Index<T>, depth: number): T {
     return value;
 }
 
-type IndexFn<T extends bigint> = (c: Context & {value: T}) => DataFlow;
-export function idxArg<T extends bigint>(name: string, opcode: number[], suffix: number[],
-                                         stackOps: IndexFn<T>): (x: Index<T>) => InstrContext<IdxInstance> {
-    return (x) => context => {
+type IndexFn<T extends bigint, X> = (c: Context & {value: T, extra: X}) => DataFlow;
+export function idxArg<T extends bigint, X extends any[]>(name: string, opcode: number[], suffix: number[],
+                                                          stackOps: IndexFn<T, X>): (x: Index<T>, ...extra: X) => InstrContext<IdxInstance> {
+    return (x, ...extra) => context => {
         const value = getIndex(x, context.depth);
         const encoded = [...opcode as byte[], ...encodeU32(value), ...suffix as byte[]];
-        const {parameters, result, reads, writes} = stackOps({value, ...context});
+        const {parameters, result, reads, writes} = stackOps({value, extra, ...context});
 
         return {
             name, encoded,
@@ -164,7 +164,7 @@ export function idxArg<T extends bigint>(name: string, opcode: number[], suffix:
             reads, writes,
 
             copy() {
-                return this;
+                return () => this;
             }
         };
     };
@@ -188,7 +188,7 @@ export function brTableInstr(opcode: number): (defaultLbl: Index<labelidx>, lblA
             reads: [], writes: ["jump"],
 
             copy() {
-                return this;
+                return () => this;
             }
         };
     };
@@ -234,10 +234,12 @@ export function blockLoopInstr(opcode: number, name: "block" | "loop"): (type: V
                 return expression.writes;
             },
 
-            copy(ctx) {
-                const x = constructor(type, [])(ctx);
-                expression.copyInto(x.immediate.expression);
-                return x;
+            copy() {
+                return (ctx) => {
+                    const x = constructor(type, [])(ctx);
+                    expression.copyInto(x.immediate.expression);
+                    return x;
+                };
             }
         };
         const expression = new WExpression(instr, context.depth + 1, context.builder);
@@ -280,11 +282,13 @@ export function ifInstr(opcode: number, elseOpcode: number): (type: ValueType | 
                 return expression.writes;
             },
 
-            copy(ctx) {
-                const x = constructor(type, [], expression2 ? [] : undefined)(ctx);
-                expression.copyInto(x.immediate.expression);
-                if (expression2) expression2.copyInto(x.immediate.expression2 as WExpression);
-                return x;
+            copy() {
+                return (ctx) => {
+                    const x = constructor(type, [], expression2 ? [] : undefined)(ctx);
+                    expression.copyInto(x.immediate.expression);
+                    if (expression2) expression2.copyInto(x.immediate.expression2 as WExpression);
+                    return x;
+                };
             }
         };
 
@@ -372,7 +376,7 @@ export class WExpression {
     }
 
     copyInto(target: WExpression): void {
-        for (const instr of this.instructions) target.push(instr.copy);
+        for (const instr of this.instructions) target.push(instr.copy());
     }
 
     private stackManipulation(instr: InstrInstance, stack: ValueType[]) {
