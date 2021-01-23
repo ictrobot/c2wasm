@@ -44,12 +44,20 @@ export function inlineFunctions(module: ModuleBuilder): void {
             }, 1);
 
             modifiedFns.add(usage.fn);
+            info.usages = info.usages.filter(x => x !== usage);
+        }
+
+        if (info.usages.length === 0 && !info.inTable && !info.exported) {
+            // TODO remove fn
         }
     }
 
     for (const fn of modifiedFns) { // clean up any modified functions
         optimize(fn.body);
     }
+
+    // TODO remove now unused functions
+    // FIXME nested inlining?
 }
 
 type Usage = {fn: WFunction, fnInfo: FnInfo, expr: WExpression, instrIndex: number};
@@ -87,12 +95,16 @@ class FnInfo {
     }
 
     inliningCandidates(): Usage[] {
-        if (this.usages.length === 1 && !this.inTable && !this.exported) {
-            // function can be removed later, so always inline
-            return this.usages;
-        } else if (this.size <= 3) {
-            // always inline
-            return this.usages;
+        if (this.size > 50 || this.usages.length === 0) return []; // never inline
+
+        let score = this.size;
+        score += Math.min(this.fn.body.builder.args.length - 1, 0) * 5; // one argument is okay
+        score += this.fn.locals.length * 5;
+        if (this.fn.hints.inline) score -= 20;
+
+        if (score <= 8 || (score <= 16 && this.usages.length <= 3 && !this.inTable && !this.exported)) {
+            // inline all (non-recursive) cases
+            return this.usages.filter(({fn}) => fn !== this.fn);
         }
         return [];
     }

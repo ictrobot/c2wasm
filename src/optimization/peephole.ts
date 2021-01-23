@@ -135,7 +135,7 @@ peepholeOptimizers.push({
     name: "remove unused blocks and loops",
     enabled: (flags) => flags.peephole_unused_blocks,
     run: ([instr]) => {
-        if (instr.type !== "structured" || instr.name === "if" || instr.immediate.type !== null) return;
+        if (instr.type !== "structured" || instr.name === "if") return;
         if (branchedTo(instr)) return;
 
         return eliminateStructuredInstruction(instr.immediate.expression);

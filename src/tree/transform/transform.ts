@@ -153,6 +153,7 @@ function ptFunction(fn: pt.FunctionDefinition, scope: Scope): void {
     else linkage = "external";
 
     const cfn = new CFuncDefinition(fn, name, type, linkage, scope);
+    cfn.hints.inline = fn.typeInfo.fnSpecifierList[0] === "inline";
     scope.addIdentifier(cfn);
 
     // add arguments as parameters to function's scope

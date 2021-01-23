@@ -97,6 +97,7 @@ export class CFuncDefinition {
     readonly declType = "function";
     readonly body: CCompoundStatement;
     readonly dependencies = new Map<CDeclaration, boolean>(); // direct dependencies only
+    readonly hints: {inline: boolean} = {inline: false};
 
     constructor(readonly node: FunctionDefinition,
                 readonly name: string,

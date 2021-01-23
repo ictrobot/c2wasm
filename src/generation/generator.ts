@@ -65,6 +65,7 @@ export class WGenerator {
             returnType(func.type.returnType),
             undefined,
             name);
+        wasmFunc.hints.inline = func.hints.inline;
         this.functions.set(func, wasmFunc);
     }
 

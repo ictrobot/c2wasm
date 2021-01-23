@@ -22,6 +22,7 @@ export class WImportedFunction {
 
 export class WFunction {
     private _builder?: WFunctionBuilder;
+    readonly hints: {inline: boolean} = {inline: false};
 
     constructor(readonly parent: ModuleBuilder, readonly type: FunctionType, readonly exportName?: string) {
     }

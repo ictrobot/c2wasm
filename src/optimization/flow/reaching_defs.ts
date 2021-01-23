@@ -1,5 +1,6 @@
 import {gInstr} from "../../generation/expressions";
 import {WExpression, Instructions} from "../../wasm";
+import {InstrInstance} from "../../wasm/instr_helpers";
 import {InstrFlow, simplifiedControlFlow, Flow} from "./control_flow";
 import {framework} from "./framework";
 
@@ -77,6 +78,18 @@ function reachingDefinitions(expr: WExpression): { definitions: DUChain[], reach
     return {definitions: duChains, reaching, localMasks};
 }
 
+// find the instruction which created the result consumed by this instruction
+function findValueInstr(f: InstrFlow): InstrInstance | undefined {
+    let len = f.instr.parameters.length;
+    for (let i = f.instrIndex - 1; i >= 0; i--) {
+        const instr = f.expr.instructions[i];
+        if (instr.result) len--;
+        if (len === 0) return instr;
+        len += instr.parameters.length;
+    }
+    return undefined;
+}
+
 export function copyPropagation(expr: WExpression): void {
     const {definitions, reaching, localMasks} = reachingDefinitions(expr);
     if (!definitions.length) return; // couldn't analyze
@@ -93,19 +106,19 @@ export function copyPropagation(expr: WExpression): void {
         // check if there are definite uses which we would be able to inline / propagate
         if (def.definiteUses.length === 0) continue;
 
-        const prevInstr = def.flow.expr.instructions[def.flow.instrIndex - 1];
-        if (prevInstr?.type === "constant") {
+        const valueInstr = findValueInstr(def.flow);
+        if (valueInstr?.type === "constant") {
             // constant propagation
-            const replacement = gInstr(def.flow.instr.parameters[0], "const", prevInstr.immediate.value);
+            const replacement = gInstr(def.flow.instr.parameters[0], "const", valueInstr.immediate.value);
 
             for (const use of def.definiteUses) {
                 use.expr.replace(use.instrIndex, use.instrIndex + 1, replacement);
             }
-        } else if (prevInstr?.type === "index" && (prevInstr.name === "local.get" || prevInstr.name === "local.tee")) {
+        } else if (valueInstr?.type === "index" && (valueInstr.name === "local.get" || valueInstr.name === "local.tee")) {
             // copy propagation
             const getFlow = [...def.flow.flowPrevious].find(f => f.instr && f.instrIndex === def.flow.instrIndex - 1 && f.expr === def.flow.expr);
             if (!getFlow) continue; // needed to look up the valid definitions
-            const getLocal = Number(prevInstr.immediate.value);
+            const getLocal = Number(valueInstr.immediate.value);
             const getDefs = (reaching.get(getFlow) ?? 0n) & localMasks[getLocal];
 
             const replacement = Instructions.local.get(getLocal);
