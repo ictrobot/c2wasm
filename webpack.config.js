@@ -28,7 +28,7 @@ module.exports = (env, argv) => {
         },
         resolve: {
             extensions: [".ts", ".js"],
-            fallback: Object.fromEntries(["crypto", "path", "fs", "stream"].map(x => [x, false]))
+            fallback: Object.fromEntries(["crypto", "path", "fs", "stream", "util"].map(x => [x, false]))
         },
         module: {
             rules: [{test: /\.ts$/, loader: "ts-loader"}]
@@ -45,6 +45,7 @@ module.exports = (env, argv) => {
             minimizer
         },
         devtool: argv.mode !== "development" ? "source-map" : "eval-source-map",
+        mode: argv.mode ?? "production"
     };
     if (argv.mode === "development") return [demos];
 
@@ -69,7 +70,8 @@ module.exports = (env, argv) => {
                 minimizer
             },
             externals: mode !== "bundle" ? ["moo"] : [],
-            devtool: "source-map"
+            devtool: "source-map",
+            mode: argv.mode ?? "production"
         };
     }
 
