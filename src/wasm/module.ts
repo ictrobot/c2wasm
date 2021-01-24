@@ -206,6 +206,11 @@ export class ModuleBuilder {
     _inFunctionTable(f: WFunction | WImportedFunction): boolean {
         return this._functionTable.indexOf(f) >= 0;
     }
+
+    _removeFunction(f: WFunction): void {
+        const idx = this._functions.indexOf(f);
+        if (idx >= 0) this._functions.splice(idx, 1);
+    }
 }
 
 function encodeSection(id: number, vec: byte[][]): byte[] {

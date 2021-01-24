@@ -6,10 +6,7 @@ import {peephole} from "../peephole";
 import {InstrSplicer} from "../splicer";
 
 export function inlineFunctions(module: ModuleBuilder): void {
-    const map = new Map<WFunction, FnInfo>();
-    for (const fn of module.functions) map.set(fn, new FnInfo(fn, map));
-    for (const info of map.values()) info.analyze();
-
+    const map = FnInfo.infoMap(module);
     const modifiedFns = new Set<WFunction>();
 
     const splicer = new InstrSplicer();
@@ -44,20 +41,40 @@ export function inlineFunctions(module: ModuleBuilder): void {
             }, 1);
 
             modifiedFns.add(usage.fn);
-            info.usages = info.usages.filter(x => x !== usage);
-        }
-
-        if (info.usages.length === 0 && !info.inTable && !info.exported) {
-            // TODO remove fn
         }
     }
 
     for (const fn of modifiedFns) { // clean up any modified functions
         optimize(fn.body);
     }
+    if (modifiedFns.size) removeUnusedFns(module);
 
-    // TODO remove now unused functions
     // FIXME nested inlining?
+}
+
+export function removeUnusedFns(module: ModuleBuilder): void {
+    const map = FnInfo.infoMap(module);
+    const functions = [...module.functions, ...module.functionImports].map(x => {
+        const info = map.get(x as WFunction);
+        if (info?.usages.length === 0 && !info.inTable && !info.exported) {
+            module._removeFunction(x as WFunction);
+            return undefined;
+        }
+        return x;
+    });
+
+    const startingIndex = functions.indexOf(undefined);
+    if (startingIndex === -1) return; // no functions to remove
+
+    for (let i = startingIndex + 1; i < functions.length; i++) {
+        const fn = functions[i];
+        const info = map.get(fn as WFunction);
+        if (!fn || !info) continue;
+
+        for (const usage of info.usages) {
+            usage.expr.replace(usage.instrIndex, usage.instrIndex + 1, Instructions.call(fn));
+        }
+    }
 }
 
 type Usage = {fn: WFunction, fnInfo: FnInfo, expr: WExpression, instrIndex: number};
@@ -65,7 +82,6 @@ type Usage = {fn: WFunction, fnInfo: FnInfo, expr: WExpression, instrIndex: numb
 class FnInfo {
     usages: Usage[] = [];
     size: number = 0;
-
     inTable: boolean;
     exported: boolean;
 
@@ -107,5 +123,12 @@ class FnInfo {
             return this.usages.filter(({fn}) => fn !== this.fn);
         }
         return [];
+    }
+
+    static infoMap(module: ModuleBuilder) {
+        const map = new Map<WFunction, FnInfo>();
+        for (const fn of module.functions) map.set(fn, new FnInfo(fn, map));
+        for (const info of map.values()) info.analyze();
+        return map;
     }
 }
