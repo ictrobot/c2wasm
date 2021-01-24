@@ -5,6 +5,7 @@ import * as c from "../tree/expressions";
 import {evalExpression} from "../tree/transform/constant_expressions";
 import {CType, CArithmetic, CPointer, CArray, CSizeT, CUnion, CStruct, CFuncType, integerPromotion} from "../tree/types";
 import {i32Type, Instructions, i64Type, f32Type, f64Type, ValueType} from "../wasm";
+import {PartialInstr} from "../wasm/instr_helpers";
 import {WInstruction} from "../wasm/instructions";
 import {GenError} from "./gen_error";
 import {WFnGenerator} from "./generator";
@@ -519,7 +520,7 @@ function iInstr(t: ImplementationType, op: (keyof typeof Instructions.i32 & keyo
 }
 
 /** generic instruction - i32, i64, f32 or f64 */
-export function gInstr(t: ImplementationType, op: (keyof typeof Instructions.i32 & keyof typeof Instructions.i64 & keyof typeof Instructions.f32 & keyof typeof Instructions.f64), ...args: any[]) {
+export function gInstr(t: ImplementationType, op: (keyof typeof Instructions.i32 & keyof typeof Instructions.i64 & keyof typeof Instructions.f32 & keyof typeof Instructions.f64), ...args: any[]): PartialInstr {
     if (typeof t !== "number") throw new Error("Instructions can only operate on value types");
 
     if (t === i32Type) {
