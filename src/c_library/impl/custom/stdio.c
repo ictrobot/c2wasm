@@ -35,6 +35,8 @@ FILE* stdout = &__stdout;
 static FILE __stderr = {__fhandle_stderr, -1, false, false};
 FILE* stderr = &__stderr;
 
+#define __fhandle_flag_str 1
+
 static void store_fname(const char *s) {
     char *x = s;
     while (*x) {
@@ -62,6 +64,7 @@ FILE *freopen(const char *filename, const char *mode, FILE* stream) {
     stream->handle = __get_fhandle();
     stream->unget = -1;
     stream->len = 0;
+    stream->flags = 0;
     stream->error = false;
     stream->eof = false;
 
@@ -70,6 +73,15 @@ FILE *freopen(const char *filename, const char *mode, FILE* stream) {
     }
 
     return stream;
+}
+
+void __str2file(FILE *stream, const char *data) {
+    stream->handle = (int) data;
+    stream->unget = -1;
+    stream->len = 0;
+    stream->flags = __fhandle_flag_str;
+    stream->error = false;
+    stream->eof = false;
 }
 
 int fflush(FILE* stream) {
@@ -118,6 +130,17 @@ int fgetc(FILE *stream) {
     if (stream->unget >= 0) {
         c = (unsigned char) stream->unget;
         stream->unget = -1;
+    } else if (stream->flags & __fhandle_flag_str) {
+        char* s = (char*) stream->handle;
+        c = *(s++);
+        if (c) {
+            stream->handle = (int) s;
+        } else {
+            stream->eof = true;
+            c = EOF;
+        }
+        stream->error = false;
+        stream->len++;
     } else {
         c = __get_char(stream->handle);
         stream->eof = c == EOF;
@@ -140,12 +163,15 @@ char *fgets(char *s, int n, FILE *stream) {
 }
 
 int fputc(int c, FILE *stream) {
+    if (stream->flags & __fhandle_flag_str) return EOF;
     int result = __put_char(stream->handle, c);
     if (result >= 0) return c;
     return result;
 }
 
 int fputs(const char *s, FILE *stream) {
+    if (stream->flags & __fhandle_flag_str) return EOF;
+
     char *x = s;
     while (*x) {
         if (__put_char(stream->handle, *x) < 0) return EOF;
@@ -220,6 +246,8 @@ size_t fwrite(const void *ptr, size_t size, size_t nobj, FILE* stream) {
 
 
 int fseek(FILE *stream, long offset, int origin) {
+    if (stream->flags & __fhandle_flag_str) return -1;
+
     long pos;
     if (origin == SEEK_SET) {
         pos = offset;
@@ -234,6 +262,8 @@ int fseek(FILE *stream, long offset, int origin) {
 }
 
 long ftell(FILE *stream) {
+    if (stream->flags & __fhandle_flag_str) return -1;
+
     long pos = __get_pos(stream->handle);
     if (pos < 0) return -1;
     return pos;
@@ -245,6 +275,8 @@ void rewind(FILE *stream) {
 }
 
 int fgetpos(FILE *stream, fpos_t *ptr) {
+    if (stream->flags & __fhandle_flag_str) return -1;
+
     long pos = __get_pos(stream->handle);
     if (pos < 0) return -1;
     *ptr = pos;
@@ -252,7 +284,7 @@ int fgetpos(FILE *stream, fpos_t *ptr) {
 }
 
 int fsetpos(FILE *stream, const fpos_t *ptr) {
-    if (__set_pos(stream->handle, *ptr) != 0) {
+    if (stream->flags & __fhandle_flag_str || __set_pos(stream->handle, *ptr) != 0) {
         return -1;
     }
     return 0;
@@ -282,10 +314,8 @@ void perror(const char *s) {
 
 int fscanf(FILE *stream, const char *fmt, ...) {
 	va_list va;
-	int result;
-
 	va_start(va, fmt);
-	result = vfscanf(stream, fmt, va);
+	int result = vfscanf(stream, fmt, va);
 	va_end(va);
 
 	return result;
@@ -293,13 +323,23 @@ int fscanf(FILE *stream, const char *fmt, ...) {
 
 int scanf(const char *fmt, ...) {
 	va_list va;
-	int result;
-
 	va_start(va, fmt);
-	result = vfscanf(stdin, fmt, va);
+	int result = vfscanf(stdin, fmt, va);
 	va_end(va);
 
 	return result;
+}
+
+int sscanf(char *s, const char *fmt, ...) {
+    FILE f;
+    __str2file(&f, s);
+
+    va_list va;
+    va_start(va, fmt);
+    int result = vfscanf(&f, fmt, va);
+    va_end(va);
+
+    return result;
 }
 
 #endif
