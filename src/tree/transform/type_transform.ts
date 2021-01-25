@@ -44,10 +44,11 @@ export function getDeclaratorType(type: CType, declarator: pt.Declarator | pt.Ab
             let parameterNames = undefined;
 
             for (const param of d.args ?? []) {
-                // in function parameters arrays are equivalent to pointers
-                const type = convertArraysToPointers(getType(param, scope));
-
-                if (type instanceof CFuncType) {
+                let type = getType(param, scope);
+                if (type instanceof CArray) {
+                    // in function parameters arrays are equivalent to pointers
+                    type = new CPointer(type.node, type.type);
+                } else if (type instanceof CFuncType) {
                     throw new ParseTreeValidationError(param, "Functions cannot be parameters");
                 }
                 parameterTypes.push(type);
@@ -161,18 +162,4 @@ function getSpecifierType(d: pt.SpecifierQualifiers | pt.DeclarationSpecifiers, 
     }
 
     throw new ParseTreeValidationError(d, "Invalid specifier");
-}
-
-function convertArraysToPointers(type: CType): CType {
-    if (type instanceof CArray) { // key case
-        return new CPointer(type.node, convertArraysToPointers(type.type));
-    } else if (type instanceof CPointer) {
-        const child = convertArraysToPointers(type.type);
-        if (child === type.type) return type;
-        return new CPointer(type.node, child, type.qualifier === "const");
-    } else {
-        // CArithmetic and CVoid can't change
-        // Don't need to change members of CStruct or CUnion
-        return type;
-    }
 }
