@@ -1,5 +1,5 @@
 import {ParseNode} from "../parsing";
-import {CConstant, CInitializer, CArrayPointer, CStringLiteral, CExpression, CValue, CCast, CAddressOf, CIdentifier, CAddSub, CDereference} from "../tree/expressions";
+import {CConstant, CInitializer, CStringLiteral, CExpression, CValue, CCast, CAddressOf, CIdentifier, CAddSub, CDereference} from "../tree/expressions";
 import {constExpression, normalizeValueType} from "../tree/transform/constant_expressions";
 import {CArithmetic, CArray, CUnion, CStruct, CSizeT, CPointer, CType} from "../tree/types";
 import {byte} from "../wasm/base_types";
@@ -11,7 +11,7 @@ export function staticInitializer(ctx: WGenerator, init: CExpression | CInitiali
     if (init instanceof CInitializer) {
         if (targetType && !init.type.equals(targetType)) throw new GenError("Static initializer type mismatch", undefined, init.node);
         return initializer(ctx, init);
-    } else if (init instanceof CArrayPointer && init.arrayIdentifier instanceof CStringLiteral) {
+    } else if (init instanceof CStringLiteral && targetType instanceof CPointer) {
         // string literal being used as pointer
         return stringLiteralPtr(ctx, init);
     } else if (init instanceof CStringLiteral) {
@@ -38,14 +38,14 @@ export function staticInitializer(ctx: WGenerator, init: CExpression | CInitiali
                 const addr = ctx.indirectIndex(e.value);
                 return normalizeValueType({value: addr, type: new CPointer(e.node, e.type)});
 
-            } else if (e instanceof CArrayPointer && e.arrayIdentifier instanceof CIdentifier) { // implicit array to pointer conversion
-                const addr = getStaticAddress(e.arrayIdentifier.value);
+            } else if (e instanceof CIdentifier) { // implicit array to pointer conversion
+                const addr = getStaticAddress(e.value);
                 if (addr !== undefined) return normalizeValueType({value: addr, type: new CPointer(e.node, e.type)});
 
-            } else if (e instanceof CArrayPointer && e.arrayIdentifier instanceof CStringLiteral) {
+            } else if (e instanceof CStringLiteral) {
                 // allocate a new string literal and return pointer
                 const addr = ctx.nextStaticAddr; // chars 1 byte aligned
-                const stringBytes = stringLiteral(e.arrayIdentifier);
+                const stringBytes = stringLiteral(e);
                 ctx.module.dataSegment(addr, stringBytes);
                 ctx.nextStaticAddr += stringBytes.length;
                 return normalizeValueType({value: addr, type: e.type});
@@ -96,11 +96,9 @@ function constant(c: CValue, node?: ParseNode): byte[] {
     throw new GenError("Unknown value type?", undefined, node);
 }
 
-function stringLiteralPtr(ctx: WGenerator, init: CArrayPointer): byte[] {
-    if (!(init.arrayIdentifier instanceof CStringLiteral)) throw new GenError("Invalid initializer", undefined, init.node);
-
+function stringLiteralPtr(ctx: WGenerator, init: CStringLiteral): byte[] {
     const addr = ctx.nextStaticAddr; // char is any byte aligned
-    const stringBytes = stringLiteral(init.arrayIdentifier);
+    const stringBytes = stringLiteral(init);
     ctx.module.dataSegment(addr, stringBytes);
 
     ctx.nextStaticAddr += stringBytes.length;

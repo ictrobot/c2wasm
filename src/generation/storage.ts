@@ -113,7 +113,7 @@ export function storageSetupScope(ctx: WFnGenerator, s: Scope): [setup: WInstruc
 export function storageGet(ctx: WFnGenerator, ctype: CType, locationExpr: CExpression): WInstruction[] {
     const [instr, location] = fromExpression(ctx, locationExpr);
 
-    if (ctype instanceof CStruct || ctype instanceof CUnion) {
+    if (ctype instanceof CStruct || ctype instanceof CUnion || (ctype instanceof CPointer && ctype.original instanceof CArray)) {
         // loading a structure just returns a pointer
         return getAddress(ctx, locationExpr);
     }

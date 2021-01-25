@@ -29,13 +29,6 @@ function identifier(ctx: WFnGenerator, e: c.CIdentifier, discard: boolean): WIns
     return storageGet(ctx, e.type, e);
 }
 
-function arrayPointer(ctx: WFnGenerator, e: c.CArrayPointer, discard: boolean): WInstruction[] {
-    if (discard) return []; // no possible side effects
-    if (e.arrayIdentifier instanceof c.CStringLiteral) return stringLiteral(ctx, e.arrayIdentifier, discard);
-
-    return getAddress(ctx, e.arrayIdentifier);
-}
-
 function stringLiteral(ctx: WFnGenerator, e: c.CStringLiteral, discard: boolean): WInstruction[] {
     if (discard) return []; // no possible side effects
     const stringAddress = ctx.gen.nextStaticAddr; // chars allowed to be 1-byte aligned
@@ -172,7 +165,7 @@ function addressOf(ctx: WFnGenerator, e: c.CAddressOf, discard: boolean): WInstr
 function dereference(ctx: WFnGenerator, e: c.CDereference, discard: boolean): WInstruction[] {
     if (discard) return expressionGeneration(ctx, e.body, true); // get any side effects
 
-    if (e.type instanceof CFuncType) {
+    if (e.type instanceof CPointer && e.type.original instanceof CFuncType) { // pointer generation
         // don't do final deref of function pointers
         return expressionGeneration(ctx, e.body, false);
     }
@@ -395,12 +388,11 @@ function assignment(ctx: WFnGenerator, e: c.CAssignment, discard: boolean): WIns
         const instr: WInstruction[] = [];
 
         if (e.rhs.type instanceof CArray) {
-            const lhs = e.lhs instanceof c.CIdentifier ? new c.CArrayPointer(e.lhs.node, e.lhs) : e.lhs;
             for (let i = 0; i < e.rhs.body.length; i++) {
                 const value = e.rhs.body[i];
 
-                const entryPointer = new c.CAddSub(lhs.node, lhs, new c.CConstant(lhs.node, CSizeT, BigInt(i)), "+");
-                const entryDeref = new c.CDereference(lhs.node, entryPointer);
+                const entryPointer = new c.CAddSub(e.lhs.node, e.lhs, new c.CConstant(e.lhs.node, CSizeT, BigInt(i)), "+");
+                const entryDeref = new c.CDereference(e.lhs.node, entryPointer);
                 const entryAssignment = new c.CAssignment(value.node, entryDeref, value, undefined, e.initialAssignment);
                 instr.push(...expressionGeneration(ctx, entryAssignment, true));
             }
@@ -441,7 +433,6 @@ export function expressionGeneration(ctx: WFnGenerator, e: c.CExpression, discar
 
     if (e instanceof c.CConstant) return constant(ctx, e, discard);
     else if (e instanceof c.CIdentifier) return identifier(ctx, e, discard);
-    else if (e instanceof c.CArrayPointer) return arrayPointer(ctx, e, discard);
     else if (e instanceof c.CStringLiteral) return stringLiteral(ctx, e, discard);
     else if (e instanceof c.CFunctionCall) return functionCall(ctx, e, discard);
     else if (e instanceof c.CMemberAccess) return memberAccess(ctx, e, discard);

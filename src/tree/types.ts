@@ -4,7 +4,7 @@ import type {TypeSpecifier, TypeQualifier, ParseNode} from "../parsing/parsetree
 // types for expressions and declarations in the IR
 export type CType = CNotFuncType | CFuncType;
 export type CNotFuncType = CArithmetic | CPointer | CArray | CStruct | CUnion | CVoid;
-export type CQualifiedType<T extends CType> = T & {qualifier?: TypeQualifier};
+export type CQualifiedType<T extends CType> = T & {qualifier?: TypeQualifier, _base?: T};
 
 export class CFuncType {
     readonly typeName = "function";
@@ -29,6 +29,10 @@ export class CFuncType {
             && t.parameterTypes.every((other, i) => this.parameterTypes[i].equals(other))
             && t.variadic === this.variadic;
     }
+
+    get pointerGeneration(): CPointer {
+        return addQualifier(new CPointer(this.node, this, false, this), getQualifier(this));
+    }
 }
 
 export class CPointer {
@@ -38,13 +42,20 @@ export class CPointer {
     readonly incomplete = false;
     readonly qualifier?: TypeQualifier;
 
-    constructor(readonly node: ParseNode | undefined, readonly type: CType, constant: boolean = false) {
+    constructor(readonly node: ParseNode | undefined,
+                readonly type: CType,
+                constant: boolean = false,
+                readonly original?: CFuncType | CArray /* used in pointer generation */) {
         // allow pointers to incomplete types
         if (constant) this.qualifier = "const";
     }
 
     equals(t: object): boolean {
         return t instanceof CPointer && t.qualifier === this.qualifier && this.type.equals(t.type);
+    }
+
+    get pointerGeneration(): this {
+        return this; // no pointer generation (already a pointer!)
     }
 }
 
@@ -68,6 +79,10 @@ export class CArray {
 
     equals(t: object): boolean {
         return t instanceof CArray && t.length === this.length && this.type.equals(t.type);
+    }
+
+    get pointerGeneration(): CPointer {
+        return addQualifier(new CPointer(this.node, this.type, false, this), getQualifier(this));
     }
 }
 
@@ -115,8 +130,9 @@ export class CStruct {
     equals(t: object): boolean {
         /** "Structures, unions and enumerations with different tags are distinct,
          * and a tagless union, structure, or enumeration specifies a unique type" */
-        if (this.name === undefined) return this === t;
-        return t instanceof CStruct && t.name === this.name;
+        if (!(t instanceof CStruct)) return false;
+        if (this.name === undefined) return withoutQualifiers(this) === withoutQualifiers(t);
+        return t.name === this.name;
     }
 
     memberType(m: string): CType {
@@ -129,6 +145,10 @@ export class CStruct {
         return this.members.find(m =>
             getQualifier(m.type) || ((m.type instanceof CUnion || m.type instanceof CStruct) && m.type.hasConstMember())
         ) !== undefined;
+    }
+
+    get pointerGeneration(): this {
+        return this; // no pointer generation
     }
 }
 
@@ -164,8 +184,9 @@ export class CUnion {
     }
 
     equals(t: object): boolean {
-        if (this.name === undefined) return this === t;
-        return t instanceof CUnion && t.name === this.name;
+        if (!(t instanceof CUnion)) return false;
+        if (this.name === undefined) return withoutQualifiers(this) === withoutQualifiers(t);
+        return t.name === this.name;
     }
 
     memberType(m: string): CType {
@@ -178,6 +199,10 @@ export class CUnion {
         return this.members.find(m =>
             getQualifier(m.type) || ((m.type instanceof CUnion || m.type instanceof CStruct) && m.type.hasConstMember())
         ) !== undefined;
+    }
+
+    get pointerGeneration(): this {
+        return this; // no pointer generation
     }
 }
 
@@ -220,6 +245,10 @@ export class CVoid {
     equals(t: object): boolean {
         return t instanceof CVoid;
     }
+
+    get pointerGeneration(): this {
+        return this; // no pointer generation
+    }
 }
 
 export class CArithmetic {
@@ -260,6 +289,10 @@ export class CArithmetic {
         case "signed":
             return 2n ** (BigInt(this.bytes * 8) - 1n) - 1n;
         }
+    }
+
+    get pointerGeneration(): this {
+        return this; // no pointer generation
     }
 
     static readonly Fp32 = new CArithmetic("float", 4, "float");
@@ -304,6 +337,13 @@ export function addQualifier<T extends CType>(t: T, qualifier?: TypeQualifier): 
     const type = Object.setPrototypeOf({qualifier, _base: t}, t);
     baseType[constType] = type;
     return type;
+}
+
+function withoutQualifiers<T extends CType>(t: T): T {
+    if (Object.prototype.hasOwnProperty.call(t, "qualifier")) {
+        return (t as CQualifiedType<T>)._base ?? t;
+    }
+    return t;
 }
 
 export function getQualifier(t: CQualifiedType<CType>): TypeQualifier | undefined {

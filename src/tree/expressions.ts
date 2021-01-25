@@ -9,7 +9,7 @@ import {
 // Classes to represent all the possible expression types in the IR
 
 export type CExpression =
-    CConstant | CIdentifier | CArrayPointer | CStringLiteral |
+    CConstant | CIdentifier | CStringLiteral |
     CFunctionCall | CMemberAccess | CIncrDecr | // postfix
     CAddressOf | CDereference | CUnaryPlusMinus | CBitwiseNot | CLogicalNot | CSizeof | // unary
     CCast |
@@ -59,7 +59,7 @@ export class CIdentifier {
     }
 
     get type(): CType {
-        return this.value.type;
+        return this.value.type.pointerGeneration;
     }
 
     *identifiers(): IterableIterator<CIdentifier> {
@@ -67,37 +67,16 @@ export class CIdentifier {
     }
 }
 
-/**
- * Array identifiers are used as pointers to arrays everywhere excluding:
- * - the unary & operator
- * - the sizeof operator
- */
-export class CArrayPointer {
-    readonly lvalue = false;
-    readonly type: CPointer;
-
-    constructor(readonly node: ParseNode, readonly arrayIdentifier: CIdentifier | CStringLiteral) {
-        if (!(arrayIdentifier.type instanceof CArray)) {
-            throw new checks.ExpressionTypeError(this.node, "array");
-        }
-        this.type = new CPointer(this.node, arrayIdentifier.type.type);
-    }
-
-    *identifiers(): IterableIterator<CIdentifier> {
-        if (this.arrayIdentifier instanceof CIdentifier) yield this.arrayIdentifier;
-    }
-}
-
 export class CStringLiteral {
     readonly lvalue = false;
-    readonly type: CArray;
+    readonly type: CPointer;
 
     constructor(readonly node: ParseNode, readonly value: bigint[]) {
         // currently only supports UTF8
         if (value.length === 0 || value[value.length - 1] !== 0n) {
             throw new checks.ExpressionTypeError(node, "null terminated char[]", "char[]");
         }
-        this.type = new CArray(node, CArithmetic.U8, value.length);
+        this.type = new CArray(node, CArithmetic.U8, value.length).pointerGeneration;
     }
 
     *identifiers(): IterableIterator<CIdentifier> {
@@ -112,7 +91,7 @@ export class CFunctionCall {
 
     constructor(readonly node: ParseNode, readonly body: CExpression, readonly args: CExpression[]) {
         this.fnType = checks.asFunction(body.node, body.type);
-        this.type = this.fnType.returnType;
+        this.type = this.fnType.returnType.pointerGeneration;
 
         // check arguments correct for the function type
         if (this.fnType.variadic && this.fnType.parameterTypes.length > args.length) {
@@ -138,11 +117,12 @@ export class CMemberAccess {
 
     /** transform `e.member` to `(&e)->member` before calling */
     constructor(readonly node: ParseNode, readonly body: CExpression, readonly member: string) {
-        const pointerType = checks.asPointer(body.node, body.type);
+        const bodyType = body.type instanceof CPointer ? (body.type.original ?? body.type) : body.type; // no pointer gen
+        const pointerType = checks.asPointer(body.node, bodyType);
         this.structUnion = checks.asStructOrUnion(body.node, pointerType.type);
 
         const type = this.structUnion.memberType(member);
-        this.type = type instanceof CArray ? new CPointer(type.node, type.type) : type;
+        this.type = type.pointerGeneration;
         this.lvalue = !(this.type instanceof CArray);
     }
 
@@ -159,7 +139,8 @@ export class CIncrDecr {
                 readonly op: "++" | "--", readonly pos: "pre" | "post") {
         checks.checkLvalue(body, true);
 
-        this.type = checks.asNonFunctionPointer(body.node, checks.asArithmeticOrPointer(body.node, body.type));
+        const bodyType = body.type instanceof CPointer ? (body.type.original ?? body.type) : body.type; // no pointer gen
+        this.type = checks.asNonFunctionPointer(body.node, checks.asArithmeticOrPointer(body.node, bodyType));
         if (this.type instanceof CPointer) checkTypeComplete(this.type.type);
     }
 
@@ -171,9 +152,11 @@ export class CIncrDecr {
 export class CSizeof {
     readonly lvalue = false;
     readonly type = CSizeT;
+    readonly body: CType;
 
-    constructor(readonly node: ParseNode, readonly body: CType) {
-        if (body.incomplete || body.bytes === 0 || body instanceof CFuncType) {
+    constructor(readonly node: ParseNode, body: CType) {
+        this.body = body instanceof CPointer ? (body.original ?? body) : body; // no pointer gen
+        if (this.body.incomplete || this.body.bytes === 0 || this.body instanceof CFuncType) {
             throw new checks.ExpressionTypeError(node, "Complete non-function type", body.typeName);
         }
     }
@@ -189,9 +172,9 @@ export class CAddressOf { // &
     readonly body: CExpression;
 
     constructor(readonly node: ParseNode, body: CExpression) {
-        if (body instanceof CArrayPointer) body = body.arrayIdentifier;
-        if (!(body instanceof CIdentifier && body.type instanceof CFuncType)) checks.checkLvalue(body, true);
-        this.type = new CPointer(node, body.type);
+        const bodyType = body.type instanceof CPointer ? (body.type.original ?? body.type) : body.type; // no pointer gen
+        if (!(body instanceof CIdentifier && bodyType instanceof CFuncType)) checks.checkLvalue(body, true);
+        this.type = new CPointer(node, bodyType);
 
         if (body instanceof CIdentifier) {
             // when translating to wasm all variables which have their address taken have to be stored on the shadow stack
@@ -210,7 +193,7 @@ export class CDereference { // * or 'indirection'
     readonly type: CType;
 
     constructor(readonly node: ParseNode, readonly body: CExpression) {
-        this.type = checks.asPointer(node, body.type).type;
+        this.type = checks.asPointer(node, body.type).type.pointerGeneration;
     }
 
     *identifiers(): IterableIterator<CIdentifier> {
@@ -263,8 +246,10 @@ export class CLogicalNot {
 
 export class CCast {
     readonly lvalue = false;
+    readonly type: CType;
 
-    constructor(readonly node: ParseNode, readonly type: CType, readonly body: CExpression) {
+    constructor(readonly node: ParseNode, type: CType, readonly body: CExpression) {
+        this.type = type.pointerGeneration;
     }
 
     *identifiers(): IterableIterator<CIdentifier> {
@@ -472,18 +457,16 @@ export class CAssignment {
     constructor(readonly node: ParseNode, readonly lhs: CExpression, readonly rhs: CExpression | CInitializer,
                 readonly assignmentType: pt.AssignmentType, readonly initialAssignment: boolean = false) {
         // check lvalue
+        const lhsType = lhs.type instanceof CPointer ? (lhs.type.original ?? lhs.type) : lhs.type; // no pointer gen
         checks.checkLvalue(lhs, true);
-        if ((lhs.type instanceof CArray && !initialAssignment) || lhs.type instanceof CFuncType || lhs.type.incomplete) {
+        if ((lhsType instanceof CArray && !initialAssignment) || lhsType instanceof CFuncType || lhs.type.incomplete) {
             throw new checks.ExpressionTypeError(lhs.node, "assignable type");
-        } else if (getQualifier(lhs.type) === "const" && !initialAssignment) {
+        } else if (getQualifier(lhsType) === "const" && !initialAssignment) {
             throw new checks.ExpressionTypeError(lhs.node, "non-const location");
-        } else if ((lhs.type instanceof CStruct || lhs.type instanceof CUnion) && lhs.type.hasConstMember() && !initialAssignment) {
+        } else if ((lhsType instanceof CStruct || lhsType instanceof CUnion) && lhsType.hasConstMember() && !initialAssignment) {
             throw new checks.ExpressionTypeError(lhs.node, "structure without a const member");
         }
-        this.type = lhs.type;
-
-        // fix string constants being wrapped into pointers
-        if (lhs.type instanceof CArray && rhs instanceof CArrayPointer) this.rhs = rhs = rhs.arrayIdentifier;
+        this.type = lhsType.pointerGeneration;
 
         // check assignment types are valid
         if (assignmentType) {
@@ -507,9 +490,9 @@ export class CAssignment {
             case "bitwiseXor": rhsType = new CBitwiseAndOr(node, lhs, rhs, "xor").type; break;
             default: throw new checks.ExpressionTypeError(node, "valid assignment type");
             }
-            CAssignment._checkAssignmentTypeValid(node, lhs.type, rhsType);
+            CAssignment._checkAssignmentTypeValid(node, lhsType, rhsType);
         } else {
-            CAssignment.checkAssignmentValid(node, lhs.type, rhs);
+            CAssignment.checkAssignmentValid(node, lhsType, rhs);
         }
     }
 
@@ -540,6 +523,15 @@ export class CAssignment {
         if (varType instanceof CPointer && valueType instanceof CFuncType) {
             // implicit function pointer conversion
             if (varType.type.equals(valueType)) return;
+        }
+        if (valueType instanceof CPointer && valueType.original) {
+            // pointer generation
+            if (varType.equals(valueType.original)) return;
+
+            if (varType instanceof CArray && valueType.original instanceof CArray && varType.type.equals(valueType.type)) {
+                // allow assigning smaller arrays to larger ones
+                if ((valueType.original.length ?? 0) < (varType.length ?? 0)) return;
+            }
         }
 
         throw new checks.ExpressionTypeError(node, varType.typeName, valueType.typeName);

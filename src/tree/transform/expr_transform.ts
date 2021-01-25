@@ -1,9 +1,8 @@
 import {ParseNode, ParseTreeValidationError, pt} from "../../parsing";
-import {CFuncDefinition, CFuncDeclaration} from "../declarations";
 import {
     CExpression, CConstant, CIdentifier, CFunctionCall, CMemberAccess, CDereference, CConditional,
     CAssignment, CStringLiteral, CIncrDecr, CAddressOf, CUnaryPlusMinus, CBitwiseNot, CLogicalNot, CSizeof, CAddSub,
-    CCast, CComma, CMulDiv, CMod, CShift, CRelational, CEquality, CBitwiseAndOr, CLogicalAndOr, CArrayPointer, CValue
+    CCast, CComma, CMulDiv, CMod, CShift, CRelational, CEquality, CBitwiseAndOr, CLogicalAndOr, CValue
 } from "../expressions";
 import {Scope} from "../scope";
 import {CArithmetic, CArray} from "../types";
@@ -22,10 +21,6 @@ export function ptExpression(e: pt.Expression, scope: Scope): CExpression {
     } else if (e instanceof pt.Identifier) {
         const id = new CIdentifier(e, scope.lookupIdentifier(e.name, e));
         if (scope.func) scope.func.dependencies.set(id.value, true);
-
-        if (id.type instanceof CArray) {
-            return new CArrayPointer(e, id);
-        }
         return id;
 
     } else if (e instanceof pt.StringLiteral) {
@@ -41,7 +36,7 @@ export function ptExpression(e: pt.Expression, scope: Scope): CExpression {
             }
         }
         arr.push(0n); // null terminator
-        return new CArrayPointer(e, new CStringLiteral(e, arr));
+        return new CStringLiteral(e, arr);
 
     } else if (e instanceof pt.UnaryExpression) {
         return ptUnary(e, scope);
@@ -51,9 +46,7 @@ export function ptExpression(e: pt.Expression, scope: Scope): CExpression {
 
     } else if (e instanceof pt.SizeofExpression) {
         if (e.body instanceof pt.Expression) { // sizeof [expression]
-            let bodyExpr = ptExpression(e.body, scope);
-            if (bodyExpr instanceof CArrayPointer) bodyExpr = bodyExpr.arrayIdentifier;
-            return new CSizeof(e, bodyExpr.type);
+            return new CSizeof(e, ptExpression(e.body, scope).type);
         } else { // sizeof [type]
             return new CSizeof(e, getType(e.body, scope));
         }

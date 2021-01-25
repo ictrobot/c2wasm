@@ -1,6 +1,6 @@
 import {ParseTreeValidationError, pt} from "../../parsing";
 import {CFuncDefinition, CArgument, CFuncDeclaration, CVarDefinition, CVarDeclaration} from "../declarations";
-import {CAssignment, CIdentifier, CExpression, CInitializer, CStringLiteral, CConstant, CArrayPointer} from "../expressions";
+import {CAssignment, CIdentifier, CExpression, CInitializer, CStringLiteral, CConstant} from "../expressions";
 import {INTERNAL_SCOPE} from "../internal_scope";
 import {Scope} from "../scope";
 import {CStatement, CCompoundStatement, CExpressionStatement, CNop, CIf, CForLoop, CWhileLoop, CDoLoop, CSwitch, CBreak, CContinue, CReturn, CGoto, CLabelledStatement} from "../statements";
@@ -42,12 +42,10 @@ function ptDeclaration(declaration: pt.Declaration, scope: Scope, inFunction: bo
         }
 
         const type = getDeclaratorType(declType, entry, scope);
-        if (!(type instanceof CPointer) && initialValue instanceof CArrayPointer && initialValue.arrayIdentifier instanceof CStringLiteral) {
-            initialValue = initialValue.arrayIdentifier;
-        }
-        if (initialValue?.type instanceof CArray && type instanceof CArray && type.incomplete) {
+        const initialType = initialValue?.type instanceof CPointer ? initialValue.type.original ?? initialValue.type : initialValue?.type;
+        if (initialType instanceof CArray && type instanceof CArray && type.incomplete) {
             // initialize array length from initializer if incomplete
-            type.length = initialValue.type.length;
+            type.length = initialType.length;
         }
 
         if (type.incomplete) {
