@@ -31,7 +31,7 @@ import int __get_fhandle();
 
 // File support
 typedef struct __stdio_file {
-    int handle, unget;
+    int handle, unget, len;
     _Bool error, eof;
 } FILE;
 typedef long fpos_t;
@@ -50,6 +50,9 @@ void setbuf(FILE *stream, char *buf);
 // printf functions
 int fprintf(FILE *stream, const char *format, ...);
 // scanf functions
+int vfscanf(FILE *stream, const char *fmt, va_list ap);
+int fscanf(FILE *stream, const char *fmt, ...);
+int scanf(const char *fmt, ...);
 
 int fgetc(FILE *stream);
 char *fgets(char *s, int n, FILE *stream);

@@ -61,9 +61,11 @@ export class Definition {
             const char = out.remainingLine[0];
             let consumed = 1;
 
-            if (inQuote && char === `\\` && out.remainingLine[0] === `"`) {
+            if (inQuote && char === `\\` && out.remainingLine[1] === `"`) {
                 // escaped quote
                 consumed = 2;
+            } else if (!inQuote && char === `'`) {
+                consumed += Math.max(out.remainingLine.indexOf(`'`, 1), 0);
             } else if (char === `"`) {
                 inQuote = !inQuote;
             } else if (char === `(` && !inQuote) {

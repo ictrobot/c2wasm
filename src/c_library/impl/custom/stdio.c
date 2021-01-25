@@ -57,10 +57,11 @@ FILE *freopen(const char *filename, const char *mode, FILE* stream) {
     if (stream == NULL) {
         stream = malloc(sizeof(struct __stdio_file));
     }
-    
+
     store_fname(filename);
     stream->handle = __get_fhandle();
     stream->unget = -1;
+    stream->len = 0;
     stream->error = false;
     stream->eof = false;
 
@@ -121,6 +122,7 @@ int fgetc(FILE *stream) {
         c = __get_char(stream->handle);
         stream->eof = c == EOF;
         stream->error = c < 0 && c != EOF;
+        stream->len++;
     }
     return c;
 }
@@ -165,7 +167,7 @@ char *gets(char *s) {
         } else if (c < 0) {
             break;
         } else {
-            *s = c; 
+            *s = c;
         }
         s++;
     }
@@ -274,6 +276,30 @@ int ferror(FILE *stream) {
 void perror(const char *s) {
     fputs(s, stderr);
     fputs(": error\n", stderr);
+}
+
+
+
+int fscanf(FILE *stream, const char *fmt, ...) {
+	va_list va;
+	int result;
+
+	va_start(va, fmt);
+	result = vfscanf(stream, fmt, va);
+	va_end(va);
+
+	return result;
+}
+
+int scanf(const char *fmt, ...) {
+	va_list va;
+	int result;
+
+	va_start(va, fmt);
+	result = vfscanf(stdin, fmt, va);
+	va_end(va);
+
+	return result;
 }
 
 #endif
