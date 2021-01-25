@@ -36,23 +36,25 @@ export class Preprocessor extends PreprocessorBase {
 
         let output = "";
         while (lines.length > 0) {
-            const line = lines.shift() as string;
+            let line = lines.shift() as string;
 
             if (line.startsWith("#")) {
+                line = line.substring(1).trimStart();
+
                 let match: ReturnType<typeof Preprocessor.prototype["consume"]>;
-                if ((match = this.consume(line, "#define")).success) {
+                if ((match = this.consume(line, "define")).success) {
                     this._define(match.remainingLine);
-                } else if ((match = this.consume(line, "#undef")).success) {
+                } else if ((match = this.consume(line, "undef")).success) {
                     this._undef(match.remainingLine);
-                } else if ((match = this.consume(line, "#include")).success) {
+                } else if ((match = this.consume(line, "include")).success) {
                     output += this._include(match.remainingLine) + "\n";
-                } else if ((match = this.consume(line, "#ifdef")).success) {
+                } else if ((match = this.consume(line, "ifdef")).success) {
                     this._ifdef(match.remainingLine, true, lines);
-                } else if ((match = this.consume(line, "#ifndef")).success) {
+                } else if ((match = this.consume(line, "ifndef")).success) {
                     this._ifdef(match.remainingLine, false, lines);
-                } else if ((match = this.consume(line, "#if")).success) {
+                } else if ((match = this.consume(line, "if")).success) {
                     output += this._if(match.remainingLine, lines);
-                } else if ((match = this.consume(line, "#pragma")).success) {
+                } else if ((match = this.consume(line, "pragma")).success) {
                     const l = this.mustConsume(match.remainingLine, PreProRegex.whitespace, "whitespace").remainingLine;
                     if (l.trim() === "once") {
                         // only include source file once
@@ -61,8 +63,10 @@ export class Preprocessor extends PreprocessorBase {
                         this.definitions.set(defName, new Definition(this, defName, [], []));
                     }
                     // unknown pragmas must be ignored
+                } else if ((match = this.consume(line, "error")).success) {
+                    throw this.error("#" + line);
                 } else if (line.trim().length > 1) {
-                    throw this.error("Unknown preprocessor directive");
+                    throw this.error(`Unknown preprocessor directive "#${line}"`);
                 }
 
             } else {
