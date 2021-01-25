@@ -1,5 +1,5 @@
 import {Network, Node, Edge, Options} from "vis-network";
-import {compile} from "../src/compile";
+import {compileSnippet} from "../src/compile";
 import {controlFlow, Flow} from "../src/optimization/flow/control_flow";
 import {ModuleBuilder, WFunction} from "../src/wasm";
 
@@ -79,9 +79,6 @@ function draw(fn: WFunction) {
         }
     }
 
-    const container = document.getElementById("network");
-    if (!container) throw new Error("div not found");
-
     const data = {
         nodes: nodes,
         edges: edges,
@@ -109,6 +106,7 @@ html, body {
 <div style="display: flex; flex-direction: column; width: 100%; height: 100%">
     <h1 style="margin: 4px;">c2wasm cfg</h1>
     <textarea id="textInput" rows="20" style="width: 100%; resize: vertical">${testInput}</textarea>
+    <pre id="errors"></pre>
     <div style="flex: 1; position: relative">
         <div style="position:absolute; width: 100%; height: 100%;" id="network"></div>
     </div>
@@ -116,15 +114,18 @@ html, body {
 let module: ModuleBuilder | undefined;
 
 const textInput = window.document.getElementById("textInput") as HTMLTextAreaElement;
+const errors = window.document.getElementById("errors") as HTMLPreElement;
+const container = document.getElementById("network") as HTMLDivElement;
 
 const recompile = () => {
-    const files = new Map<string, string>();
-    files.set("main.c", textInput.value);
-
     try {
-        module = compile(files);
+        module = compileSnippet(textInput.value);
+        errors.innerText = "";
+        container.style.visibility = "visible";
     } catch (e) {
         module = undefined;
+        errors.innerText = e.stack;
+        container.style.visibility = "hidden";
         throw e;
     }
 

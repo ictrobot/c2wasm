@@ -1,5 +1,6 @@
 import {compress, decompress} from "lzutf8";
 import wabt from "wabt";
+import {Files} from "../src/c_library/runtime/files";
 import {compile, compileSnippet} from "../src/compile";
 import {setFlags, getFlags} from "../src/optimization/flags";
 import {ModuleBuilder} from "../src/wasm";
@@ -64,6 +65,10 @@ wabt().then(wabt => {
         </div>
     `);
         let module: ModuleBuilder | undefined;
+        const files = new Files(
+            (s) => output.textContent += s,
+            () => (prompt("Input?") ?? "") + "\n",
+        );
 
         const textInput = window.document.getElementById("textInput") as HTMLTextAreaElement;
         const output = window.document.getElementById("output") as HTMLPreElement;
@@ -74,20 +79,7 @@ wabt().then(wabt => {
             if (module === undefined) return;
             output.textContent = "Output:\n\n";
 
-            const imports: {c2wasm: {[s: string]: typeof console.log}} = {c2wasm: {}};
-            module.functionImports.filter(x => x.type[1].length === 0).forEach(f => {
-                if (f.name === "__put_char") {
-                    imports.c2wasm[f.name] = (char: number) => {
-                        output.textContent += String.fromCharCode(char);
-                    };
-                } else {
-                    imports.c2wasm[f.name] = (...args: any[]) => {
-                        console.log(...args);
-                        output.textContent += args.join(" ") + "\n";
-                    };
-                }
-            });
-
+            const imports = {c2wasm: {...files.getImports()}};
             try {
                 const {main, __mem} = await module.execute(imports) as { main: () => any, __mem?: WebAssembly.Memory };
                 (window as any).wMem = __mem;
@@ -101,11 +93,8 @@ wabt().then(wabt => {
 
         // compiling Wasm
         const recompile = () => {
-            const files = new Map<string, string>();
-            files.set("main.c", textInput.value);
-
             try {
-                module = compile(files);
+                module = compile(textInput.value, {FILES: "1"});
             } catch (e) {
                 output.textContent = e.stack;
                 module = undefined;

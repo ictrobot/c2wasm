@@ -6,6 +6,7 @@ Other demos:
 - [preprocessor](https://ictrobot.github.io/c2wasm/preprocessor.html)
 - [parse tree](https://ictrobot.github.io/c2wasm/parsetree.html)
 - [intermediate representation](https://ictrobot.github.io/c2wasm/ctree.html)
+- [control flow graph](https://ictrobot.github.io/c2wasm/cfg.html)
 
 ## Features
 Compiles most of c89 excluding nested typedefs and with reduced standard library and goto support.
