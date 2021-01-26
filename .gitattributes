@@ -1,1 +1,2 @@
 src/parsing/gen/* linguist-generated=true
+tests/benchmark/*/**/* linguist-vendored=true
