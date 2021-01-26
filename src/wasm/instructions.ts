@@ -28,12 +28,12 @@ export const Instructions = {
         reads: [], writes: ["jump"]
     })),
     call: idxArg<funcidx, []>("call", [0x10], [], ({builder, value}) => {
-        const func = builder.fn.parent._functionLookup(value);
-        return {parameters: func.type[0], result: func.type[1][0] ?? null, reads: [], writes: ["jump"]};
+        const func = builder.fn.parent._functionLookup(value); // function that we are calling may write to memory
+        return {parameters: func.type[0], result: func.type[1][0] ?? null, reads: [], writes: ["jump", "memory"]};
     }),
     call_indirect: idxArg<typeidx, []>("call_indirect", [0x11], [0x00], ({builder, value}) => {
         const type = builder.fn.parent._typeLookup(value);
-        return {parameters: [...type[0], i32Type], result: type[1][0] ?? null, reads: [], writes: ["jump"]};
+        return {parameters: [...type[0], i32Type], result: type[1][0] ?? null, reads: [], writes: ["jump", "memory"]};
     }),
 
 

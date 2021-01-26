@@ -371,6 +371,12 @@ export function pre(expr: WExpression): void {
             } else if (i.instr.name.startsWith("br")) {
                 // at a branch
                 ifs.splice(i, 0, result.insertInstructions);
+            } else if (j.expr.parent === i.instr && j.instrIndex === 0) {
+                // j is first instruction inside i
+                ifs.splice(j, 0, result.insertInstructions);
+            } else if (i.expr.depth > j.expr.depth) {
+                // i nested deeper inside expr containing j
+                ifs.splice(i, 0, result.insertInstructions, i.instr.name.startsWith("br") ? 0 : 1);
             } else {
                 throw new Error("Unknown PRE insertion");
             }

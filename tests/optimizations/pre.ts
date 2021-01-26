@@ -1,3 +1,5 @@
+import test from "ava";
+import {compile} from "../../src";
 import {InstrInstance} from "../../src/wasm/instr_helpers";
 import {optimizationTest, countInstructions} from "./index";
 
@@ -24,3 +26,35 @@ int test(int a, int b) {
   } while(sum > 100);
   return sum;
 }`);
+
+test("pre regression #1", async (t) => {
+    let output = "";
+    const {main} = await compile(`
+#include <stdio.h>
+
+int arr[100];
+
+void doStuff(int i) {
+  printf("Element=%d i=%d\\n", arr[43], i);
+  arr[43] = 0xBAD;
+}
+
+void main() {
+  doStuff(arr[43]);
+  doStuff(arr[43]);
+}
+`).execute({
+        c2wasm: {__put_char: (x: number) => output += String.fromCharCode(x)}
+    }) as {main: () => void};
+    main();
+
+    // BAD output - caused by function calls not being marked as writing to memory and PRE thus marking them as transparent
+    // Element=0 i=0
+    // Element=2989 i=0
+
+    // GOOD output
+    // Element=0 i=0
+    // Element=2989 i=2989
+
+    t.is(output, "Element=0 i=0\nElement=2989 i=2989\n");
+});

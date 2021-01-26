@@ -311,7 +311,7 @@ export class WExpression {
     private _stack: ValueType[] = [];
     private _instructions: InstrInstance[] = [];
 
-    constructor(private readonly parent: StructureInstance | null, readonly depth: number, readonly builder: WFunctionBuilder) {
+    constructor(readonly parent: StructureInstance | null, readonly depth: number, readonly builder: WFunctionBuilder) {
     }
 
     push(...items: (PartialInstr | InstrInstance)[]): void {
