@@ -7,8 +7,7 @@ const LIBJPEG = ["jcapimin.c", "jcapistd.c", "jctrans.c", "jcparam.c", "jdatadst
 const CDJPEG = [...LIBJPEG, "rdppm.c", "rdgif.c", "rdtarga.c", "rdrle.c", "rdbmp.c", "rdswitch.c", "wrppm.c", "wrgif.c", "wrtarga.c", "wrrle.c", "wrbmp.c", "rdcolmap.c", "cdjpeg.c"];
 //const JPEGTRAN = [...LIBJPEG, "jpegtran.c", "rdswitch.c", "cdjpeg.c", "transupp.c"];
 
-// TODO fix PRE
-setFlags({partial_redundancy_elimination: false, inlining: true});
+setFlags({inlining: true});
 
 (async () => {
     function jpegCompile(name: string, sources: string[]): Promise<WebAssembly.Module> {

@@ -57,7 +57,7 @@ optimizers.push({
     enabled: (flags) => flags.unused_locals,
     run: (expr) => {
         const usedLocals = new Set<WLocal>();
-        for (const resource of expr.writes) {
+        for (const resource of [...expr.writes, ...expr.reads]) {
             if (resource instanceof WLocal && !resource.isArgument) usedLocals.add(resource);
         }
         if (usedLocals.size === expr.builder.locals.length) return;
