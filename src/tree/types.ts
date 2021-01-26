@@ -128,10 +128,15 @@ export class CStruct {
     }
 
     equals(t: object): boolean {
-        /** "Structures, unions and enumerations with different tags are distinct,
-         * and a tagless union, structure, or enumeration specifies a unique type" */
         if (!(t instanceof CStruct)) return false;
-        if (this.name === undefined) return withoutQualifiers(this) === withoutQualifiers(t);
+        if (this.name === undefined && t.name === undefined) {
+            /** TODO breaks spec but works around anonymous structure being included in multiple files from a header file
+             *
+             * "Structures, unions and enumerations with different tags are distinct,
+             * and a tagless union, structure, or enumeration specifies a unique type" */
+            if (this.members.length !== t.members.length) return false;
+            return this.members.every((x, i) => t.members[i].name === x.name && t.members[i].type.equals(x.type));
+        }
         return t.name === this.name;
     }
 
@@ -185,7 +190,10 @@ export class CUnion {
 
     equals(t: object): boolean {
         if (!(t instanceof CUnion)) return false;
-        if (this.name === undefined) return withoutQualifiers(this) === withoutQualifiers(t);
+        if (this.name === undefined && t.name === undefined) {
+            if (this.members.length !== t.members.length) return false;
+            return this.members.every((x, i) => t.members[i].name === x.name && t.members[i].type.equals(x.type));
+        }
         return t.name === this.name;
     }
 

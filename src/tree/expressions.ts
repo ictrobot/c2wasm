@@ -518,7 +518,7 @@ export class CAssignment {
             // void pointers can be assigned to any pointer and any pointer can be assigned to a void pointer
             if (varType.type instanceof CVoid || valueType.type instanceof CVoid) return;
             // allow non-constant pointers to be assigned to constant pointers
-            if (varType.type.equals(valueType.type) && valueType.qualifier !== "const") return;
+            if (varType.type.equals(valueType.type)) return;
         }
         if (varType instanceof CPointer && valueType instanceof CFuncType) {
             // implicit function pointer conversion
