@@ -36,7 +36,7 @@ export class Linker {
     /** check complete or link with other linker */
     public link(other?: Linker): void {
         if (this._linked) throw new LinkingError("Already linked!");
-        let usedOtherLinker = false;
+        if (other && !other._linked) throw new LinkingError("Cannot link against not-linked Linker!");
 
         // link this with other
         for (const linkable of this._linkables.values()) {
@@ -44,18 +44,15 @@ export class Linker {
 
             if (other !== undefined) {
                 const linkable2 = other._linkables.get(linkable.id);
-                if (linkable2 !== undefined) {
-                    if (linkable.externalType !== linkable2.externalType) {
-                        throw new LinkingError(`Tried to link ${linkable.externalType} with ${linkable2.externalType}`, linkable.parseNode, linkable2.parseNode);
-                    } else if (!linkable.type.equals(linkable2.type)) {
+                if (linkable2 !== undefined && linkable2.definition) {
+                    if (linkable instanceof ExternalFunction && linkable2 instanceof ExternalFunction) {
+                        // we've found a definition in the other linker we can use!
+                        linkable.setDefinition(linkable2.definition, other);
+                    } else if (linkable instanceof ExternalVariable && linkable2 instanceof ExternalVariable) {
+                        // have to be separate branches to please TS
+                        linkable.setDefinition(linkable2.definition, other);
+                    } else {
                         throw new LinkingError("Tried to link incompatible types", linkable.parseNode, linkable2.parseNode);
-                    }
-
-                    // we've found a definition in the other linker we can use!
-                    usedOtherLinker = true;
-                    this._linkables.set(linkable.id, linkable2);
-                    for (const element of linkable.declarationArray) {
-                        linkable2.addDeclaration(element as any);
                     }
                     continue;
                 }
@@ -64,11 +61,11 @@ export class Linker {
             if (linkable.externalType === "variable") {
                 // each external variable declaration is also a tentative definition, so initialize to zero
                 const cvar = new CVarDefinition(linkable.parseNode, linkable.id, linkable.type, "static", "external");
-                linkable.setDefinition(cvar);
+                linkable.setDefinition(cvar, this);
                 continue;
             } else if (linkable.externalType === "function" && linkable.declarationArray[0].fnImport) {
                 // define the function import if didn't already exist in other linker
-                linkable.setDefinition(new CFuncImport(linkable.declarationArray[0]));
+                linkable.setDefinition(new CFuncImport(linkable.declarationArray[0]), this);
                 continue;
             }
 
@@ -81,7 +78,7 @@ export class Linker {
         for (const linkable of this._linkables.values()) {
             if (linkable.definition === undefined) {
                 throw new LinkingError("Invalid state - declaration has no definition in emit", linkable.parseNode);
-            } else if (linkable.linker === this) {
+            } else if (linkable.definitionLinker === this) {
                 seen.set(linkable.definition, true);
                 toEmit.unshift(linkable.definition);
             }
@@ -94,7 +91,7 @@ export class Linker {
             } else {
                 if (dependency.declType === "variable") {
                     if (dependency.storage === "static") this._emitVariables.push(dependency);
-                } else if (dependency.linkage === "external" && this._linkables.get(dependency.name)?.linker === this) {
+                } else if (dependency.linkage === "external" && this._linkables.get(dependency.name)?.definitionLinker === this) {
                     this._emitExportedFunctions.push(dependency);
                 } else {
                     this._emitFunctions.push(dependency);
@@ -151,7 +148,7 @@ export class Linker {
 
             } else if (decl instanceof CFuncDefinition) {
                 if (decl.linkage === "external") {
-                    this.externalFn(decl).setDefinition(decl);
+                    this.externalFn(decl).setDefinition(decl, this);
                 }
                 this.process_fn_body(decl.body);
 
@@ -168,7 +165,7 @@ export class Linker {
 
             } else if (decl instanceof CVarDefinition) {
                 if (decl.linkage === "external") {
-                    this.externalVar(decl).setDefinition(decl);
+                    this.externalVar(decl).setDefinition(decl, this);
                 }
                 // if (decl.storage === "static") this._emitVariables.push(decl);
 
@@ -197,7 +194,7 @@ export class Linker {
     private externalFn(node: CFuncDeclaration | CFuncDefinition): ExternalFunction {
         let result = this._linkables.get(node.name);
         if (result === undefined) {
-            this._linkables.set(node.name, result = new ExternalFunction(node.name, node.type, this));
+            this._linkables.set(node.name, result = new ExternalFunction(node.name, node.type));
         } else if (result instanceof ExternalVariable) {
             throw new LinkingError("Tried to link function with variable", node.node, result.parseNode);
         } else if (!result.type.equals(node.type)) {
@@ -211,7 +208,7 @@ export class Linker {
     private externalVar(node: CVarDeclaration | CVarDefinition): ExternalVariable {
         let result = this._linkables.get(node.name);
         if (result === undefined) {
-            this._linkables.set(node.name, result = new ExternalVariable(node.name, node.type, this));
+            this._linkables.set(node.name, result = new ExternalVariable(node.name, node.type));
         } else if (result instanceof ExternalFunction) {
             throw new LinkingError("Tried to link variable with function", node.node, result.parseNode);
         } else if (!result.type.equals(node.type)) {
@@ -221,11 +218,12 @@ export class Linker {
     }
 }
 
-class Linkable<Decl extends CVarDeclaration | CFuncDeclaration> {
+class Linkable<Decl extends CVarDeclaration | CFuncDeclaration, Def extends Decl["definition"]> {
     protected readonly declarations: Decl[] = [];
-    protected _definition?: Decl["definition"];
+    protected _definition?: Def;
+    protected _defLinker?: Linker;
 
-    constructor(readonly id: string, readonly type: Decl["type"], readonly linker: Linker) {
+    constructor(readonly id: string, readonly type: Decl["type"]) {
 
     }
 
@@ -234,11 +232,12 @@ class Linkable<Decl extends CVarDeclaration | CFuncDeclaration> {
         if (this._definition) d.definition = this._definition;
     }
 
-    setDefinition(d: Decl["definition"] & {}) {
+    setDefinition(d: NonNullable<Def>, defLinker: Linker) {
         if (this._definition !== undefined) {
             throw new LinkingError("Already defined!", d.node, this.parseNode);
         }
         this._definition = d;
+        this._defLinker = defLinker;
 
         this.declarations.forEach(x => {
             x.definition = d;
@@ -251,8 +250,13 @@ class Linkable<Decl extends CVarDeclaration | CFuncDeclaration> {
         throw new LinkingError("Linkable without parse node? This shouldn't happen!");
     }
 
-    get definition(): Decl["definition"] {
+    get definition(): Def | undefined {
         return this._definition;
+    }
+
+    get definitionLinker(): Linker {
+        if (!this._defLinker) throw new Error("Definition not set");
+        return this._defLinker;
     }
 
     get declarationArray(): ReadonlyArray<Decl> {
@@ -260,11 +264,11 @@ class Linkable<Decl extends CVarDeclaration | CFuncDeclaration> {
     }
 }
 
-class ExternalFunction extends Linkable<CFuncDeclaration> {
+class ExternalFunction extends Linkable<CFuncDeclaration, CFuncDefinition | CFuncImport> {
     readonly externalType = "function";
 }
 
-class ExternalVariable extends Linkable<CVarDeclaration> {
+class ExternalVariable extends Linkable<CVarDeclaration, CVarDefinition> {
     readonly externalType = "variable";
 }
 
