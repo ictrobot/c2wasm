@@ -109,6 +109,9 @@ function arithmeticConversion(inType: CArithmetic, outType: CArithmetic): WInstr
         return [];
 
     } else if (outType.type === "signed" && outType.bytes < 4) {
+        if (inType.type !== "float" && inType.bytes < outType.bytes) return []; // e.g. (un)signed char -> signed short
+        if (CArithmetic.BOOL.equals(inType)) return [];
+
         const conversion = [
             Instructions.i32.const(32 - (8 * outType.bytes)),
             Instructions.i32.shl(),
@@ -122,11 +125,11 @@ function arithmeticConversion(inType: CArithmetic, outType: CArithmetic): WInstr
         return conversion;
 
     } else if (outType.type === "unsigned" && outType.bytes < 4) {
+        if (CArithmetic.BOOL.equals(inType)) return [];
+
         const conversion = [
-            Instructions.i32.const(32 - (8 * outType.bytes)),
-            Instructions.i32.shl(),
-            Instructions.i32.const(32 - (8 * outType.bytes)),
-            Instructions.i32.shr_u(),
+            Instructions.i32.const((2 ** (8 * outType.bytes)) - 1),
+            Instructions.i32.and()
         ];
 
         if (CArithmetic.Fp64.equals(inType)) conversion.unshift(Instructions.i32.trunc_sat_f64_u());
