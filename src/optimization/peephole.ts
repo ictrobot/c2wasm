@@ -29,7 +29,7 @@ export function peephole(expr: WExpression, fn: PeepholeCallback, size: number, 
 }
 
 export function peepholeMulti(expr: WExpression, fns: [fn: PeepholeCallback, size: number][], depth = 0): void {
-    const maxSize = fns.map(x => x[1]).reduce((a, b) => Math.min(a, b), 1);
+    const maxSize = fns.map(x => x[1]).reduce((a, b) => Math.max(a, b), 1);
 
     // optimize inside structured instructions first in case this eliminates branches etc which enable
     // more optimizations to occur at this level
