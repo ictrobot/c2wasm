@@ -64,7 +64,9 @@ export function evalExpression(e: CExpression, extra?: ExtraFn): CValue | undefi
                 return {value: Number(lhs.value) * Number(rhs.value), type: e.type};
             }
             return normalizeType({value: BigInt(lhs.value) * BigInt(rhs.value), type: e.type});
-        } else {
+
+            // eslint-disable-next-line eqeqeq
+        } else if (rhs.value != 0) {
             if (e.type.type === "float") {
                 return {value: Number(lhs.value) / Number(rhs.value), type: e.type};
             }
@@ -73,7 +75,7 @@ export function evalExpression(e: CExpression, extra?: ExtraFn): CValue | undefi
 
     } else if (e instanceof CMod) {
         const lhs = evalInteger(e.lhs, extra), rhs = evalInteger(e.rhs, extra);
-        if (!lhs || !rhs) return fail(e);
+        if (!lhs || !rhs || rhs.value === 0n) return fail(e);
         return normalizeType({value: lhs.value % rhs.value, type: e.type});
 
     } else if (e instanceof CAddSub && e.type instanceof CArithmetic) {

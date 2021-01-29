@@ -80,6 +80,83 @@ peepholeOptimizers.push({
 });
 
 peepholeOptimizers.push({
+    name: "i32.const, i32.const, i32.[op]",
+    enabled: (flags) => flags.peephole_i32_constants_ops,
+    run: ([instr1, instr2, instr3]) => {
+        if (instr1.type !== "constant" || instr2.type !== "constant" || !instr3.name.startsWith("i32.")) return;
+        if (instr1.result !== i32Type || instr2.result !== i32Type) return;
+
+        const s1 = Number(instr1.immediate.value), s2 = Number(instr2.immediate.value);
+        const u1 = (BigInt(s1) + 2n ** 32n) % (2n ** 32n), u2 = (BigInt(s2) + 2n ** 32n) % (2n ** 32n);
+
+        switch (instr3.name) {
+        case "i32.eq":
+            return [Instructions.i32.const(s1 === s2 ? 1 : 0)];
+        case "i32.ne":
+            return [Instructions.i32.const(s1 !== s2 ? 1 : 0)];
+        case "i32.lt_s":
+            return [Instructions.i32.const(s1 < s2 ? 1 : 0)];
+        case "i32.lt_u":
+            return [Instructions.i32.const(u1 < u2 ? 1 : 0)];
+        case "i32.gt_s":
+            return [Instructions.i32.const(s1 > s2 ? 1 : 0)];
+        case "i32.gt_u":
+            return [Instructions.i32.const(u1 > u2 ? 1 : 0)];
+        case "i32.le_s":
+            return [Instructions.i32.const(s1 <= s2 ? 1 : 0)];
+        case "i32.le_u":
+            return [Instructions.i32.const(u1 <= u2 ? 1 : 0)];
+        case "i32.ge_s":
+            return [Instructions.i32.const(s1 >= s2 ? 1 : 0)];
+        case "i32.ge_u":
+            return [Instructions.i32.const(u1 >= u2 ? 1 : 0)];
+        case "i32.add":
+            return [Instructions.i32.const((s1 + s2) | 0)];
+        case "i32.sub":
+            return [Instructions.i32.const((s1 - s2) | 0)];
+        case "i32.mul":
+            return [Instructions.i32.const((u1 * u2) & (2n ** 32n - 1n))];
+        case "i32.div_s":
+            if (s2 === 0) return;
+            return [Instructions.i32.const((s1 / s2) | 0)];
+        case "i32.div_u":
+            if (s2 === 0) return;
+            return [Instructions.i32.const(u1 / u2)];
+        case "i32.rem_s":
+            if (s2 === 0) return;
+            return [Instructions.i32.const(s1 % s2)];
+        case "i32.rem_u":
+            if (s2 === 0) return;
+            return [Instructions.i32.const(u1 % u2)];
+        case "i32.and":
+            return [Instructions.i32.const(s1 & s2)];
+        case "i32.or":
+            return [Instructions.i32.const(s1 | s2)];
+        case "i32.xor":
+            return [Instructions.i32.const(s1 ^ s2)];
+        case "i32.shl":
+            return [Instructions.i32.const(s1 << s2)];
+        case "i32.shr_s":
+            return [Instructions.i32.const(s1 >> s2)];
+        case "i32.shr_u":
+            return [Instructions.i32.const(s1 >>> s2)];
+        }
+    },
+    peepholeSize: 3
+});
+
+peepholeOptimizers.push({
+    name: "i32.const, i32.eqz",
+    enabled: (flags) => flags.peephole_i32_constants_ops,
+    run: ([instr1, instr2]) => {
+        if (instr1.type !== "constant" || !instr2.name.endsWith(".eqz")) return;
+        // eslint-disable-next-line eqeqeq
+        return [Instructions.i32.const(instr1.immediate.value == 0 ? 1 : 0)];
+    },
+    peepholeSize: 2
+});
+
+peepholeOptimizers.push({
     name: "?.const, ?.const, ?.add/mul",
     enabled: (flags) => flags.peephole_constants_add_mul,
     run: ([instr1, instr2, instr3]) => {

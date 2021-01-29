@@ -4,6 +4,7 @@ const DEFAULT = {
     generation_switch_br_table: false,
 
     peephole_local_tee: true,
+    peephole_i32_constants_ops: true,
     peephole_constants_add_mul: true,
     peephole_add_0: true,
     peephole_combine_adds: true,
