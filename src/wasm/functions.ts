@@ -23,6 +23,7 @@ export class WImportedFunction {
 export class WFunction {
     private _builder?: WFunctionBuilder;
     readonly hints: {inline: boolean} = {inline: false};
+    readonly instrCounts: {name: string, count: number}[] = [];
 
     constructor(readonly parent: ModuleBuilder, readonly type: FunctionType, readonly exportName?: string) {
     }
@@ -38,6 +39,7 @@ export class WFunction {
     define(bodyFn: (b: WFunctionBuilder) => WInstruction[]): void {
         if (this._builder !== undefined) throw new Error(`Wasm function already defined`);
         this._builder = new WFunctionBuilder(this, bodyFn);
+        optimize(this);
     }
 
     toBytes(): byte[] {
@@ -86,7 +88,6 @@ export class WFunctionBuilder {
 
         this.expr = new WExpression(null, 0, this);
         this.expr.push(...bodyFn(this));
-        optimize(this.expr);
     }
 
     get locals(): ReadonlyArray<WLocal> {

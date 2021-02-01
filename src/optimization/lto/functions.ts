@@ -45,7 +45,7 @@ export function inlineFunctions(module: ModuleBuilder): void {
     }
 
     for (const fn of modifiedFns) { // clean up any modified functions
-        optimize(fn.body);
+        optimize(fn);
     }
     if (modifiedFns.size) removeUnusedFns(module);
 

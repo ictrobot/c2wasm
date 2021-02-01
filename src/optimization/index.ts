@@ -1,4 +1,4 @@
-import {WExpression, Instructions} from "../wasm";
+import {WExpression, Instructions, WFunction} from "../wasm";
 import {WLocal} from "../wasm/functions";
 import {deadCodeElimination} from "./dead_code";
 import {getFlags} from "./flags";
@@ -10,11 +10,27 @@ import {peepholeMulti, peepholeOptimizers} from "./peephole";
 
 const optimizers: Optimizer[] = [];
 
-export function optimize(expr: WExpression): void {
-    const flags = getFlags();
+export function optimize(fn: WFunction): void {
+    const flags = getFlags(), expr = fn.body;
+
+    fn.instrCounts.push({name: "before opt", count: countInstructions(expr)});
     for (const optimizer of optimizers) {
-        if (optimizer.enabled(flags)) optimizer.run(expr);
+        if (optimizer.enabled(flags)) {
+            optimizer.run(expr);
+            fn.instrCounts.push({name: optimizer.name, count: countInstructions(expr)});
+        }
     }
+}
+
+function countInstructions(expr: WExpression): number {
+    let num = expr.instructions.length;
+    for (const instr of expr.instructions) {
+        if (instr.type === "structured") {
+            num += countInstructions(instr.immediate.expression);
+            if (instr.immediate.expression2) num += countInstructions(instr.immediate.expression2);
+        }
+    }
+    return num;
 }
 
 function peepholeOptimizations(expr: WExpression) {
