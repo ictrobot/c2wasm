@@ -1,4 +1,4 @@
-import {Instructions, f32Type, f64Type, i32Type, WExpression} from "../wasm";
+import {Instructions, f32Type, f64Type, i32Type, WExpression, i64Type} from "../wasm";
 import {labelidx} from "../wasm/base_types";
 import {WLocal} from "../wasm/functions";
 import {InstrInstance, PartialInstr} from "../wasm/instr_helpers";
@@ -206,6 +206,37 @@ peepholeOptimizers.push({
         ];
     },
     peepholeSize: 4
+});
+
+peepholeOptimizers.push({
+    name: "..., i32.const, i32.add, *.load offset",
+    enabled: (flags) => flags.peephole_load_offset,
+    run: ([instr1, instr2, instr3]) => {
+        if (instr1.type !== "constant" || instr1.result !== i32Type) return;
+        if (instr2.name !== "i32.add") return;
+        if (instr3.type !== "memory" || !instr3.name.includes(".load")) return;
+
+        const offset = instr3.immediate.offset + BigInt(instr1.immediate.value);
+
+        if (instr3.result === i32Type) {
+            if (instr3.name === "i32.load") return [Instructions.i32.load(instr3.immediate.align, offset)];
+            if (instr3.name === "i32.load8_s") return [Instructions.i32.load8_s(instr3.immediate.align, offset)];
+            if (instr3.name === "i32.load16_s") return [Instructions.i32.load16_s(instr3.immediate.align, offset)];
+            if (instr3.name === "i32.load16_u") return [Instructions.i32.load16_u(instr3.immediate.align, offset)];
+        } else if (instr3.result === i64Type) {
+            if (instr3.name === "i64.load") return [Instructions.i64.load(instr3.immediate.align, offset)];
+            if (instr3.name === "i64.load8_s") return [Instructions.i64.load8_s(instr3.immediate.align, offset)];
+            if (instr3.name === "i64.load16_s") return [Instructions.i64.load16_s(instr3.immediate.align, offset)];
+            if (instr3.name === "i64.load16_u") return [Instructions.i64.load16_u(instr3.immediate.align, offset)];
+            if (instr3.name === "i64.load32_s") return [Instructions.i64.load32_s(instr3.immediate.align, offset)];
+            if (instr3.name === "i64.load32_u") return [Instructions.i64.load32_u(instr3.immediate.align, offset)];
+        } else if (instr3.result === f32Type) {
+            return [Instructions.f32.load(instr3.immediate.align, offset)];
+        } else if (instr3.result === f64Type) {
+            return [Instructions.f64.load(instr3.immediate.align, offset)];
+        }
+    },
+    peepholeSize: 3
 });
 
 peepholeOptimizers.push({

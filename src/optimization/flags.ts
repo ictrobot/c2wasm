@@ -8,6 +8,7 @@ const DEFAULT = {
     peephole_constants_add_mul: true,
     peephole_add_0: true,
     peephole_combine_adds: true,
+    peephole_load_offset: true,
     peephole_constant_if: true,
     peephole_unused_blocks: true,
 
