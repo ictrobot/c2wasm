@@ -60,10 +60,16 @@ peepholeOptimizers.push({
     name: "[local.set, local.get] => [local.tee]",
     enabled: (flags) => flags.peephole_local_tee,
     run: ([instr1, instr2]) => {
-        if (instr1.name !== "local.set" || instr2.name !== "local.get") return;
-        const resource = instr1.writes[0];
-        if (!(resource instanceof WLocal) || instr2.reads[0] !== resource) return;
-        return [Instructions.local.tee(resource)];
+        if (instr1.name === "local.set" && instr2.name === "local.get") {
+            const resource = instr1.writes[0];
+            if (!(resource instanceof WLocal) || instr2.reads[0] !== resource) return;
+            return [Instructions.local.tee(resource)];
+        } else if (instr1.name === "local.tee" && instr2.name === "drop") {
+            // convert back to a single local.set if the result is now discarded
+            const resource = instr1.writes[0];
+            if (!(resource instanceof WLocal)) return;
+            return [Instructions.local.set(resource)];
+        }
     },
     peepholeSize: 2
 });
@@ -217,6 +223,7 @@ peepholeOptimizers.push({
         if (instr3.type !== "memory" || !instr3.name.includes(".load")) return;
 
         const offset = instr3.immediate.offset + BigInt(instr1.immediate.value);
+        if (offset > 127) return; // only inline small offsets
 
         if (instr3.result === i32Type) {
             if (instr3.name === "i32.load") return [Instructions.i32.load(instr3.immediate.align, offset)];
