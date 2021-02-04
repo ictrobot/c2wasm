@@ -35,7 +35,7 @@ function arbitrary(ctx: WFnGenerator, e: CFunctionCall, result: ValueType | null
             parameters: parameterArgs.map(parm => realType(parm.type)),
             result,
             reads: [],
-            writes: ["arbitraryCode"],
+            writes: ["arbitraryCode", "memory"], // the arbitrary code may write to memory
 
             copy() {
                 return () => this;
