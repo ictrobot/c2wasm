@@ -51,21 +51,27 @@ optimizers.push({
 });
 
 optimizers.push({
+    name: "Dead code elimination",
+    enabled: (flags) => flags.dead_code_elimination,
+    run: deadCodeElimination
+});
+
+optimizers.push({
     name: "Copy propagation",
     enabled: (flags) => flags.copy_propagation,
     run: copyPropagation
 });
 
 optimizers.push({
-    name: "Basic dead code elimination",
-    enabled: (flags) => flags.dead_code_elimination,
-    run: deadCodeElimination
+    name: "Reallocate locals",
+    enabled: (flags) => flags.reallocate_locals,
+    run: realloc_locals // must be ran immediate after copy propagation
 });
 
 optimizers.push({
-    name: "Reallocate locals",
-    enabled: (flags) => flags.reallocate_locals,
-    run: realloc_locals
+    name: "Dead code elimination 2nd pass",
+    enabled: (flags) => flags.dead_code_elimination,
+    run: deadCodeElimination
 });
 
 optimizers.push({
