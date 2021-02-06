@@ -93,7 +93,7 @@ export const cjpeg = (new class extends BenchmarkBase {
     }
 
     async emccRun(optLevel: OptLevel, nodeFlags: string): Promise<string> {
-        return BenchmarkBase.cmdStdout(`TIMEFORMAT=%R; (time node ${nodeFlags} /tmp/c2wasm-cjpeg-emcc${optLevel} jpeg/benchmark.bmp /dev/null) 2>&1`);
+        return BenchmarkBase.cmdStdout(`node ${nodeFlags} /tmp/c2wasm-cjpeg-emcc${optLevel} jpeg/benchmark.bmp /dev/null`);
     }
 
     async nativeCompile(optLevel: OptLevel): Promise<void> {

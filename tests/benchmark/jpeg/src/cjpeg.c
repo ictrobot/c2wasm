@@ -26,6 +26,12 @@
 #include "cdjpeg.h"		/* Common decls for cjpeg/djpeg applications */
 #include "jversion.h"		/* for version message */
 
+// CHANGED - support timing on emscripten
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
+
 #ifdef USE_CCOMMAND		/* command-line reader for Macintosh */
 #ifdef __MWERKS__
 #include <SIOUX.h>              /* Metrowerks needs this */
@@ -471,6 +477,11 @@ main (int argc, char **argv)
   FILE * output_file;
   JDIMENSION num_scanlines;
 
+  // CHANGED - support timing on emscripten
+#ifdef __EMSCRIPTEN__
+  double startTime = EM_ASM_DOUBLE({return require("perf_hooks").performance.now();});
+#endif
+
   /* On Mac, fetch a command line. */
 #ifdef USE_CCOMMAND
   argc = ccommand(&argv);
@@ -598,6 +609,12 @@ main (int argc, char **argv)
 
 #ifdef PROGRESS_REPORT
   end_progress_monitor((j_common_ptr) &cinfo);
+#endif
+
+  // CHANGED - support timing on emscripten
+#ifdef __EMSCRIPTEN__
+  double endTime = EM_ASM_DOUBLE({ return require("perf_hooks").performance.now(); });
+  printf("%f", (endTime - startTime) / 1000);
 #endif
 
   /* All done. */
