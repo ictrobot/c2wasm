@@ -44,12 +44,20 @@ export const coremark = (new class extends BenchmarkBase {
         return output;
     }
 
+    async c2wasmSize(): Promise<number> {
+        return compile(files).toBytes().length;
+    }
+
     async emccCompile(optLevel: OptLevel): Promise<void> {
         await BenchmarkBase.cmdStdout(`emcc ${compilerCmd} ${optLevel} -o /tmp/c2wasm-coremark-emcc${optLevel}`);
     }
 
     async emccRun(optLevel: OptLevel, nodeFlags: string): Promise<string> {
         return BenchmarkBase.cmdStdout(`node ${nodeFlags} /tmp/c2wasm-coremark-emcc${optLevel}`);
+    }
+
+    async emccSize(optLevel: OptLevel): Promise<number> {
+        return Number(await BenchmarkBase.cmdStdout(`stat -c %s /tmp/c2wasm-coremark-emcc${optLevel}`));
     }
 
     async nativeCompile(optLevel: OptLevel): Promise<void> {

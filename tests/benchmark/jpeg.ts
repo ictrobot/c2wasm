@@ -88,12 +88,21 @@ export const cjpeg = (new class extends BenchmarkBase {
         return (ms / 1000).toFixed(5); // return seconds
     }
 
+    async c2wasmSize(): Promise<number> {
+        await jpegCompile("cjpeg");
+        return (await fs.promises.stat(`${__dirname}/cjpeg.wasm`)).size;
+    }
+
     async emccCompile(optLevel: OptLevel): Promise<void> {
         await BenchmarkBase.cmdStdout(`emcc -w ${cjpegCompilerFiles} -s EXIT_RUNTIME=1 -s NODERAWFS=1 ${optLevel} -o /tmp/c2wasm-cjpeg-emcc${optLevel}`);
     }
 
     async emccRun(optLevel: OptLevel, nodeFlags: string): Promise<string> {
         return BenchmarkBase.cmdStdout(`node ${nodeFlags} /tmp/c2wasm-cjpeg-emcc${optLevel} jpeg/benchmark.bmp /dev/null`);
+    }
+
+    async emccSize(optLevel: OptLevel): Promise<number> {
+        return Number(await BenchmarkBase.cmdStdout(`stat -c %s /tmp/c2wasm-cjpeg-emcc${optLevel}`));
     }
 
     async nativeCompile(optLevel: OptLevel): Promise<void> {

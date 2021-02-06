@@ -14,6 +14,8 @@ export abstract class BenchmarkBase {
 
     abstract c2wasmRun(): Promise<string>;
 
+    abstract c2wasmSize(): Promise<number>;
+
     c2wasmNodeFlagsRun(nodeFlags: string): Promise<string> {
         const cmd = `node ${nodeFlags} -r ts-node/register ${this.benchmarkFile} ${BenchmarkBase.flagString()}`;
 
@@ -29,6 +31,7 @@ export abstract class BenchmarkBase {
     // called once, before any run calls with the same OptLevel
     abstract emccCompile?(optimizationLevel: OptLevel): Promise<void>;
     abstract emccRun?(optimizationLevel: OptLevel, nodeFlags: string): Promise<string>;
+    abstract emccSize?(optimizationLevel: OptLevel): Promise<number>;
 
     abstract nativeCompile?(optimizationLevel: OptLevel): Promise<void>;
     abstract nativeRun?(optimizationLevel: OptLevel): Promise<string>;

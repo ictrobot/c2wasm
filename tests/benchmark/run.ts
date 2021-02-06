@@ -41,12 +41,17 @@ async function run(benchmark: BenchmarkBase, iterations = 10) {
 
 async function getRunners(benchmark: BenchmarkBase): Promise<[name: string, run: () => Promise<string>, scores: number[]][]> {
     const runners: [string, () => Promise<string>, number[]][] = [];
+    const sizes = new Map<string, number>();
 
     // c2wasm runners
     for (const [name, flags] of FLAG_CONFIGURATIONS.entries()) {
         runners.push([`LIFTOFF ${name}`, () => {
             setFlags(flags); return benchmark.c2wasmNodeFlagsRun("--liftoff --no-wasm-tier-up");
         }, []]);
+
+        // get size of module
+        setFlags(flags);
+        sizes.set(name, await benchmark.c2wasmSize());
     }
     runners.push(["TURBOFAN NONE", () => {
         setFlags("none"); return benchmark.c2wasmNodeFlagsRun("--no-liftoff");
@@ -58,12 +63,15 @@ async function getRunners(benchmark: BenchmarkBase): Promise<[name: string, run:
     const compilePromises: Promise<void>[] = [];
 
     // emcc runners
-    if (benchmark.emccRun && benchmark.emccCompile) {
-        const emcc = benchmark.emccRun.bind(benchmark);
-        for (const optFlag of ["-O0", "-O1", "-O3", "-Os"] as OptLevel[]) {
+    if (benchmark.emccRun && benchmark.emccCompile && benchmark.emccSize) {
+        const emcc = benchmark.emccRun.bind(benchmark), size = benchmark.emccSize.bind(benchmark);
+        for (const optFlag of ["-O0", "-O1", "-O2", "-O3", "-Os"] as OptLevel[]) {
             runners.push([`EMCC LIFTOFF ${optFlag}`, () => emcc(optFlag, "--liftoff --no-wasm-tier-up"), []]);
             runners.push([`EMCC TURBOFAN ${optFlag}`, () => emcc(optFlag, "--no-liftoff"), []]);
-            compilePromises.push(benchmark.emccCompile(optFlag));
+
+            compilePromises.push(benchmark.emccCompile(optFlag).then(async () => {
+                sizes.set(`EMCC ${optFlag}`, await size(optFlag));
+            }));
         }
     }
 
@@ -77,11 +85,19 @@ async function getRunners(benchmark: BenchmarkBase): Promise<[name: string, run:
     }
 
     await Promise.all(compilePromises);
+
+    // print WASM module sizes
+    console.log(`${benchmark.name.padEnd(32)} - Wasm module sizes (KiB)`);
+    for (const [name, size] of sizes) {
+        console.log(`${name.padEnd(32)} - ${(size / 1024).toFixed(2)}`);
+    }
+    console.log("\n");
+
     return runners;
 }
 
 if (require.main === module) {
     (async () => {
-        await run(coremark);
+        await run(cjpeg);
     })();
 }
