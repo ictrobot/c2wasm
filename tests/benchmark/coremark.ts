@@ -44,20 +44,20 @@ export const coremark = (new class extends BenchmarkBase {
         return output;
     }
 
-    async emccRun(optimizationLevel: OptLevel, nodeFlags: string): Promise<string> {
-        return BenchmarkBase.commandHelper(
-            (out) => `emcc ${compilerCmd} ${optimizationLevel} -o ${out}`,
-            (out) => `node ${nodeFlags} ${out}`,
-            "Failed to run emcc coremark"
-        );
+    async emccCompile(optLevel: OptLevel): Promise<void> {
+        await BenchmarkBase.cmdStdout(`emcc ${compilerCmd} ${optLevel} -o /tmp/c2wasm-coremark-emcc${optLevel}`);
     }
 
-    async nativeRun(optimizationLevel: OptLevel): Promise<string> {
-        return BenchmarkBase.commandHelper(
-            (out) => `gcc ${compilerCmd} ${optimizationLevel} -o ${out}`,
-            (out) => `${out}`,
-            "Failed to run native coremark"
-        );
+    async emccRun(optLevel: OptLevel, nodeFlags: string): Promise<string> {
+        return BenchmarkBase.cmdStdout(`node ${nodeFlags} /tmp/c2wasm-coremark-emcc${optLevel}`);
+    }
+
+    async nativeCompile(optLevel: OptLevel): Promise<void> {
+        await BenchmarkBase.cmdStdout(`gcc ${compilerCmd} ${optLevel} -o /tmp/c2wasm-coremark-native${optLevel}`);
+    }
+
+    async nativeRun(optLevel: OptLevel): Promise<string> {
+        return BenchmarkBase.cmdStdout(`/tmp/c2wasm-coremark-native${optLevel}`);
     }
 }("coremark", __filename));
 
@@ -65,8 +65,3 @@ if (require.main === module) {
     BenchmarkBase.setFlags(process.argv[2]);
     (async () => console.log(await coremark.c2wasmRun()))();
 }
-
-// console.log(await coremark.emccRun("-O0", "--no-liftoff"));
-// console.log(await coremark.emccRun("-O0", "--liftoff --no-wasm-tier-up"));
-// console.log(await coremark.emccRun("-O3", "--no-liftoff"));
-// console.log(await coremark.emccRun("-O3", "--liftoff --no-wasm-tier-up"));

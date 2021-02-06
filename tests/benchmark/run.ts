@@ -1,6 +1,7 @@
 import {setFlags} from "../../src";
 import {BenchmarkBase, FLAG_CONFIGURATIONS, OptLevel} from "./base";
 import {coremark} from "./coremark";
+import {cjpeg} from "./jpeg";
 
 function shuffleArray<T>(array: T[]) {
     for (let i = array.length - 1; i > 0; i--) {
@@ -10,7 +11,7 @@ function shuffleArray<T>(array: T[]) {
 }
 
 async function run(benchmark: BenchmarkBase, iterations = 10) {
-    const runners = getRunners(benchmark);
+    const runners = await getRunners(benchmark);
 
     for (let i = 0 ; i < iterations; i++) {
         const shuffled = runners.slice();
@@ -21,7 +22,7 @@ async function run(benchmark: BenchmarkBase, iterations = 10) {
         }
 
         console.log(`${benchmark.name.padEnd(32)} - ${i + 1} repeats:`);
-        console.log("=".repeat(80));
+        console.log("=".repeat(120));
         for (const [name, _, scores] of runners) {
             // const sorted = scores.slice().sort((a, b) => a - b);
 
@@ -32,13 +33,13 @@ async function run(benchmark: BenchmarkBase, iterations = 10) {
             // sample stdev
             const stdev = Math.sqrt(scores.map(x => (x - avg) ** 2).reduce((a, b) => a + b) / i);
 
-            console.log(`${name.padEnd(32)} - ${avg.toFixed(2).padEnd(10)} stdev=${stdev.toFixed(2).padEnd(10)} min=${min.toFixed(2).padEnd(10)} max=${max.toFixed(2).padEnd(10)}`);
+            console.log(`${name.padEnd(32)} - ${avg.toFixed(3).padEnd(10)} stdev=${stdev.toFixed(3).padEnd(10)} min=${min.toFixed(3).padEnd(10)} max=${max.toFixed(3).padEnd(10)}`);
         }
         console.log("\n");
     }
 }
 
-function getRunners(benchmark: BenchmarkBase): [name: string, run: () => Promise<string>, scores: number[]][] {
+async function getRunners(benchmark: BenchmarkBase): Promise<[name: string, run: () => Promise<string>, scores: number[]][]> {
     const runners: [string, () => Promise<string>, number[]][] = [];
 
     // c2wasm runners
@@ -54,21 +55,28 @@ function getRunners(benchmark: BenchmarkBase): [name: string, run: () => Promise
         setFlags("default"); return benchmark.c2wasmNodeFlagsRun("--no-liftoff");
     }, []]);
 
+    const compilePromises: Promise<void>[] = [];
+
     // emcc runners
-    if (benchmark.emccRun !== undefined) {
+    if (benchmark.emccRun && benchmark.emccCompile) {
         const emcc = benchmark.emccRun.bind(benchmark);
         for (const optFlag of ["-O0", "-O1", "-O3", "-Os"] as OptLevel[]) {
             runners.push([`EMCC LIFTOFF ${optFlag}`, () => emcc(optFlag, "--liftoff --no-wasm-tier-up"), []]);
             runners.push([`EMCC TURBOFAN ${optFlag}`, () => emcc(optFlag, "--no-liftoff"), []]);
+            compilePromises.push(benchmark.emccCompile(optFlag));
         }
     }
 
     // native runner
-    if (benchmark.nativeRun !== undefined) {
+    if (benchmark.nativeRun && benchmark.nativeCompile) {
         const native = benchmark.nativeRun.bind(benchmark);
-        runners.push(["NATIVE -O3", () => native("-O3"), []]);
+        for (const optFlag of ["-O1", "-O2", "-O3"] as OptLevel[]) {
+            runners.push(["NATIVE " + optFlag, () => native(optFlag), []]);
+            compilePromises.push(benchmark.nativeCompile(optFlag));
+        }
     }
 
+    await Promise.all(compilePromises);
     return runners;
 }
 

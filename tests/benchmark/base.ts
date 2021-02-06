@@ -26,8 +26,11 @@ export abstract class BenchmarkBase {
         }));
     }
 
+    // called once, before any run calls with the same OptLevel
+    abstract emccCompile?(optimizationLevel: OptLevel): Promise<void>;
     abstract emccRun?(optimizationLevel: OptLevel, nodeFlags: string): Promise<string>;
 
+    abstract nativeCompile?(optimizationLevel: OptLevel): Promise<void>;
     abstract nativeRun?(optimizationLevel: OptLevel): Promise<string>;
 
     static flagString(): string {
@@ -53,14 +56,8 @@ export abstract class BenchmarkBase {
         }
     }
 
-    static commandHelper(compileCommand: (outputLoc: string) => string,
-                         runCommand: (outputLoc: string) => string,
-                         errorMessage: string): Promise<string> {
-
-        const compile = compileCommand('"$OUTPUT_FILE"');
-        const run = runCommand('"$OUTPUT_FILE"');
-        let cmd = `/bin/bash -c 'OUTPUT_FILE=$(mktemp); ${compile}; ${run}; rm "$OUTPUT_FILE";'`;
-
+    static cmdStdout(command: string): Promise<string> {
+        let cmd = `/bin/bash -c '${command}'`;
         if (process.platform.startsWith("win")) { // try run through WSL
             cmd = `wsl -- ${cmd.replace(/(\$)/g, '$1')}`;
         }
@@ -68,7 +65,7 @@ export abstract class BenchmarkBase {
         return new Promise((resolve, reject) => exec(cmd, {cwd: __dirname}, (error, stdout, stderr) => {
             if (error || stderr) {
                 console.log(error || stderr);
-                reject(new Error(errorMessage));
+                reject(error || stderr);
             }
             resolve(stdout.trim());
         }));

@@ -24,9 +24,14 @@ const benchmarkDir = (() => {
 /* eslint-disable @typescript-eslint/no-var-requires */
 require('ts-node').register({});
 const coremark = require(path.join(benchmarkDir, "coremark")).coremark as BenchmarkBase;
+const jpegTests = require(path.join(benchmarkDir, "jpeg")).jpegTests as () => Promise<void>;
 
 test("coremark", async t => {
     const output = await coremark.c2wasmRun();
     t.log(output);
     t.truthy(coremark.getScore(output));
+});
+
+test("jpeg tests", async t => {
+    await t.notThrowsAsync(jpegTests);
 });
