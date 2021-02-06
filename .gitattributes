@@ -1,2 +1,5 @@
 src/parsing/gen/* linguist-generated=true
 tests/benchmark/*/**/* linguist-vendored=true
+
+# Fix jpeg test ppm files
+*.ppm binary
