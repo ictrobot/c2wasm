@@ -1,6 +1,6 @@
 {
   "name": "@ictrobot/c2wasm",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "C Compiler To WebAssembly",
   "main": "dist/c2wasm.js",
   "types": "src/index.d.ts",
