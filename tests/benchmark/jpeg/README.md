@@ -12,6 +12,6 @@ The included files are unmodified, apart from:
    rearrange code to enable it to work with c2wasm's limited goto support or add returns at the end of functions which
    it doesn't think will always return.
 
-3) `cjpeg.c` is modified in a few places to add timing support when running under emscripten.
+3) `cjpeg.c` is modified in a few places to add timing support.
 
 The original README containing the license is included in the src folder.

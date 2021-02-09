@@ -110,7 +110,7 @@ export const cjpeg = (new class extends BenchmarkBase {
     }
 
     async nativeRun(optLevel: OptLevel): Promise<string> {
-        return BenchmarkBase.cmdStdout(`TIMEFORMAT=%R; (time /tmp/c2wasm-cjpeg-native${optLevel} jpeg/benchmark.bmp /dev/null) 2>&1`);
+        return BenchmarkBase.cmdStdout(`/tmp/c2wasm-cjpeg-native${optLevel} jpeg/benchmark.bmp /dev/null`);
     }
 }("cjpeg", __filename));
 

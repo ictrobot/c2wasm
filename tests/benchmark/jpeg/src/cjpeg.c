@@ -29,6 +29,23 @@
 // CHANGED - support timing on emscripten
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
+#define TIMING
+
+static double ej_get_ms() {
+    return EM_ASM_DOUBLE({return require("perf_hooks").performance.now();});
+}
+
+#else if defined(__GNUC__)
+#include <sys/time.h>
+#include <sys/resource.h>
+#define TIMING
+
+static double ej_get_ms() {
+    struct timeval t;
+    struct timezone tzp;
+    gettimeofday(&t, &tzp);
+    return 1000 * (t.tv_sec + t.tv_usec*1e-6);
+}
 #endif
 
 
@@ -477,9 +494,9 @@ main (int argc, char **argv)
   FILE * output_file;
   JDIMENSION num_scanlines;
 
-  // CHANGED - support timing on emscripten
-#ifdef __EMSCRIPTEN__
-  double startTime = EM_ASM_DOUBLE({return require("perf_hooks").performance.now();});
+  // CHANGED - support timing
+#ifdef TIMING
+  double startTime = ej_get_ms();
 #endif
 
   /* On Mac, fetch a command line. */
@@ -611,9 +628,9 @@ main (int argc, char **argv)
   end_progress_monitor((j_common_ptr) &cinfo);
 #endif
 
-  // CHANGED - support timing on emscripten
-#ifdef __EMSCRIPTEN__
-  double endTime = EM_ASM_DOUBLE({ return require("perf_hooks").performance.now(); });
+  // CHANGED - support timing
+#ifdef TIMING
+  double endTime = ej_get_ms();
   printf("%f", (endTime - startTime) / 1000);
 #endif
 
