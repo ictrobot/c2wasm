@@ -2,7 +2,7 @@ import {byte, typeidx, funcidx, globalidx, tableidx} from "./base_types";
 import {encodeU32, encodeUtf8, encodeConstantInstr} from "./encoding";
 import {WFunctionBuilder, WFunction, WImportedFunction} from "./functions";
 import {WGlobal} from "./global";
-import {WExpression, WInstruction} from "./instructions";
+import {WInstruction} from "./instructions";
 import {encodeVec, ResultType, encodeFunctionType, FunctionType, MemoryType, encodeLimits, ValueType, i32Type} from "./wtypes";
 
 export class ModuleBuilder {
@@ -51,7 +51,18 @@ export class ModuleBuilder {
     }
 
     dataSegment(offset: number, contents: byte[] | number[]): void {
-        this._dataSegments.push([offset, contents as byte[]]);
+        // remove 0s from the start
+        let startIdx = 0;
+        while (startIdx < contents.length && contents[startIdx] === 0) startIdx++;
+        if (startIdx !== 0) {
+            contents = contents.slice(startIdx);
+            offset += startIdx;
+        }
+
+        // remove 0s from the end
+        while (contents.length && contents[contents.length - 1] === 0) contents.pop();
+
+        if (contents.length) this._dataSegments.push([offset, contents as byte[]]);
     }
 
     private byteList(): byte[] {
@@ -137,6 +148,24 @@ export class ModuleBuilder {
     private _encodeDataSegments(): byte[][] {
         if (this._dataSegments.length > 0 && this._memory === undefined) {
             throw new Error("Cannot use data segments with memory disabled");
+        }
+
+        // sort into offset order
+        this._dataSegments.sort((a,b) => a[0] - b[0]);
+
+        // merge segments
+        let lastEnd = -Infinity;
+        for (let i = 0; i < this._dataSegments.length; i++) {
+            const [offset, contents] = this._dataSegments[i];
+            if (lastEnd + 5 >= offset) { // between each segment min 5 byte overhead (0x00, 0x41, [offset], 0x0B, [size])
+                const previousContents = this._dataSegments[i - 1][1];
+                for (let i = lastEnd; i < offset; i++) previousContents.push(0 as byte);
+                previousContents.push(...contents);
+
+                this._dataSegments.splice(i, 1); // remove this segment now we have merged
+                i--;
+            }
+            lastEnd = offset + contents.length;
         }
 
         // convert each offset into `expression(i32.const offset)`
