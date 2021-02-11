@@ -4,6 +4,7 @@ import {deadCodeElimination} from "./dead_code";
 import {getFlags} from "./flags";
 import {realloc_locals, remapLocals} from "./flow/local_allocation";
 import {pre} from "./flow/pre";
+import {rangeSplitting} from "./flow/range_splitting";
 import {copyPropagation} from "./flow/reaching_defs";
 import {Optimizer} from "./optimizer";
 import {peepholeMulti, peepholeOptimizers} from "./peephole";
@@ -63,9 +64,15 @@ optimizers.push({
 });
 
 optimizers.push({
+    name: "Local live range splitting",
+    enabled: (flags) => flags.live_range_splitting,
+    run: rangeSplitting
+});
+
+optimizers.push({
     name: "Reallocate locals",
     enabled: (flags) => flags.reallocate_locals,
-    run: realloc_locals // must be ran immediate after copy propagation
+    run: realloc_locals // must be ran when there are no redundant variables, i.e. immediate after copy propagation
 });
 
 optimizers.push({
