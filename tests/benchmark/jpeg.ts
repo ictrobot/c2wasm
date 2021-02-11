@@ -94,11 +94,11 @@ export const cjpeg = (new class extends BenchmarkBase {
     }
 
     async emccCompile(optLevel: OptLevel): Promise<void> {
-        await BenchmarkBase.cmdStdout(`emcc -w ${cjpegCompilerFiles} -s EXIT_RUNTIME=1 -s NODERAWFS=1 ${optLevel} -o /tmp/c2wasm-cjpeg-emcc${optLevel}`);
+        await BenchmarkBase.cmdStdout(`emcc -w ${cjpegCompilerFiles} -s EXIT_RUNTIME=1 -s NODERAWFS=1 ${optLevel} -o /tmp/c2wasm-cjpeg-emcc${optLevel}; cp jpeg/benchmark.bmp /tmp/c2wasm-cjpeg-benchmark.bmp`);
     }
 
     async emccRun(optLevel: OptLevel, nodeFlags: string): Promise<string> {
-        return BenchmarkBase.cmdStdout(`node ${nodeFlags} /tmp/c2wasm-cjpeg-emcc${optLevel} jpeg/benchmark.bmp /dev/null`);
+        return BenchmarkBase.cmdStdout(`node ${nodeFlags} /tmp/c2wasm-cjpeg-emcc${optLevel} /tmp/c2wasm-cjpeg-benchmark.bmp /dev/null`);
     }
 
     async emccSize(optLevel: OptLevel): Promise<number> {
@@ -106,11 +106,11 @@ export const cjpeg = (new class extends BenchmarkBase {
     }
 
     async nativeCompile(optLevel: OptLevel): Promise<void> {
-        await BenchmarkBase.cmdStdout(`gcc -w ${cjpegCompilerFiles} ${optLevel} -o /tmp/c2wasm-cjpeg-native${optLevel}`);
+        await BenchmarkBase.cmdStdout(`gcc -w ${cjpegCompilerFiles} ${optLevel} -o /tmp/c2wasm-cjpeg-native${optLevel}; cp jpeg/benchmark.bmp /tmp/c2wasm-cjpeg-benchmark.bmp`);
     }
 
     async nativeRun(optLevel: OptLevel): Promise<string> {
-        return BenchmarkBase.cmdStdout(`/tmp/c2wasm-cjpeg-native${optLevel} jpeg/benchmark.bmp /dev/null`);
+        return BenchmarkBase.cmdStdout(`/tmp/c2wasm-cjpeg-native${optLevel} /tmp/c2wasm-cjpeg-benchmark.bmp /dev/null`);
     }
 }("cjpeg", __filename));
 
