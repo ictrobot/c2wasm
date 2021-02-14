@@ -2,7 +2,7 @@ import {WExpression, ValueType, Instructions} from "../../wasm";
 import {WLocal} from "../../wasm/functions";
 import {simplifiedControlFlow, Flow} from "./control_flow";
 
-export function rangeSplitting(expr: WExpression) {
+export function rangeSplitting(expr: WExpression): void {
     const cfg = simplifiedControlFlow(expr, x => x.name.startsWith("local."));
     const localsMap = new Map<Flow, LocalRange[]>();
     const definitionMap = new Map<Flow, LocalRange>();
@@ -18,9 +18,9 @@ export function rangeSplitting(expr: WExpression) {
             for (const [i, local] of (localsMap.get(prev) ?? []).entries()) {
                 if (!local) continue;
                 if (ranges[i] !== undefined) {
-                    ranges[i].merge(local);
+                    ranges[i] = ranges[i].merge(local);
                 } else {
-                    ranges[i] = local;
+                    ranges[i] = local.get();
                 }
             }
         }
@@ -42,7 +42,7 @@ export function rangeSplitting(expr: WExpression) {
     }
 
     const allLocals = [...new Set([...definitionMap.values()].map(x => x.get()))];
-    if (allLocals.length === expr.builder.locals.length) return;
+    if (allLocals.length <= expr.builder.locals.length) return;
 
     expr.builder.wipeLocals();
     for (const l of allLocals) l.newLocal = expr.builder.addLocal(l.type);
@@ -71,15 +71,17 @@ class LocalRange {
     constructor(readonly type: ValueType) {
     }
 
-    merge(other: LocalRange): void {
-        if (this === other) return;
+    merge(other: LocalRange): LocalRange {
+        if (this === other) return this.get();
 
         if (this.target) {
-            this.target.merge(other);
+            return this.target.merge(other);
         } else if (other.id < this.id) {
             other.merge(this);
+            return this.get();
         } else {
             this.target = other;
+            return other.get();
         }
     }
 

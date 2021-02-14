@@ -14,7 +14,7 @@ const DEFAULT = {
 
     partial_redundancy_elimination: true,
     copy_propagation: true,
-    live_range_splitting: false,
+    live_range_splitting: true,
     dead_code_elimination: true,
     reallocate_locals: true,
     unused_locals: true,
