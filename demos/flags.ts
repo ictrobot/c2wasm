@@ -1,3 +1,4 @@
+import {AsyncSeriesWaterfallHook} from "tapable";
 import wabt from "wabt";
 import {compile, compileSnippet} from "../src/compile";
 import {setFlags, getFlags, OptimizationFlags} from "../src/optimization/flags";
@@ -126,13 +127,17 @@ wabt().then(wabt => {
             // results
             const resultDiv = window.document.createElement("div");
             resultDiv.classList.add("results");
+            resultDiv.classList.add("single");
             this.containerDiv.appendChild(resultDiv);
 
-            function pRow(before: string, after?: string): HTMLSpanElement {
+            function pRow(before: string, after?: string, cssClass?: string): HTMLSpanElement {
                 const p = window.document.createElement("p");
+                if (cssClass) p.classList.add(cssClass);
                 p.appendChild(window.document.createTextNode(before));
+
                 const span = window.document.createElement("span");
                 p.appendChild(span);
+
                 if (after) p.appendChild(window.document.createTextNode(after));
                 resultDiv.appendChild(p);
                 return span;
@@ -141,9 +146,29 @@ wabt().then(wabt => {
             this.compileTimeSpan = pRow("Compilation: ", "ms");
             resultDiv.appendChild(window.document.createElement("hr"));
 
-            const avg = pRow("Run: ", "ms");
-            //const std = pRow("Std: ", "ms");
-            this.results = ([r]) => avg.innerText = r.toFixed(2);
+            const avgSpan = pRow("Average: ", "ms");
+            const stdSpan = pRow("Std: ", "ms", "multiple");
+            const minSpan = pRow("Min: ", "ms", "multiple");
+            const maxSpan = pRow("Max: ", "ms", "multiple");
+            const iterationsSpan = pRow("", " iterations", "multiple");
+
+            this.results = (results) => {
+                iterationsSpan.innerText = results.length.toString();
+                if (results.length > 1) {
+                    resultDiv.classList.remove("single");
+                } else {
+                    resultDiv.classList.add("single");
+                }
+
+                const avg = (results.reduce((a, b) => a + b) / results.length);
+                avgSpan.innerText = avg.toFixed(3);
+                // sample stdev
+                const stdev = Math.sqrt(results.map(x => (x - avg) ** 2).reduce((a, b) => a + b) / (results.length - 1));
+                stdSpan.innerText = stdev.toFixed(3);
+
+                minSpan.innerText = Math.min(...results).toFixed(3);
+                maxSpan.innerText = Math.max(...results).toFixed(3);
+            };
 
             this.updateFlags({});
         }
@@ -169,7 +194,8 @@ wabt().then(wabt => {
             } catch (e) {
                 this.outputPre.textContent = e.stack;
                 this.module = undefined;
-                throw e;
+                console.error(e);
+                return;
             }
             this.compileTimeSpan.innerText = (performance.now() - s).toFixed(2);
 
@@ -180,34 +206,59 @@ wabt().then(wabt => {
             }
         }
 
-        async run() {
+        private async runModule() {
             if (this.module === undefined) {
-                this.outputPre.textContent = "No main function";
-                return;
+                return {output: "No main function", returnValue: undefined, time: NaN};
             }
-            this.outputPre.textContent = "Output:\n\n";
 
-            const imports = {c2wasm: {__put_char: (x: number) => this.outputPre.textContent += String.fromCharCode(x)}};
+            let output = "";
+            const imports = {c2wasm: {__put_char: (x: number) => output += String.fromCharCode(x)}};
             try {
                 const {main} = await this.module.execute(imports) as { main: () => any };
 
-                const s = performance.now();
+                const start = performance.now();
                 const returnValue = main();
-                this.results([performance.now() - s]);
+                const time = performance.now() - start;
 
-                if (returnValue !== undefined) this.outputPre.textContent += "\nReturn value: " + returnValue;
+                return {output, returnValue, time};
             } catch (e) {
                 console.log(e);
-                this.outputPre.textContent += e.stack;
+                return {output: e.stack, returnValue: undefined, time: NaN};
             }
         }
+
+        async run() {
+            const x = await this.runModule();
+            this.outputPre.innerText = x.output;
+            if (x.returnValue !== undefined) this.outputPre.textContent += "\nReturn value: " + x.returnValue;
+            this.results([x.time]);
+        }
+
+        async benchmark(ms = 1000) {
+            await this.recompile();
+
+            const start = performance.now();
+            const results = [];
+            while (results.length < 5 || performance.now() - start < 1000) {
+                const {time, output} = await this.runModule();
+                if (isNaN(time)) {
+                    this.outputPre.innerText = output;
+                    return;
+                }
+                results.push(time);
+            }
+            results.shift();
+            this.results(results);
+        }
+
     }
 
     window.document.write(`
 <h1>c2wasm flags</h1>
 <div>
     <div style="position: absolute; right: 2px">
-        <button id="runButton">Run!</button>
+        <button id="benchButton">Benchmark</button>
+        <button id="runButton">Run</button>
     </div>
     <textarea id="textInput" rows="20" style="width: 100%; resize: vertical">${testInput}</textarea>
     <pre id="main"></pre>
@@ -242,8 +293,18 @@ wabt().then(wabt => {
     overflow: auto;
     margin: 0;
 }
+
+.flagSet .results.single .multiple {
+    display: none;
+}
 </style>
     `);
+    // benchmarking
+    const benchButton = window.document.getElementById("benchButton") as HTMLButtonElement;
+    benchButton.addEventListener("click", async () => {
+        for (const set of sets) await set.benchmark();
+    });
+
     // running Wasm
     const runButton = window.document.getElementById("runButton") as HTMLButtonElement;
     runButton.addEventListener("click", async () => {
