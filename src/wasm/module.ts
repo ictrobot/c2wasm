@@ -54,10 +54,9 @@ export class ModuleBuilder {
         // remove 0s from the start
         let startIdx = 0;
         while (startIdx < contents.length && contents[startIdx] === 0) startIdx++;
-        if (startIdx !== 0) {
-            contents = contents.slice(startIdx);
-            offset += startIdx;
-        }
+        // always slice to ensure we take a copy
+        contents = contents.slice(startIdx);
+        offset += startIdx;
 
         // remove 0s from the end
         while (contents.length && contents[contents.length - 1] === 0) contents.pop();
