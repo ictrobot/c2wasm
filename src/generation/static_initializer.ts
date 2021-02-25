@@ -46,8 +46,8 @@ export function staticInitializer(ctx: WGenerator, init: CExpression | CInitiali
                 // allocate a new string literal and return pointer
                 const addr = ctx.nextStaticAddr; // chars 1 byte aligned
                 const stringBytes = stringLiteral(e);
-                ctx.module.dataSegment(addr, stringBytes);
                 ctx.nextStaticAddr += stringBytes.length;
+                ctx.module.dataSegment(addr, stringBytes);
                 return normalizeValueType({value: addr, type: e.type});
 
             } else if (e instanceof CAddSub && e.type instanceof CPointer) { // pointer arithmetic
@@ -99,9 +99,9 @@ function constant(c: CValue, node?: ParseNode): byte[] {
 function stringLiteralPtr(ctx: WGenerator, init: CStringLiteral): byte[] {
     const addr = ctx.nextStaticAddr; // char is any byte aligned
     const stringBytes = stringLiteral(init);
+    ctx.nextStaticAddr += stringBytes.length;
     ctx.module.dataSegment(addr, stringBytes);
 
-    ctx.nextStaticAddr += stringBytes.length;
     return constant(new CConstant(init.node, CSizeT, BigInt(addr)));
 }
 
