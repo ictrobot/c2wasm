@@ -1,5 +1,5 @@
 import test from "ava";
-import {toIR} from "../src/tree";
+import {toIR} from "../src/ir";
 
 test('const int* x', t => {
     t.truthy(toIR(`

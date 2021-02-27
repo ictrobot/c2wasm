@@ -5,7 +5,7 @@
 Other demos:
 - [preprocessor](https://ictrobot.github.io/c2wasm/preprocessor.html)
 - [parse tree](https://ictrobot.github.io/c2wasm/parsetree.html)
-- [intermediate representation](https://ictrobot.github.io/c2wasm/ctree.html)
+- [intermediate representation](https://ictrobot.github.io/c2wasm/ir.html)
 - [control flow graph](https://ictrobot.github.io/c2wasm/cfg.html)
 - [flag comparison](https://ictrobot.github.io/c2wasm/flags.html)
 

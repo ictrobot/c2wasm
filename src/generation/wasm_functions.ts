@@ -1,6 +1,6 @@
-import {CFunctionCall, CIdentifier, CConstant} from "../tree/expressions";
-import {INTERNAL_FNS} from "../tree/internal_scope";
-import {CArithmetic, CStruct, CUnion, CPointer} from "../tree/types";
+import {CFunctionCall, CIdentifier, CConstant} from "../ir/expressions";
+import {INTERNAL_FNS} from "../ir/internal_scope";
+import {CArithmetic, CStruct, CUnion, CPointer} from "../ir/types";
 import {ValueType, i32Type, i64Type, f32Type, f64Type} from "../wasm";
 import {byte} from "../wasm/base_types";
 import {WInstruction, Instructions} from "../wasm/instructions";

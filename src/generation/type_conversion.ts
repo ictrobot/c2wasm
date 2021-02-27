@@ -1,4 +1,4 @@
-import {CType, CArithmetic, CPointer, CArray, CVoid, CFuncType, CStruct, CUnion} from "../tree/types";
+import {CType, CArithmetic, CPointer, CArray, CVoid, CFuncType, CStruct, CUnion} from "../ir/types";
 import {Instructions, ValueType, f32Type, f64Type, i64Type, i32Type} from "../wasm";
 import {WInstruction} from "../wasm/instructions";
 import {ResultType} from "../wasm/wtypes";

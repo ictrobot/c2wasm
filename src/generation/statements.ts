@@ -1,7 +1,7 @@
 import {getFlags} from "../optimization/flags";
-import {CConstant} from "../tree/expressions";
-import * as c from "../tree/statements";
-import {CArithmetic, CPointer} from "../tree/types";
+import {CConstant} from "../ir/expressions";
+import * as c from "../ir/statements";
+import {CArithmetic, CPointer} from "../ir/types";
 import {Instructions, i32Type, i64Type} from "../wasm";
 import {labelidx} from "../wasm/base_types";
 import {WInstruction} from "../wasm/instructions";

@@ -1,8 +1,8 @@
-import {CArgument, CDeclaration, CVarDefinition, CVarDeclaration} from "../tree/declarations";
-import {CExpression} from "../tree/expressions";
-import * as e from "../tree/expressions";
-import {Scope} from "../tree/scope";
-import {CType, CArithmetic, CPointer, CStruct, CUnion, CArray, CVoid, CFuncType} from "../tree/types";
+import {CArgument, CDeclaration, CVarDefinition, CVarDeclaration} from "../ir/declarations";
+import {CExpression} from "../ir/expressions";
+import * as e from "../ir/expressions";
+import {Scope} from "../ir/scope";
+import {CType, CArithmetic, CPointer, CStruct, CUnion, CArray, CVoid, CFuncType} from "../ir/types";
 import {Instructions, i32Type} from "../wasm";
 import {localidx} from "../wasm/base_types";
 import {WLocal} from "../wasm/functions";

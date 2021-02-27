@@ -1,10 +1,10 @@
 import {CError} from "./c_error";
 import {ParseNode} from "./parsing";
 import {Preprocessor} from "./preprocessor";
-import {toIR} from "./tree";
-import {CFuncDefinition, CFuncDeclaration, CVarDeclaration, CVarDefinition, CFuncImport, CDeclaration, CArgument} from "./tree/declarations";
-import {Scope} from "./tree/scope";
-import {CStatement, CCompoundStatement, CForLoop, CIf, CWhileLoop, CDoLoop, CSwitch} from "./tree/statements";
+import {toIR} from "./ir";
+import {CFuncDefinition, CFuncDeclaration, CVarDeclaration, CVarDefinition, CFuncImport, CDeclaration, CArgument} from "./ir/declarations";
+import {Scope} from "./ir/scope";
+import {CStatement, CCompoundStatement, CForLoop, CIf, CWhileLoop, CDoLoop, CSwitch} from "./ir/statements";
 
 type Emitable = CFuncDefinition | CFuncImport | CVarDefinition;
 

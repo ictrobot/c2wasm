@@ -1,6 +1,6 @@
 import {parse} from "../parsing";
 import {Expression, Constant, BinaryExpression, UnaryExpression, Identifier} from "../parsing/parsetree";
-import {ptConstant} from "../tree/transform/expr_transform";
+import {ptConstant} from "../ir/transform/expr_transform";
 import {Preprocessor} from "./preprocessor";
 
 export function ppEvaluate(x: string, preprocessor: Preprocessor): bigint {

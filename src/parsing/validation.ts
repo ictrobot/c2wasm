@@ -1,5 +1,5 @@
 import {CError} from "../c_error";
-import {getArithmeticType} from "../tree/types";
+import {getArithmeticType} from "../ir/types";
 import * as pt from "./parsetree";
 import {ParseNode, TypeSpecifier} from "./parsetree";
 

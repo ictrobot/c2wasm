@@ -1,7 +1,7 @@
 import {ParseNode} from "../parsing";
-import {CConstant, CInitializer, CStringLiteral, CExpression, CValue, CCast, CAddressOf, CIdentifier, CAddSub, CDereference} from "../tree/expressions";
-import {constExpression, normalizeValueType} from "../tree/transform/constant_expressions";
-import {CArithmetic, CArray, CUnion, CStruct, CSizeT, CPointer, CType} from "../tree/types";
+import {CConstant, CInitializer, CStringLiteral, CExpression, CValue, CCast, CAddressOf, CIdentifier, CAddSub, CDereference} from "../ir/expressions";
+import {constExpression, normalizeValueType} from "../ir/transform/constant_expressions";
+import {CArithmetic, CArray, CUnion, CStruct, CSizeT, CPointer, CType} from "../ir/types";
 import {byte} from "../wasm/base_types";
 import {GenError} from "./gen_error";
 import {WGenerator} from "./generator";

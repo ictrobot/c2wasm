@@ -1,10 +1,10 @@
 import type {Linker} from "../linker";
 import {ltoOptimize} from "../optimization/lto";
 import {getFlags} from "../optimization/flags";
-import {CFuncDefinition, CFuncDeclaration} from "../tree/declarations";
-import type {CExpression} from "../tree/expressions";
-import type {CStatement} from "../tree/statements";
-import type {CFuncType} from "../tree/types";
+import {CFuncDefinition, CFuncDeclaration} from "../ir/declarations";
+import type {CExpression} from "../ir/expressions";
+import type {CStatement} from "../ir/statements";
+import type {CFuncType} from "../ir/types";
 import {ModuleBuilder, WFunctionBuilder, WFunction, Instructions, WImportedFunction, ValueType, i32Type} from "../wasm";
 import type {funcidx, tableidx, typeidx} from "../wasm/base_types";
 import type {WLocal} from "../wasm/functions";

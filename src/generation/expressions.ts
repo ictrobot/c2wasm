@@ -1,9 +1,9 @@
 import {getFlags} from "../optimization/flags";
-import {CFuncDefinition, CFuncDeclaration} from "../tree/declarations";
-import {CIdentifier} from "../tree/expressions";
-import * as c from "../tree/expressions";
-import {evalExpression} from "../tree/transform/constant_expressions";
-import {CType, CArithmetic, CPointer, CArray, CSizeT, CUnion, CStruct, CFuncType, integerPromotion} from "../tree/types";
+import {CFuncDefinition, CFuncDeclaration} from "../ir/declarations";
+import {CIdentifier} from "../ir/expressions";
+import * as c from "../ir/expressions";
+import {evalExpression} from "../ir/transform/constant_expressions";
+import {CType, CArithmetic, CPointer, CArray, CSizeT, CUnion, CStruct, CFuncType, integerPromotion} from "../ir/types";
 import {i32Type, Instructions, i64Type, f32Type, f64Type, ValueType} from "../wasm";
 import {PartialInstr} from "../wasm/instr_helpers";
 import {WInstruction} from "../wasm/instructions";

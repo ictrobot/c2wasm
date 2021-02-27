@@ -1,5 +1,5 @@
-import {toIR} from "../src/tree";
-import {CArithmetic} from "../src/tree/types";
+import {toIR} from "../src/ir";
+import {CArithmetic} from "../src/ir/types";
 
 const testInput = `
 static const struct Node {
