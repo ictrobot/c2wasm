@@ -21,7 +21,7 @@ const DEFAULT = {
 
     peephole_2nd_pass: true,
 
-    // lto
+    // interprocedural
     inlining: false,
 } as const;
 
