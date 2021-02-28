@@ -2,17 +2,17 @@ import {Instructions, f32Type, f64Type, i32Type, WExpression, i64Type} from "../
 import {labelidx} from "../wasm/base_types";
 import {WLocal} from "../wasm/functions";
 import {InstrInstance, PartialInstr} from "../wasm/instr_helpers";
-import {OptimizationFlags} from "./flags";
+import {OptimisationFlags} from "./flags";
 
 type PeepholeCallback = (instr: InstrInstance[], depth: number) => (InstrInstance | PartialInstr)[] | undefined;
-interface PeepholeOptimizer {
+interface PeepholeOptimiser {
     name: string,
-    enabled: (flags: OptimizationFlags) => boolean,
+    enabled: (flags: OptimisationFlags) => boolean,
     run: PeepholeCallback,
     peepholeSize: number
 }
 
-export const peepholeOptimizers: PeepholeOptimizer[] = [];
+export const peepholeOptimisers: PeepholeOptimiser[] = [];
 
 export function peephole(expr: WExpression, fn: PeepholeCallback, size: number, depth = 0): void {
     for (let i = 0; i <= expr.instructions.length - size; i++) {
@@ -31,8 +31,8 @@ export function peephole(expr: WExpression, fn: PeepholeCallback, size: number, 
 export function peepholeMulti(expr: WExpression, fns: [fn: PeepholeCallback, size: number][], depth = 0): void {
     const maxSize = fns.map(x => x[1]).reduce((a, b) => Math.max(a, b), 1);
 
-    // optimize inside structured instructions first in case this eliminates branches etc which enable
-    // more optimizations to occur at this level
+    // optimise inside structured instructions first in case this eliminates branches etc which enable
+    // more optimisations to occur at this level
     for (const instruction of expr.instructions) {
         if (instruction.type === "structured") {
             peepholeMulti(instruction.immediate.expression, fns, depth + 1);
@@ -48,7 +48,7 @@ export function peepholeMulti(expr: WExpression, fns: [fn: PeepholeCallback, siz
             if (replacement !== undefined) {
                 expr.replace(i, i + size, ...replacement);
 
-                i -= maxSize; // repeat optimizers with new instructions
+                i -= maxSize; // repeat optimisers with new instructions
                 if (i < -1) i = -1;
                 break;
             }
@@ -56,7 +56,7 @@ export function peepholeMulti(expr: WExpression, fns: [fn: PeepholeCallback, siz
     }
 }
 
-peepholeOptimizers.push({
+peepholeOptimisers.push({
     name: "[local.set, local.get] => [local.tee]",
     enabled: (flags) => flags.peephole_local_tee,
     run: ([instr1, instr2]) => {
@@ -74,7 +74,7 @@ peepholeOptimizers.push({
     peepholeSize: 2
 });
 
-peepholeOptimizers.push({
+peepholeOptimisers.push({
     name: "?.const 0, ?.add",
     enabled: (flags) => flags.peephole_add_0,
     run: ([instr1, instr2]) => {
@@ -85,7 +85,7 @@ peepholeOptimizers.push({
     peepholeSize: 2
 });
 
-peepholeOptimizers.push({
+peepholeOptimisers.push({
     name: "i32.const, i32.const, i32.[op]",
     enabled: (flags) => flags.peephole_i32_constants_ops,
     run: ([instr1, instr2, instr3]) => {
@@ -151,7 +151,7 @@ peepholeOptimizers.push({
     peepholeSize: 3
 });
 
-peepholeOptimizers.push({
+peepholeOptimisers.push({
     name: "i32.const, i32.eqz",
     enabled: (flags) => flags.peephole_i32_constants_ops,
     run: ([instr1, instr2]) => {
@@ -162,7 +162,7 @@ peepholeOptimizers.push({
     peepholeSize: 2
 });
 
-peepholeOptimizers.push({
+peepholeOptimisers.push({
     name: "?.const, ?.const, ?.add/mul",
     enabled: (flags) => flags.peephole_constants_add_mul,
     run: ([instr1, instr2, instr3]) => {
@@ -199,7 +199,7 @@ peepholeOptimizers.push({
     peepholeSize: 3
 });
 
-peepholeOptimizers.push({
+peepholeOptimisers.push({
     name: "i32.const, i32.add, i32.const, i32.add",
     enabled: (flags) => flags.peephole_combine_adds,
     run: ([instr1, instr2, instr3, instr4]) => {
@@ -214,7 +214,7 @@ peepholeOptimizers.push({
     peepholeSize: 4
 });
 
-peepholeOptimizers.push({
+peepholeOptimisers.push({
     name: "..., i32.const, i32.add, *.load offset",
     enabled: (flags) => flags.peephole_load_offset,
     run: ([instr1, instr2, instr3]) => {
@@ -246,7 +246,7 @@ peepholeOptimizers.push({
     peepholeSize: 3
 });
 
-peepholeOptimizers.push({
+peepholeOptimisers.push({
     name: "remove unused blocks and loops",
     enabled: (flags) => flags.peephole_unused_blocks,
     run: ([instr]) => {
@@ -258,7 +258,7 @@ peepholeOptimizers.push({
     peepholeSize: 1
 });
 
-peepholeOptimizers.push({
+peepholeOptimisers.push({
     name: "remove constant ifs",
     enabled: (flags) => flags.peephole_constant_if,
     run: ([instr1, instr2]) => {

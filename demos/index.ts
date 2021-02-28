@@ -2,7 +2,7 @@ import {compress, decompress} from "lzutf8";
 import wabt from "wabt";
 import {Files} from "../src/c_library/runtime/files";
 import {compile, compileSnippet} from "../src/compile";
-import {setFlags, getFlags} from "../src/optimization/flags";
+import {setFlags, getFlags} from "../src/optimisation/flags";
 import {ModuleBuilder} from "../src/wasm";
 
 const testInput = `
@@ -112,7 +112,7 @@ wabt().then(wabt => {
         };
         textInput.addEventListener("input", recompile);
 
-        // Optimization flags
+        // Optimisation flags
         const flagsButton = window.document.getElementById("flagsButton") as HTMLButtonElement;
         flagsButton.addEventListener("click", () => flagsDiv.style.display = flagsDiv.style.display === "none" ? "" : "none");
 

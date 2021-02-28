@@ -1,4 +1,4 @@
-import {getFlags} from "../optimization/flags";
+import {getFlags} from "../optimisation/flags";
 import {CFuncDefinition, CFuncDeclaration} from "../ir/declarations";
 import {CIdentifier} from "../ir/expressions";
 import * as c from "../ir/expressions";

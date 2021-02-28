@@ -1,4 +1,4 @@
-import {getFlags} from "../optimization/flags";
+import {getFlags} from "../optimisation/flags";
 import {CConstant} from "../ir/expressions";
 import * as c from "../ir/statements";
 import {CArithmetic, CPointer} from "../ir/types";

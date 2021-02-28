@@ -13,7 +13,7 @@ const fakeParseNode: ParseNode = new class extends ParseNode {
 
 export const INTERNAL_FNS = {
     /** For executing arbitrary Wasm. Should NOT contain control flow as the code will not be processed
-     * by optimizations. Similarly, locals should only be accessed as parameters as they map be remapped.
+     * by optimisations. Similarly, locals should only be accessed as parameters as they map be remapped.
      *
      * __wasm_push__([#parameters], [parameter1], [parameter2], ..., [byte1], [byte2]...);
      */

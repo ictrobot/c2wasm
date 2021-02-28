@@ -1,6 +1,6 @@
 import {Network, Node, Edge, Options} from "vis-network";
 import {compileSnippet} from "../src/compile";
-import {controlFlow, Flow} from "../src/optimization/flow/control_flow";
+import {controlFlow, Flow} from "../src/optimisation/flow/control_flow";
 import {ModuleBuilder, WFunction} from "../src/wasm";
 
 if (typeof window === 'undefined' || !window.document) throw new Error("Must be ran in a web browser");

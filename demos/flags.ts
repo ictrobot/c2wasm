@@ -1,7 +1,6 @@
-import {AsyncSeriesWaterfallHook} from "tapable";
 import wabt from "wabt";
 import {compile, compileSnippet} from "../src/compile";
-import {setFlags, getFlags, OptimizationFlags} from "../src/optimization/flags";
+import {setFlags, getFlags, OptimisationFlags} from "../src/optimisation/flags";
 import {ModuleBuilder} from "../src/wasm";
 
 const testInput = `
@@ -58,8 +57,8 @@ wabt().then(wabt => {
         containerDiv: HTMLDivElement;
 
         flagsDiv: HTMLDivElement;
-        flagCheckboxes = new Map<keyof OptimizationFlags, HTMLInputElement>();
-        flags: OptimizationFlags;
+        flagCheckboxes = new Map<keyof OptimisationFlags, HTMLInputElement>();
+        flags: OptimisationFlags;
 
         outputPre: HTMLPreElement;
         compileTimeSpan: HTMLSpanElement;
@@ -93,7 +92,7 @@ wabt().then(wabt => {
                 this.flagsDiv.appendChild(document.createElement("br"));
 
                 checkbox.addEventListener("change", () => this.updateFlags({[flagName]: checkbox.checked}));
-                this.flagCheckboxes.set(flagName as keyof OptimizationFlags, checkbox);
+                this.flagCheckboxes.set(flagName as keyof OptimisationFlags, checkbox);
             }
 
             const flagDefaults = document.createElement("button");
@@ -181,7 +180,7 @@ wabt().then(wabt => {
             this.flags = {...getFlags()};
 
             for (const [flagName, checkbox] of this.flagCheckboxes.entries()) {
-                checkbox.checked = this.flags[flagName as keyof OptimizationFlags];
+                checkbox.checked = this.flags[flagName as keyof OptimisationFlags];
             }
             this.recompile();
         }

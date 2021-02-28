@@ -25,11 +25,11 @@ const DEFAULT = {
     inlining: false,
 } as const;
 
-export type OptimizationFlags = {[k in keyof typeof DEFAULT]: boolean};
+export type OptimisationFlags = {[k in keyof typeof DEFAULT]: boolean};
 
-let current: OptimizationFlags = DEFAULT;
+let current: OptimisationFlags = DEFAULT;
 
-export function setFlags(flags: Partial<OptimizationFlags> | "none" | "default"): void {
+export function setFlags(flags: Partial<OptimisationFlags> | "none" | "default"): void {
     if (typeof flags === "object") {
         current = {...current, ...flags};
     } else if (flags === "default") {
@@ -46,6 +46,6 @@ export function setFlags(flags: Partial<OptimizationFlags> | "none" | "default")
     }
 }
 
-export function getFlags(): OptimizationFlags {
+export function getFlags(): OptimisationFlags {
     return current;
 }

@@ -1,7 +1,7 @@
 import {ModuleBuilder, WFunction, WExpression, Instructions} from "../../wasm";
 import type {funcidx} from "../../wasm/base_types";
 import {remapLocals} from "../flow/local_allocation";
-import {optimize} from "../index";
+import {optimise} from "../index";
 import {peephole} from "../peephole";
 import {InstrSplicer} from "../splicer";
 
@@ -45,7 +45,7 @@ export function inlineFunctions(module: ModuleBuilder): void {
     }
 
     for (const fn of modifiedFns) { // clean up any modified functions
-        optimize(fn);
+        optimise(fn);
     }
     if (modifiedFns.size) removeUnusedFns(module);
 

@@ -1,6 +1,6 @@
 import type {Linker} from "../linker";
-import {interproceduralOptimize} from "../optimization/interprocedural";
-import {getFlags} from "../optimization/flags";
+import {interproceduralOptimise} from "../optimisation/interprocedural";
+import {getFlags} from "../optimisation/flags";
 import {CFuncDefinition, CFuncDeclaration} from "../ir/declarations";
 import type {CExpression} from "../ir/expressions";
 import type {CStatement} from "../ir/statements";
@@ -50,7 +50,7 @@ export class WGenerator {
 
         for (const initializer of staticInitializers) initializer();
 
-        interproceduralOptimize(this.module);
+        interproceduralOptimise(this.module);
 
         this.module.emitCallback = () => {
             const shadowStackStart = Math.ceil(this.nextStaticAddr / 1024) * 1024;

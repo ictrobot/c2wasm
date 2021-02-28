@@ -5,9 +5,9 @@ export declare function compile(files: ReadonlyMap<string, string> | string, cus
 /** No access to standard library! */
 export declare function compileSnippet(source: string): CModule;
 
-export declare function setFlags(flags: Partial<OptimizationFlags> | "none" | "default"): void;
+export declare function setFlags(flags: Partial<OptimisationFlags> | "none" | "default"): void;
 
-export declare function getFlags(): OptimizationFlags;
+export declare function getFlags(): OptimisationFlags;
 
 export interface CModule {
     toBytes(): Uint8Array;
@@ -18,7 +18,7 @@ export interface CModule {
 
 export type FunctionType = [parameters: number[], results: number[]];
 
-export type OptimizationFlags = {[k: string]: boolean};
+export type OptimisationFlags = {[k: string]: boolean};
 
 // runtime support
 export namespace runtime {

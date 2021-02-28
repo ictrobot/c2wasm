@@ -2,7 +2,7 @@ import {exec} from "child_process";
 import * as fs from "fs";
 import {performance} from "perf_hooks";
 import {compile} from "../../src/compile";
-import {setFlags} from "../../src/optimization/flags";
+import {setFlags} from "../../src/optimisation/flags";
 
 const dir = __dirname + "/benchmarksgame/";
 
@@ -40,7 +40,7 @@ async function test(filename: string) {
 }
 
 async function main() {
-    console.log("NOTE: there are more optimized versions of these programs using multithreading, specific compiler optimizations or architecture specific instructions which are faster natively.\n");
+    console.log("NOTE: there are more optimised versions of these programs using multithreading, specific compiler optimisations or architecture specific instructions which are faster natively.\n");
 
     for (const filename of fs.readdirSync(dir).reverse()) {
         if (filename.endsWith(".c")) await test(filename);

@@ -1,5 +1,5 @@
-import {optimize} from "../optimization";
-import {getFlags} from "../optimization/flags";
+import {optimise} from "../optimisation";
+import {getFlags} from "../optimisation/flags";
 import {funcidx, localidx, byte, tableidx} from "./base_types";
 import {encodeU32} from "./encoding";
 import {WExpression, WInstruction} from "./instructions";
@@ -39,7 +39,7 @@ export class WFunction {
     define(bodyFn: (b: WFunctionBuilder) => WInstruction[]): void {
         if (this._builder !== undefined) throw new Error(`Wasm function already defined`);
         this._builder = new WFunctionBuilder(this, bodyFn);
-        optimize(this);
+        optimise(this);
     }
 
     toBytes(): byte[] {

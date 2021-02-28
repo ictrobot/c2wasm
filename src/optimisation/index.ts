@@ -6,19 +6,19 @@ import {realloc_locals, remapLocals} from "./flow/local_allocation";
 import {pre} from "./flow/pre";
 import {rangeSplitting} from "./flow/range_splitting";
 import {copyPropagation} from "./flow/reaching_defs";
-import {Optimizer} from "./optimizer";
-import {peepholeMulti, peepholeOptimizers} from "./peephole";
+import {Optimiser} from "./optimiser";
+import {peepholeMulti, peepholeOptimisers} from "./peephole";
 
-const optimizers: Optimizer[] = [];
+const optimisers: Optimiser[] = [];
 
-export function optimize(fn: WFunction): void {
+export function optimise(fn: WFunction): void {
     const flags = getFlags(), expr = fn.body;
 
     fn.instrCounts.push({name: "before opt", count: countInstructions(expr)});
-    for (const optimizer of optimizers) {
-        if (optimizer.enabled(flags)) {
-            optimizer.run(expr);
-            fn.instrCounts.push({name: optimizer.name, count: countInstructions(expr)});
+    for (const optimiser of optimisers) {
+        if (optimiser.enabled(flags)) {
+            optimiser.run(expr);
+            fn.instrCounts.push({name: optimiser.name, count: countInstructions(expr)});
         }
     }
 }
@@ -34,54 +34,54 @@ function countInstructions(expr: WExpression): number {
     return num;
 }
 
-function peepholeOptimizations(expr: WExpression) {
+function peepholeOptimisations(expr: WExpression) {
     const flags = getFlags();
-    peepholeMulti(expr, peepholeOptimizers.filter(x => x.enabled(flags)).map(x => [x.run, x.peepholeSize]));
+    peepholeMulti(expr, peepholeOptimisers.filter(x => x.enabled(flags)).map(x => [x.run, x.peepholeSize]));
 }
 
-optimizers.push({
-    name: "Peephole optimizations",
+optimisers.push({
+    name: "Peephole optimisations",
     enabled: () => true,
-    run: peepholeOptimizations
+    run: peepholeOptimisations
 });
 
-optimizers.push({
+optimisers.push({
     name: "Partial redundancy elimination",
     enabled: (flags) => flags.partial_redundancy_elimination,
     run: pre
 });
 
-optimizers.push({
+optimisers.push({
     name: "Dead code elimination",
     enabled: (flags) => flags.dead_code_elimination,
     run: deadCodeElimination
 });
 
-optimizers.push({
+optimisers.push({
     name: "Copy propagation",
     enabled: (flags) => flags.copy_propagation,
     run: copyPropagation
 });
 
-optimizers.push({
+optimisers.push({
     name: "Local live range splitting",
     enabled: (flags) => flags.live_range_splitting,
     run: rangeSplitting
 });
 
-optimizers.push({
+optimisers.push({
     name: "Reallocate locals",
     enabled: (flags) => flags.reallocate_locals,
     run: realloc_locals // must be ran when there are no redundant variables, i.e. immediate after copy propagation
 });
 
-optimizers.push({
+optimisers.push({
     name: "Dead code elimination 2nd pass",
     enabled: (flags) => flags.dead_code_elimination,
     run: deadCodeElimination
 });
 
-optimizers.push({
+optimisers.push({
     name: "Remove unused locals",
     enabled: (flags) => flags.unused_locals,
     run: (expr) => {
@@ -107,13 +107,13 @@ optimizers.push({
     }
 });
 
-optimizers.push({
-    name: "Peephole optimizations 2nd pass",
+optimisers.push({
+    name: "Peephole optimisations 2nd pass",
     enabled: (flags) => flags.peephole_2nd_pass,
-    run: peepholeOptimizations
+    run: peepholeOptimisations
 });
 
-optimizers.push({
+optimisers.push({
     name: "return",
     enabled: () => true,
     run: (expr) => {

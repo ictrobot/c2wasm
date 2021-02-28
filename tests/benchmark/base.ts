@@ -1,7 +1,7 @@
 import {exec} from "child_process";
-import {setFlags, getFlags, OptimizationFlags} from "../../src/optimization/flags";
+import {setFlags, getFlags, OptimisationFlags} from "../../src/optimisation/flags";
 
-const FLAG_NAMES = Object.keys(getFlags()) as (keyof OptimizationFlags)[];
+const FLAG_NAMES = Object.keys(getFlags()) as (keyof OptimisationFlags)[];
 
 export type OptLevel = `-O${'0' | '1' | '2' | '3' | 's'}`;
 
@@ -29,12 +29,12 @@ export abstract class BenchmarkBase {
     }
 
     // called once, before any run calls with the same OptLevel
-    abstract emccCompile?(optimizationLevel: OptLevel): Promise<void>;
-    abstract emccRun?(optimizationLevel: OptLevel, nodeFlags: string): Promise<string>;
-    abstract emccSize?(optimizationLevel: OptLevel): Promise<number>;
+    abstract emccCompile?(optimisationLevel: OptLevel): Promise<void>;
+    abstract emccRun?(optimisationLevel: OptLevel, nodeFlags: string): Promise<string>;
+    abstract emccSize?(optimisationLevel: OptLevel): Promise<number>;
 
-    abstract nativeCompile?(optimizationLevel: OptLevel): Promise<void>;
-    abstract nativeRun?(optimizationLevel: OptLevel): Promise<string>;
+    abstract nativeCompile?(optimisationLevel: OptLevel): Promise<void>;
+    abstract nativeRun?(optimisationLevel: OptLevel): Promise<string>;
 
     static flagString(): string {
         const flags = getFlags();
@@ -49,7 +49,7 @@ export abstract class BenchmarkBase {
         } else if (flagString === "none") {
             setFlags("none");
         } else if (flagString.length === FLAG_NAMES.length && flagString.match(/^[TF]*$/)) {
-            const flags: {-readonly[T in keyof OptimizationFlags]?: boolean} = {};
+            const flags: {-readonly[T in keyof OptimisationFlags]?: boolean} = {};
             for (const [i, f] of FLAG_NAMES.entries()) {
                 flags[f] = flagString[i] === "T";
             }

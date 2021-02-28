@@ -1,9 +1,9 @@
 import test from "ava";
 import {compile} from "../../src";
 import {InstrInstance} from "../../src/wasm/instr_helpers";
-import {optimizationTest, countInstructions} from "./index";
+import {optimisationTest, countInstructions} from "./index";
 
-optimizationTest("pre_do_loop", {partial_redundancy_elimination: true}, (t, withoutOpt, withOpt) => {
+optimisationTest("pre_do_loop", {partial_redundancy_elimination: true}, (t, withoutOpt, withOpt) => {
     // without should have two adds in the loop
     const top1 = withoutOpt.functions[0].body;
     const block1 = (top1.instructions[0] as InstrInstance & {type: "structured"}).immediate.expression;

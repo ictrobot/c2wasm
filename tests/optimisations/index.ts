@@ -1,10 +1,10 @@
 import test, {ExecutionContext} from "ava";
 import {compileSnippet} from "../../src/compile";
-import {OptimizationFlags, setFlags} from "../../src/optimization/flags";
+import {OptimisationFlags, setFlags} from "../../src/optimisation/flags";
 import {ModuleBuilder, WExpression} from "../../src/wasm";
 
-export function optimizationTest(title: string,
-                                 flags: Partial<OptimizationFlags>,
+export function optimisationTest(title: string,
+                                 flags: Partial<OptimisationFlags>,
                                  fn: (t: ExecutionContext, defaultModule: ModuleBuilder, flagsModule: ModuleBuilder) => void,
                                  src: string): void {
     test(title, t => {
