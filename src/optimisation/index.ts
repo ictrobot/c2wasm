@@ -112,20 +112,3 @@ optimisers.push({
     enabled: (flags) => flags.peephole_2nd_pass,
     run: peepholeOptimisations
 });
-
-optimisers.push({
-    name: "return",
-    enabled: () => true,
-    run: (expr) => {
-        if (expr.builder.type[1].length > 0) {
-            // if function returns something
-            if (expr.get(-1).name === "return") {
-                // final return can be implicit
-                expr.pop();
-            } else if (expr.stack.length === 0) {
-                // no return at end of function or value left on stack, must return elsewhere
-                expr.push(Instructions.unreachable());
-            }
-        }
-    }}
-);

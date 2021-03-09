@@ -2,7 +2,7 @@ import {optimise} from "../optimisation";
 import {getFlags} from "../optimisation/flags";
 import {funcidx, localidx, byte, tableidx} from "./base_types";
 import {encodeU32} from "./encoding";
-import {WExpression, WInstruction} from "./instructions";
+import {WExpression, WInstruction, Instructions} from "./instructions";
 import {ModuleBuilder} from "./module";
 import {ValueType, FunctionType, encodeVec} from "./wtypes";
 
@@ -40,6 +40,19 @@ export class WFunction {
         if (this._builder !== undefined) throw new Error(`Wasm function already defined`);
         this._builder = new WFunctionBuilder(this, bodyFn);
         optimise(this);
+
+        const expr = this._builder.expr; // clean up function returns
+        if (this.type[1].length > 0) {
+            // if function returns something
+            const finalInstr = expr.get(-1);
+            if (finalInstr.name === "return") {
+                // final return can be implicit
+                expr.pop();
+            } else if (expr.stack.length === 0 && finalInstr.name !== "unreachable") {
+                // no return at end of function or value left on stack, must return elsewhere
+                expr.push(Instructions.unreachable());
+            }
+        }
     }
 
     toBytes(): byte[] {
