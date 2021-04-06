@@ -74,7 +74,7 @@ export async function jpegTests(): Promise<void> {
 const cjpegCompilerFiles = ["cjpeg.c", ...CDJPEG].map(f => `jpeg/src/${f}`).join(" ");
 export const cjpeg = (new class extends BenchmarkBase {
     getScore(output: string): number {
-        const match = output.match(/^([0-9][1-9]*\.[0-9]+)\r?\n?$/);
+        const match = output.match(/^([1-9][0-9]*\.[0-9]+)\r?\n?$/);
         if (match) {
             return Number(match[1]);
         } else {
@@ -102,7 +102,7 @@ export const cjpeg = (new class extends BenchmarkBase {
     }
 
     async emccSize(optLevel: OptLevel): Promise<number> {
-        return Number(await BenchmarkBase.cmdStdout(`stat -c %s /tmp/c2wasm-cjpeg-emcc${optLevel}`));
+        return Number(await BenchmarkBase.cmdStdout(`stat -c %s /tmp/c2wasm-cjpeg-emcc${optLevel}.wasm`));
     }
 
     async nativeCompile(optLevel: OptLevel): Promise<void> {

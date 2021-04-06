@@ -57,7 +57,7 @@ export const coremark = (new class extends BenchmarkBase {
     }
 
     async emccSize(optLevel: OptLevel): Promise<number> {
-        return Number(await BenchmarkBase.cmdStdout(`stat -c %s /tmp/c2wasm-coremark-emcc${optLevel}`));
+        return Number(await BenchmarkBase.cmdStdout(`stat -c %s /tmp/c2wasm-coremark-emcc${optLevel}.wasm`));
     }
 
     async nativeCompile(optLevel: OptLevel): Promise<void> {

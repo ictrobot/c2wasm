@@ -2,6 +2,7 @@ import {setFlags} from "../../src";
 import {BenchmarkBase, FLAG_CONFIGURATIONS, OptLevel} from "./base";
 import {coremark} from "./coremark";
 import {cjpeg} from "./jpeg";
+import {raytracer} from "./raytracer";
 
 function shuffleArray<T>(array: T[]) {
     for (let i = array.length - 1; i > 0; i--) {
@@ -17,8 +18,12 @@ async function run(benchmark: BenchmarkBase, iterations = 10) {
         const shuffled = runners.slice();
         shuffleArray(shuffled);
 
-        for (const [_, run, scores] of shuffled) {
-            scores.push(benchmark.getScore(await run()));
+        for (const [name, run, scores] of shuffled) {
+            try {
+                scores.push(benchmark.getScore(await run()));
+            } catch (e) {
+                throw new Error("Failed to run benchmark (" + name + ")\n\n" + e.stack);
+            }
         }
 
         console.log(`${benchmark.name.padEnd(32)} - ${i + 1} repeats:`);
@@ -97,7 +102,20 @@ async function getRunners(benchmark: BenchmarkBase): Promise<[name: string, run:
 }
 
 if (require.main === module) {
+    const benchmarks = {cjpeg, coremark, raytracer} as {[k: string]: BenchmarkBase};
+    const requested = process.argv[2]?.toLowerCase();
+
+    let benchmark;
+    if (requested && benchmarks[requested]) {
+        benchmark = benchmarks[requested];
+    } else if (requested) {
+        throw new Error("Unknown benchmark '" + requested + "'");
+    } else {
+        console.log("No benchmark name provided, defaulting to CoreMark");
+        benchmark = coremark;
+    }
+
     (async () => {
-        await run(cjpeg);
+        await run(raytracer);
     })();
 }
