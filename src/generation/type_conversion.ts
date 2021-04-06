@@ -154,6 +154,11 @@ export function valueType(type: CArithmetic): ValueType {
 }
 
 export function returnType(type: CType): ResultType {
-    if (type instanceof CVoid) return [];
+    if (type instanceof CVoid || largeReturn(type)) return [];
     return [realType(type)];
+}
+
+export function largeReturn(type: CType): boolean {
+    // functions that return structs/unions as they cannot be returned as a single Wasm value
+    return type instanceof CStruct || type instanceof CUnion;
 }

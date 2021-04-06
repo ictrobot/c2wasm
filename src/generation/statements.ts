@@ -8,8 +8,8 @@ import {WInstruction} from "../wasm/instructions";
 import {subExpr, condition, expressionGeneration, gInstr} from "./expressions";
 import {GenError} from "./gen_error";
 import {WFnGenerator} from "./generator";
-import {storageSetupScope} from "./storage";
-import {valueType} from "./type_conversion";
+import {storageSetupScope, memcpy} from "./storage";
+import {valueType, largeReturn} from "./type_conversion";
 
 function _compoundStatement(ctx: WFnGenerator, s: c.CCompoundStatement): WInstruction[] {
     const [instr, finishCallback] = storageSetupScope(ctx, s.scope);
@@ -219,10 +219,18 @@ function _break(ctx: WFnGenerator, s: c.CBreak): WInstruction[] {
 }
 
 function _return(ctx: WFnGenerator, s: c.CReturn): WInstruction[] {
-    if (s.value !== undefined) {
+    if (s.value === undefined) {
+        return [Instructions.return()];
+    } else if (largeReturn(s.func.type.returnType)) {
+        // copy return value to large return parameter (the last parameter)
+        return [...memcpy(
+            subExpr(ctx, s.value, s.func.type.returnType),
+            [Instructions.local.get(s.func.type.parameterTypes.length)],
+            s.value.type.bytes),
+        Instructions.return()];
+    } else {
         return [...subExpr(ctx, s.value, s.func.type.returnType), Instructions.return()];
     }
-    return [Instructions.return()];
 }
 
 export function statementGeneration(ctx: WFnGenerator, s: c.CStatement): WInstruction[] {

@@ -10,11 +10,12 @@ import type {funcidx, tableidx, typeidx} from "../wasm/base_types";
 import type {WLocal} from "../wasm/functions";
 import type {WGlobal} from "../wasm/global";
 import type {WInstruction} from "../wasm/instructions";
+import {FunctionType} from "../wasm/wtypes";
 import {expressionGeneration} from "./expressions";
 import {GenError} from "./gen_error";
 import {statementGeneration} from "./statements";
 import {storageSetupStaticVar} from "./storage";
-import {realType, returnType} from "./type_conversion";
+import {realType, returnType, largeReturn} from "./type_conversion";
 
 export const SHADOW_STACK_SIZE = 2 ** 20;
 
@@ -60,11 +61,12 @@ export class WGenerator {
     }
 
     private function(func: CFuncDefinition, name?: string) {
-        const wasmFunc = this.module.function(
-            func.type.parameterTypes.map(realType),
-            returnType(func.type.returnType),
-            undefined,
-            name);
+        if (largeReturn(func.type.returnType)) {
+            // would be hard to correctly call, so don't export
+            name = undefined;
+        }
+
+        const wasmFunc = this.module.function(...WGenerator.funcType(func.type), undefined, name);
         wasmFunc.hints.inline = func.hints.inline;
         this.functions.set(func, wasmFunc);
     }
@@ -107,8 +109,17 @@ export class WGenerator {
         };
     }
 
+    private static funcType(fnType: CFuncType): FunctionType {
+        const paramTypes = fnType.parameterTypes.map(realType);
+        if (largeReturn(fnType.returnType)) {
+            paramTypes.push(i32Type); // add additional argument for large return pointer
+        }
+
+        return [paramTypes, returnType(fnType.returnType)];
+    }
+
     typeIndex(fnType: CFuncType): typeidx {
-        return this.module._typeIndex([fnType.parameterTypes.map(realType), returnType(fnType.returnType)]);
+        return this.module._typeIndex(WGenerator.funcType(fnType));
     }
 
     indirectIndex(fn: CFuncDeclaration | CFuncDefinition): tableidx {

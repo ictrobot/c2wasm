@@ -430,7 +430,7 @@ function store(type: CType, offset: number): WInstruction {
     }
 }
 
-function memcpy(sourceAddr: WInstruction[], destAddr: WInstruction[], bytes: number): WInstruction[] {
+export function memcpy(sourceAddr: WInstruction[], destAddr: WInstruction[], bytes: number): WInstruction[] {
     return [
         ...destAddr,
         ...sourceAddr,

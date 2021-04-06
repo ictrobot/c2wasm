@@ -5,12 +5,11 @@ import * as c from "../ir/expressions";
 import {evalExpression} from "../ir/transform/constant_expressions";
 import {CType, CArithmetic, CPointer, CArray, CSizeT, CUnion, CStruct, CFuncType, integerPromotion} from "../ir/types";
 import {i32Type, Instructions, i64Type, f32Type, f64Type, ValueType} from "../wasm";
-import {PartialInstr} from "../wasm/instr_helpers";
 import {WInstruction} from "../wasm/instructions";
 import {GenError} from "./gen_error";
 import {WFnGenerator} from "./generator";
 import {storageGet, storageSet, storageUpdate, storageGetThenUpdate, getAddress} from "./storage";
-import {ImplementationType, implType, conversion, valueType, realType} from "./type_conversion";
+import {ImplementationType, implType, conversion, valueType, realType, largeReturn, returnType} from "./type_conversion";
 import {internalFunctions} from "./wasm_functions";
 
 function constant(ctx: WFnGenerator, e: c.CConstant, discard: boolean): WInstruction[] {
@@ -43,12 +42,14 @@ function stringLiteral(ctx: WFnGenerator, e: c.CStringLiteral, discard: boolean)
  * If any argument (or function pointer) is varadic then it will try to manipulate the same region so need to call all
  * child expressions before storing. This means pushing everything onto the stack in the right order.
  * - evaluate normal function arguments
+ * - (allocate space for large return struct/union, push as hidden extra argument)
  * - (evaluate indirect function id)
  * - (evaluate variadic arguments)
  * - (store variadic arguments)
  * - increment shadow stack pointer
  * - call function (and cleanup)
  * - decrement shadow stack pointer
+ * - (push large return ptr)
  */
 function functionCall(ctx: WFnGenerator, e: c.CFunctionCall, discard: boolean): WInstruction[] {
     const indirectValue: WInstruction[] = [];
@@ -68,6 +69,20 @@ function functionCall(ctx: WFnGenerator, e: c.CFunctionCall, discard: boolean): 
     }
 
     const instr = e.fnType.parameterTypes.flatMap((t, i) => subExpr(ctx, e.args[i], t));
+
+    let largeReturnPtr: WInstruction[] | undefined;
+    if (largeReturn(e.fnType.returnType)) {
+        largeReturnPtr = [ // address allocated for storing return value
+            Instructions.global.get(ctx.gen.shadowStackPtr),
+            Instructions.i32.const(ctx.shadowStackUsage),
+            Instructions.i32.add()
+        ];
+        // allocate space for return value
+        ctx.shadowStackUsage += 4 * Math.ceil(e.fnType.returnType.bytes / 4);
+        // push pointer onto stack as hidden argument
+        instr.push(...largeReturnPtr);
+    }
+
     if (indirectValue.length > 0) {
         // indirect call index
         instr.push(...indirectValue);
@@ -113,7 +128,7 @@ function functionCall(ctx: WFnGenerator, e: c.CFunctionCall, discard: boolean): 
         instr.push(Instructions.call(ctx.gen.functionIndex(fn)));
     }
 
-    if (discard && e.fnType.returnType.bytes > 0) {
+    if (discard && returnType(e.fnType.returnType).length) {
         // cleanup return value if needed
         instr.push(Instructions.drop());
     }
@@ -123,6 +138,10 @@ function functionCall(ctx: WFnGenerator, e: c.CFunctionCall, discard: boolean): 
             Instructions.i32.const(shadowUsage),
             Instructions.i32.sub(),
             Instructions.global.set(ctx.gen.shadowStackPtr));
+    }
+    if (!discard && largeReturnPtr) {
+        // return value is the struct/union returned via the largeReturnPtr
+        instr.push(...largeReturnPtr);
     }
     return instr;
 }
@@ -511,7 +530,7 @@ function iInstr(t: ImplementationType, op: (keyof typeof Instructions.i32 & keyo
 }
 
 /** generic instruction - i32, i64, f32 or f64 */
-export function gInstr(t: ImplementationType, op: (keyof typeof Instructions.i32 & keyof typeof Instructions.i64 & keyof typeof Instructions.f32 & keyof typeof Instructions.f64), ...args: any[]): PartialInstr {
+export function gInstr(t: ImplementationType, op: (keyof typeof Instructions.i32 & keyof typeof Instructions.i64 & keyof typeof Instructions.f32 & keyof typeof Instructions.f64), ...args: any[]): WInstruction {
     if (typeof t !== "number") throw new Error("Instructions can only operate on value types");
 
     if (t === i32Type) {

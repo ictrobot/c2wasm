@@ -48,3 +48,33 @@ test("as parameter and return value", async t => {
     c.main();
     t.deepEqual(values, [84, 114]);
 });
+
+test("regression #1", async t => {
+    /*
+     * Calling a function with the results of other functions returning structs
+     * on the stack cause them to overwrite each other
+     */
+
+    const c = await compileSnippet(`
+        struct pos {int x, y;};
+        
+        struct pos get(int idx) {
+          struct pos pos;
+          pos.x = idx;
+          pos.y = idx * 10;
+          return pos;
+        }
+        
+        int sum(struct pos a, struct pos b) {
+          return a.x + a.y + b.x + b.y;
+        }
+        
+        int main() {
+          return sum(get(0), get(1));
+        }
+    `).execute({}) as {
+        main: () => number
+    };
+
+    t.is(c.main(), 11); // returns 22 if broken
+});
