@@ -277,7 +277,7 @@ export function storageGetThenUpdate(ctx: WFnGenerator, ctype: CType, locationEx
         ]));
         instr.push(load(ctype, 0));
         instr.push(...ctx.withTemporaryLocal(realType(ctype), (tmp) => [
-            Instructions.local.tee(tmp), // store copy of old valueaaaaas
+            Instructions.local.tee(tmp), // store copy of old value
             ...transform,
             store(ctype, 0),
             Instructions.local.get(tmp)
