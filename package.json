@@ -15,7 +15,7 @@
   },
   "license": "MIT",
   "scripts": {
-    "test": "ts-node src/c_library/standard_library.ts && tsc && ava",
+    "test": "ts-node src/c_library/standard_library.ts && tsc && nyc ava",
     "parser": "jison src/parsing/c_grammar.jison -o src/parsing/gen/c_grammar.js --default-action=none,merge",
     "lint": "eslint .",
     "stdlib": "ts-node src/c_library/standard_library.ts",
@@ -32,6 +32,7 @@
     "html-webpack-plugin": "^4.5.1",
     "jison-gho": "^0.6.1-216",
     "lzutf8": "^0.5.8",
+    "nyc": "^15.1.0",
     "ts-loader": "^8.0.14",
     "ts-node": "^9.1.1",
     "typescript": "^4.1.3",

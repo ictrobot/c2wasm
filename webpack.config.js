@@ -11,7 +11,7 @@ const demoFiles = Object.fromEntries(require("fs")
 
 module.exports = (env, argv) => {
     const minimizer = [
-            new TerserPlugin({
+        new TerserPlugin({
             terserOptions: {
                 output: {comments: false},
                 keep_classnames: true
