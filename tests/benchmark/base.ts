@@ -78,22 +78,31 @@ export abstract class BenchmarkBase {
 // c2wasm flag configurations
 export const FLAG_CONFIGURATIONS = new Map<string, Parameters<typeof setFlags>[0]>();
 
-FLAG_CONFIGURATIONS.set("NONE", "none");
+FLAG_CONFIGURATIONS.set("None", "none");
 
 setFlags("none");
 setFlags({generation_try_constant_expr: true});
-FLAG_CONFIGURATIONS.set("TRY CONST", getFlags());
+FLAG_CONFIGURATIONS.set("Const expr", getFlags());
 
-setFlags("default");
-setFlags({partial_redundancy_elimination: false, copy_propagation: false, reallocate_locals: false});
-FLAG_CONFIGURATIONS.set("NO PRE/CP/RL", getFlags());
+Object.keys(getFlags()).filter(x => x.startsWith("peephole_")).forEach(x => setFlags({[x]: true}));
+FLAG_CONFIGURATIONS.set("Peephole", getFlags());
 
-setFlags("default");
-setFlags({partial_redundancy_elimination: false});
-FLAG_CONFIGURATIONS.set("NO PRE", getFlags());
+setFlags({copy_propagation: true, live_range_splitting: true, dead_code_elimination: true, reallocate_locals: true, unused_locals: true});
+FLAG_CONFIGURATIONS.set("CP & RL", getFlags());
 
-FLAG_CONFIGURATIONS.set("DEFAULT", "default");
+setFlags({partial_redundancy_elimination: true});
+FLAG_CONFIGURATIONS.set("PRE (Default)", getFlags());
 
-setFlags("default");
+{ // check current flags are the same as default
+    const currentFlags = getFlags();
+    setFlags("default");
+    const defaultFlags = getFlags();
+    for (const [key, value] of Object.entries(currentFlags)) {
+        if (defaultFlags[key as keyof OptimisationFlags] !== value) {
+            throw new Error("Invalid benchmark configs");
+        }
+    }
+}
+
 setFlags({inlining: true});
 FLAG_CONFIGURATIONS.set("INLINE", getFlags());
