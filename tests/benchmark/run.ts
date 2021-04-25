@@ -116,6 +116,6 @@ if (require.main === module) {
     }
 
     (async () => {
-        await run(raytracer);
+        await run(benchmark);
     })();
 }
