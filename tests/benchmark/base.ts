@@ -7,7 +7,8 @@ export type OptLevel = `-O${'0' | '1' | '2' | '3' | 's'}`;
 
 export abstract class BenchmarkBase {
 
-    constructor(readonly name: string, readonly benchmarkFile: string) {
+    constructor(readonly name: string, readonly benchmarkFile: string,
+                readonly iterationMultiplier: number = 1, readonly turboFanAll: boolean = false) {
     }
 
     abstract getScore(output: string): number;
@@ -19,13 +20,16 @@ export abstract class BenchmarkBase {
     c2wasmNodeFlagsRun(nodeFlags: string): Promise<string> {
         const cmd = `node ${nodeFlags} -r ts-node/register ${this.benchmarkFile} ${BenchmarkBase.flagString()}`;
 
-        return new Promise((resolve, reject) => exec(cmd, (error, stdout, stderr) => {
-            if (error || stderr) {
-                console.log(error || stderr);
-                reject(new Error("Failed to spawn a child node instance"));
-            }
-            resolve(stdout.trim());
-        }));
+        return new Promise((resolve, reject) => exec(cmd,
+            {env: {TS_NODE_TRANSPILE_ONLY: "true"}},
+            (error, stdout, stderr) => {
+                if (error || stderr) {
+                    console.log(error || stderr);
+                    reject(new Error("Failed to spawn a child node instance"));
+                }
+                resolve(stdout.trim());
+            })
+        );
     }
 
     // called once, before any run calls with the same OptLevel

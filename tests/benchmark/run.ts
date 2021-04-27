@@ -3,6 +3,7 @@ import {BenchmarkBase, FLAG_CONFIGURATIONS, OptLevel} from "./base";
 import {coremark} from "./coremark";
 import {cjpeg} from "./jpeg";
 import {raytracer} from "./raytracer";
+import {toy} from "./toy";
 
 function shuffleArray<T>(array: T[]) {
     for (let i = array.length - 1; i > 0; i--) {
@@ -14,7 +15,7 @@ function shuffleArray<T>(array: T[]) {
 async function run(benchmark: BenchmarkBase, iterations = 10) {
     const runners = await getRunners(benchmark);
 
-    for (let i = 0 ; i < iterations; i++) {
+    for (let i = 0 ; i < iterations * benchmark.iterationMultiplier; i++) {
         const shuffled = runners.slice();
         shuffleArray(shuffled);
 
@@ -58,12 +59,20 @@ async function getRunners(benchmark: BenchmarkBase): Promise<[name: string, run:
         setFlags(flags);
         sizes.set(name, await benchmark.c2wasmSize());
     }
-    runners.push(["TURBOFAN NONE", () => {
-        setFlags("none"); return benchmark.c2wasmNodeFlagsRun("--no-liftoff");
-    }, []]);
-    runners.push(["TURBOFAN DEFAULT", () => {
-        setFlags("default"); return benchmark.c2wasmNodeFlagsRun("--no-liftoff");
-    }, []]);
+    if (benchmark.turboFanAll) {
+        for (const [name, flags] of FLAG_CONFIGURATIONS.entries()) {
+            runners.push([`TURBOFAN ${name}`, () => {
+                setFlags(flags); return benchmark.c2wasmNodeFlagsRun("--no-liftoff");
+            }, []]);
+        }
+    } else {
+        runners.push(["TURBOFAN NONE", () => {
+            setFlags("none"); return benchmark.c2wasmNodeFlagsRun("--no-liftoff");
+        }, []]);
+        runners.push(["TURBOFAN DEFAULT", () => {
+            setFlags("default"); return benchmark.c2wasmNodeFlagsRun("--no-liftoff");
+        }, []]);
+    }
 
     const compilePromises: Promise<void>[] = [];
 
@@ -102,7 +111,7 @@ async function getRunners(benchmark: BenchmarkBase): Promise<[name: string, run:
 }
 
 if (require.main === module) {
-    const benchmarks = {cjpeg, coremark, raytracer} as {[k: string]: BenchmarkBase};
+    const benchmarks = {cjpeg, coremark, raytracer, toy} as {[k: string]: BenchmarkBase};
     const requested = process.argv[2]?.toLowerCase();
 
     let benchmark;
