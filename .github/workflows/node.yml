@@ -15,7 +15,7 @@ jobs:
 
     strategy:
       matrix:
-        node: [14.x, 15.x]
+        node: [15.x, 16.x]
         os: [ubuntu-latest, windows-latest]
         exclude:
           - os: windows-latest
@@ -30,7 +30,7 @@ jobs:
     - run: npm ci
     - run: npm run lint
     - run: npm test
-      
+
   build:
     runs-on: ubuntu-latest
     needs: [test]

@@ -63,9 +63,6 @@
         "ts"
       ]
     },
-    "nodeArguments": [
-      "--experimental-wasm-bigint"
-    ],
     "timeout": "60s"
   },
   "publishConfig": {
