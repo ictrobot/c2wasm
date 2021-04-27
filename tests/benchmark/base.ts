@@ -109,4 +109,4 @@ FLAG_CONFIGURATIONS.set("PRE", getFlags());
 }
 
 setFlags({inlining: true});
-FLAG_CONFIGURATIONS.set("INLINE", getFlags());
+FLAG_CONFIGURATIONS.set("Inlined", getFlags());

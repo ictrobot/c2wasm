@@ -80,11 +80,11 @@ async function getRunners(benchmark: BenchmarkBase): Promise<[name: string, run:
             }, []]);
         }
     } else {
-        runners.push(["TurboFan NONE", () => {
+        runners.push(["TurboFan None", () => {
             setFlags("none"); return benchmark.c2wasmNodeFlagsRun("--no-liftoff");
         }, []]);
-        runners.push(["TurboFan DEFAULT", () => {
-            setFlags("default"); return benchmark.c2wasmNodeFlagsRun("--no-liftoff");
+        runners.push(["TurboFan Inlined", () => {
+            setFlags("default"); setFlags({inlining: true}); return benchmark.c2wasmNodeFlagsRun("--no-liftoff");
         }, []]);
     }
 
