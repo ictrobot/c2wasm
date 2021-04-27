@@ -1,6 +1,3 @@
-# This workflow will do a clean install of node dependencies, build the source code and run tests across different versions of node
-# For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
-
 name: Node.js CI
 
 on:
@@ -18,9 +15,6 @@ jobs:
         node: [14.x, 15.x, 16.x]
         os: [ubuntu-latest, windows-latest]
 
-    env:
-      NODE_OPTIONS: ${{ matrix.node-options }}
-
     steps:
     - uses: actions/checkout@v2
     - name: Use Node.js ${{ matrix.node }}
@@ -29,7 +23,14 @@ jobs:
         node-version: ${{ matrix.node }}
     - run: npm ci
     - run: npm run lint
-    - run: npm test
+    - name: "npm test [14.x]"
+      if: ${{ matrix.node == '14.x' }}
+      run: npm test
+      env:
+        NODE_OPTIONS: "--experimental-wasm-bigint"
+    - name: "npm test [15.x/16.x]"
+      if: ${{ matrix.node != '14.x' }}
+      run: npm test
 
   build:
     runs-on: ubuntu-latest
