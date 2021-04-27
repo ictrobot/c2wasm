@@ -25,6 +25,7 @@ export const coremark = (new class extends BenchmarkBase {
         if (match) {
             return Number(match[1]);
         } else {
+            console.log(output);
             throw new Error("Benchmark failed");
         }
     }

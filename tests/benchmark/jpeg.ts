@@ -74,10 +74,11 @@ export async function jpegTests(): Promise<void> {
 const cjpegCompilerFiles = ["cjpeg.c", ...CDJPEG].map(f => `jpeg/src/${f}`).join(" ");
 export const cjpeg = (new class extends BenchmarkBase {
     getScore(output: string): number {
-        const match = output.match(/^([1-9][0-9]*\.[0-9]+)\r?\n?$/);
+        const match = output.match(/^([0-9]+\.[0-9]+)\r?\n?$/);
         if (match) {
             return Number(match[1]);
         } else {
+            console.log(output);
             throw new Error("Benchmark failed");
         }
     }

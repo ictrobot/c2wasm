@@ -37,10 +37,11 @@ async function run(): Promise<[string, Uint8Array]> {
 // benchmark
 export const raytracer = (new class extends BenchmarkBase {
     getScore(output: string): number {
-        const match = output.match(/Rendered scene in ([1-9][0-9]*\.[0-9]+) seconds/);
+        const match = output.match(/Rendered scene in ([0-9]+\.[0-9]+) seconds/);
         if (match) {
             return Number(match[1]);
         } else {
+            console.log(output);
             throw new Error("Benchmark failed");
         }
     }
