@@ -25,9 +25,7 @@ jobs:
     - run: npm run lint
     - name: "npm test [14.x]"
       if: ${{ matrix.node == '14.x' }}
-      run: npm test
-      env:
-        NODE_OPTIONS: "--experimental-wasm-bigint"
+      run: npm test -- "--node-arguments=--experimental-wasm-bigint"
     - name: "npm test [15.x/16.x]"
       if: ${{ matrix.node != '14.x' }}
       run: npm test

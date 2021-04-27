@@ -23,3 +23,10 @@ Also supports the following c99 features:
 Files in `src/c_library/impl/libraries` have their own licenses inside each folder.
 
 Files in `tests/benchmark/*/` also have their own licenses.
+
+## Compatibility
+Compatible with Node.js 15.x and 16.x.
+On Windows, benchmarking is done in WSL.
+
+Compatible with Node.js 14.x using the `--experimental-wasm-bigint` flag, which can be used to run the tests using `npm test -- --node-arguments=--experimental-wasm-bigint`.
+Benchmarking is not supported.
