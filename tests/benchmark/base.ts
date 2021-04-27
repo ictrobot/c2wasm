@@ -86,16 +86,16 @@ FLAG_CONFIGURATIONS.set("None", "none");
 
 setFlags("none");
 setFlags({generation_try_constant_expr: true});
-FLAG_CONFIGURATIONS.set("Const expr", getFlags());
+FLAG_CONFIGURATIONS.set("ConstExpr", getFlags());
 
 Object.keys(getFlags()).filter(x => x.startsWith("peephole_")).forEach(x => setFlags({[x]: true}));
 FLAG_CONFIGURATIONS.set("Peephole", getFlags());
 
 setFlags({copy_propagation: true, live_range_splitting: true, dead_code_elimination: true, reallocate_locals: true, unused_locals: true});
-FLAG_CONFIGURATIONS.set("CP & RL", getFlags());
+FLAG_CONFIGURATIONS.set("CP RL", getFlags());
 
 setFlags({partial_redundancy_elimination: true});
-FLAG_CONFIGURATIONS.set("PRE (Default)", getFlags());
+FLAG_CONFIGURATIONS.set("PRE", getFlags());
 
 { // check current flags are the same as default
     const currentFlags = getFlags();

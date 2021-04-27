@@ -5,6 +5,8 @@ import {cjpeg} from "./jpeg";
 import {raytracer} from "./raytracer";
 import {toy} from "./toy";
 
+let latexOutput: boolean = false;
+
 function shuffleArray<T>(array: T[]) {
     for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -43,6 +45,18 @@ async function run(benchmark: BenchmarkBase, iterations = 10) {
         }
         console.log("\n");
     }
+
+    if (latexOutput) {
+        console.log("LaTeX output:\n");
+        console.log("{" + runners.map(([name]) => name).join(", ") + "}");
+        console.log("\\addplot plot [error bars, y dir=both, y explicit] coordinates {");
+        for (const [name, _, scores] of runners) {
+            const avg = (scores.reduce((a, b) => a + b) / scores.length);
+            const stdev = Math.sqrt(scores.map(x => (x - avg) ** 2).reduce((a, b) => a + b) / (scores.length - 1));
+            console.log(`  (${name}, ${avg}) +- (${stdev}, ${stdev})`);
+        }
+        console.log("};");
+    }
 }
 
 async function getRunners(benchmark: BenchmarkBase): Promise<[name: string, run: () => Promise<string>, scores: number[]][]> {
@@ -51,7 +65,7 @@ async function getRunners(benchmark: BenchmarkBase): Promise<[name: string, run:
 
     // c2wasm runners
     for (const [name, flags] of FLAG_CONFIGURATIONS.entries()) {
-        runners.push([`LIFTOFF ${name}`, () => {
+        runners.push([`Liftoff ${name}`, () => {
             setFlags(flags); return benchmark.c2wasmNodeFlagsRun("--liftoff --no-wasm-tier-up");
         }, []]);
 
@@ -61,15 +75,15 @@ async function getRunners(benchmark: BenchmarkBase): Promise<[name: string, run:
     }
     if (benchmark.turboFanAll) {
         for (const [name, flags] of FLAG_CONFIGURATIONS.entries()) {
-            runners.push([`TURBOFAN ${name}`, () => {
+            runners.push([`TurboFan ${name}`, () => {
                 setFlags(flags); return benchmark.c2wasmNodeFlagsRun("--no-liftoff");
             }, []]);
         }
     } else {
-        runners.push(["TURBOFAN NONE", () => {
+        runners.push(["TurboFan NONE", () => {
             setFlags("none"); return benchmark.c2wasmNodeFlagsRun("--no-liftoff");
         }, []]);
-        runners.push(["TURBOFAN DEFAULT", () => {
+        runners.push(["TurboFan DEFAULT", () => {
             setFlags("default"); return benchmark.c2wasmNodeFlagsRun("--no-liftoff");
         }, []]);
     }
@@ -80,8 +94,8 @@ async function getRunners(benchmark: BenchmarkBase): Promise<[name: string, run:
     if (benchmark.emccRun && benchmark.emccCompile && benchmark.emccSize) {
         const emcc = benchmark.emccRun.bind(benchmark), size = benchmark.emccSize.bind(benchmark);
         for (const optFlag of ["-O0", "-O1", "-O2", "-O3", "-Os"] as OptLevel[]) {
-            runners.push([`EMCC LIFTOFF ${optFlag}`, () => emcc(optFlag, "--liftoff --no-wasm-tier-up"), []]);
-            runners.push([`EMCC TURBOFAN ${optFlag}`, () => emcc(optFlag, "--no-liftoff"), []]);
+            runners.push([`EMCC Liftoff ${optFlag}`, () => emcc(optFlag, "--liftoff --no-wasm-tier-up"), []]);
+            runners.push([`EMCC TurboFan ${optFlag}`, () => emcc(optFlag, "--no-liftoff"), []]);
 
             compilePromises.push(benchmark.emccCompile(optFlag).then(async () => {
                 sizes.set(`EMCC ${optFlag}`, await size(optFlag));
@@ -105,6 +119,9 @@ async function getRunners(benchmark: BenchmarkBase): Promise<[name: string, run:
     for (const [name, size] of sizes) {
         console.log(`${name.padEnd(32)} - ${(size / 1024).toFixed(2)}`);
     }
+    if (latexOutput) {
+        console.log("\nLaTeX sizes:\n\\addplot coordinates {" + [...sizes.entries()].map(([name, size]) => `(${name}, ${size / 1024})`).join(" ") + "}");
+    }
     console.log("\n");
 
     return runners;
@@ -122,6 +139,11 @@ if (require.main === module) {
     } else {
         console.log("No benchmark name provided, defaulting to CoreMark");
         benchmark = coremark;
+    }
+
+    if (process.argv[3]?.toLowerCase() === "latex") {
+        latexOutput = true;
+        console.log("Enabling LaTeX output");
     }
 
     (async () => {
