@@ -1,6 +1,6 @@
 import {getFlags} from "../optimisation/flags";
 import {CFuncDefinition, CFuncDeclaration} from "../ir/declarations";
-import {CIdentifier} from "../ir/expressions";
+import {CIdentifier, CConstant} from "../ir/expressions";
 import * as c from "../ir/expressions";
 import {evalExpression} from "../ir/transform/constant_expressions";
 import {CType, CArithmetic, CPointer, CArray, CSizeT, CUnion, CStruct, CFuncType, integerPromotion} from "../ir/types";
@@ -479,6 +479,11 @@ export function expressionGeneration(ctx: WFnGenerator, e: c.CExpression, discar
 // helpers
 /** expressionGeneration + casting */
 export function subExpr(ctx: WFnGenerator, e: c.CExpression, desiredType: CType, discard: boolean = false): WInstruction[] {
+    if (e instanceof CConstant && desiredType instanceof CArithmetic) {
+        // if generating a constant, simply change its type
+        return constant(ctx, e.changeType(desiredType), discard);
+    }
+
     const fakeCast = new c.CCast(e.node, desiredType, e);
     return expressionGeneration(ctx, fakeCast, discard);
 }
