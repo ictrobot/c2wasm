@@ -15,7 +15,7 @@ static RaycastHit findClosestHit(Scene *scene, Ray ray) {
   return closest;
 }
 
-#ifdef __c2wasm
+#ifdef __c2wasm__
 static double pow(double a, double b) {
     double r = 1; // assumes b is integer
     for (int i = 0; i < b; i++) r *= a;

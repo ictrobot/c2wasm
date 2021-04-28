@@ -35,30 +35,31 @@ function u8Equal(u8arr1: Uint8Array, u8arr2: Uint8Array) {
 }
 
 export async function jpegTest(m: WebAssembly.Module, cmdline: string[], outputFile: string, compareAgainst?: string): Promise<number> {
-    const files = new runtime.Files((c) => process.stdout.write(c), undefined, DATASET);
-    const module = await WebAssembly.instantiate(m, {c2wasm: files.getImports()});
+    let output = "";
+    const files = new runtime.Files((c) => output += c, undefined, DATASET);
+    const module = await WebAssembly.instantiate(m, {c2wasm: {
+        ...files.getImports(),
+        __time: () => performance.now()
+    }});
 
-    let time = performance.now(), err = undefined;
+    let err = undefined;
     try {
         runtime.mainWrapper(module.exports, cmdline);
     } catch (e) {
         err = e;
     }
-    time = performance.now() - time;
 
     const contents = files.getContents(outputFile);
     if (!contents) throw err ?? new Error("Failed test");
     // fs.writeFileSync(outputFile, contents);
 
-    if (!compareAgainst) return time;
-    const targetContents = files.getContents(compareAgainst);
-    if (!targetContents) throw new Error("Couldn't find target file");
-    if (u8Equal(contents, targetContents)) {
-        //console.log(`${outputFile} matches ${compareAgainst}`);
-        return time;
-    } else {
-        throw new Error("Failed test - output does not match target");
+    if (compareAgainst) {
+        const targetContents = files.getContents(compareAgainst);
+        if (!targetContents) throw new Error("Couldn't find target file");
+        if (!u8Equal(contents, targetContents)) throw new Error("Failed test - output does not match target");
     }
+
+    return cjpeg.getScore(output);
 }
 
 export async function jpegTests(): Promise<void> {
@@ -86,7 +87,7 @@ export const cjpeg = (new class extends BenchmarkBase {
     async c2wasmRun(): Promise<string> {
         const cjpeg = await jpegCompile("cjpeg");
         const ms = await jpegTest(cjpeg, ["cjpeg", "benchmark.bmp", "output.jpg"], "output.jpg");
-        return (ms / 1000).toFixed(5); // return seconds
+        return ms.toFixed(5);
     }
 
     async c2wasmSize(): Promise<number> {

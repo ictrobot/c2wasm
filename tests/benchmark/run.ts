@@ -14,10 +14,10 @@ function shuffleArray<T>(array: T[]) {
     }
 }
 
-async function run(benchmark: BenchmarkBase, iterations = 10) {
+async function run(benchmark: BenchmarkBase, iterations = 100) {
     const runners = await getRunners(benchmark);
 
-    for (let i = 0 ; i < iterations * benchmark.iterationMultiplier; i++) {
+    for (let i = 0 ; i < iterations; i++) {
         const shuffled = runners.slice();
         shuffleArray(shuffled);
 

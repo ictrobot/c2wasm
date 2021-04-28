@@ -18,7 +18,7 @@ export class Preprocessor extends PreprocessorBase {
         }
 
         this.definitions.set("__FILE__", new Definition(this, "__FILE__", [{value: `"${filename}"`}], []));
-        this.definitions.set("__c2wasm", new Definition(this, "__c2wasm", [{value: "1"}], []));
+        this.definitions.set("__c2wasm__", new Definition(this, "__c2wasm__", [{value: "1"}], []));
 
         if (customDefinitions) {
             for (const [key, value] of Object.entries(customDefinitions)) {

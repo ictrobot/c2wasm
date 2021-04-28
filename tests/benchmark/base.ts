@@ -7,8 +7,7 @@ export type OptLevel = `-O${'0' | '1' | '2' | '3' | 's'}`;
 
 export abstract class BenchmarkBase {
 
-    constructor(readonly name: string, readonly benchmarkFile: string,
-                readonly iterationMultiplier: number = 1, readonly turboFanAll: boolean = false) {
+    constructor(readonly name: string, readonly benchmarkFile: string, readonly turboFanAll: boolean = false) {
     }
 
     abstract getScore(output: string): number;

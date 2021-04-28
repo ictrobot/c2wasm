@@ -26,12 +26,21 @@
 #include "cdjpeg.h"		/* Common decls for cjpeg/djpeg applications */
 #include "jversion.h"		/* for version message */
 
-// CHANGED - support timing on emscripten
+// CHANGED - support timing
+#ifdef __c2wasm__
+#include <time.h>
+#define TIMING
+
+static double time_ms() {
+    return clock();
+}
+
+#else
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #define TIMING
 
-static double ej_get_ms() {
+static double time_ms() {
     return EM_ASM_DOUBLE({return require("perf_hooks").performance.now();});
 }
 
@@ -40,12 +49,14 @@ static double ej_get_ms() {
 #include <sys/resource.h>
 #define TIMING
 
-static double ej_get_ms() {
+static double time_ms() {
     struct timeval t;
     struct timezone tzp;
     gettimeofday(&t, &tzp);
     return 1000 * (t.tv_sec + t.tv_usec*1e-6);
 }
+
+#endif
 #endif
 
 
@@ -496,7 +507,7 @@ main (int argc, char **argv)
 
   // CHANGED - support timing
 #ifdef TIMING
-  double startTime = ej_get_ms();
+  double startTime = time_ms();
 #endif
 
   /* On Mac, fetch a command line. */
@@ -630,8 +641,8 @@ main (int argc, char **argv)
 
   // CHANGED - support timing
 #ifdef TIMING
-  double endTime = ej_get_ms();
-  printf("%f", (endTime - startTime) / 1000);
+  double endTime = time_ms();
+  printf("%f", endTime - startTime);
 #endif
 
   /* All done. */

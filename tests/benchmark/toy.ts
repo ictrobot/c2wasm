@@ -57,7 +57,7 @@ export const toy = (new class extends BenchmarkBase {
     emccSize = undefined;
     nativeCompile = undefined;
     nativeRun = undefined;
-}("toy benchmark", __filename, 10, true));
+}("toy benchmark", __filename, true));
 
 if (require.main === module) {
     BenchmarkBase.setFlags(process.argv[2]);
