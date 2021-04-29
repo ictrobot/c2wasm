@@ -15,7 +15,7 @@ fs.readdirSync(SRC_DIR).filter(x => x.startsWith("test")).forEach(name =>
 // file used for benchmarking
 DATASET.set("benchmark.bmp", fs.readFileSync(`${__dirname}/jpeg/benchmark.bmp`, {}));
 
-export function jpegCompile(name: "cjpeg" | "djpeg"): Promise<WebAssembly.Module> {
+function jpegCompile(name: "cjpeg" | "djpeg"): Promise<WebAssembly.Module> {
     const source = new Map<string, string>();
     fs.readdirSync(SRC_DIR).filter(x => x.endsWith(".h") || x === `${name}.c` || CDJPEG.includes(x)).forEach(name =>
         source.set(name, fs.readFileSync(SRC_DIR + name, {encoding: "utf-8"})));
@@ -34,7 +34,7 @@ function u8Equal(u8arr1: Uint8Array, u8arr2: Uint8Array) {
     return true;
 }
 
-export async function jpegTest(m: WebAssembly.Module, cmdline: string[], outputFile: string, compareAgainst?: string): Promise<number> {
+async function jpegTest(m: WebAssembly.Module, cmdline: string[], outputFile: string, compareAgainst?: string): Promise<string> {
     let output = "";
     const files = new runtime.Files((c) => output += c, undefined, DATASET);
     const module = await WebAssembly.instantiate(m, {c2wasm: {
@@ -59,7 +59,7 @@ export async function jpegTest(m: WebAssembly.Module, cmdline: string[], outputF
         if (!u8Equal(contents, targetContents)) throw new Error("Failed test - output does not match target");
     }
 
-    return cjpeg.getScore(output);
+    return output;
 }
 
 export async function jpegTests(): Promise<void> {
@@ -86,8 +86,7 @@ export const cjpeg = (new class extends BenchmarkBase {
 
     async c2wasmRun(): Promise<string> {
         const cjpeg = await jpegCompile("cjpeg");
-        const ms = await jpegTest(cjpeg, ["cjpeg", "benchmark.bmp", "output.jpg"], "output.jpg");
-        return ms.toFixed(5);
+        return await jpegTest(cjpeg, ["cjpeg", "benchmark.bmp", "output.jpg"], "output.jpg");
     }
 
     async c2wasmSize(): Promise<number> {
