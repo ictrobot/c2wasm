@@ -153,7 +153,7 @@ export class Files {
     }
 }
 
-interface FileLike {
+export interface FileLike {
     get(): number | -1;
     put(c: number): boolean;
     pos(): bigint;

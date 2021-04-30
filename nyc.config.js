@@ -1,8 +1,9 @@
 module.exports = {
     "temp-dir": "./build/.nyc_output/",
     "report-dir": "./build/coverage/",
-    include: [
-        "src/**/*.ts"
+    exclude: [
+        "tests/**",
+        "**/gen/**",
     ],
     reporter: [
         "text-summary",

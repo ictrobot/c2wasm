@@ -54,3 +54,11 @@ int main(int argc, char *argv[]) {
 
     t.assert(mainWrapper(exports, ["Testing123"]) > 0, "Stack pointer after arguments");
 });
+
+test("no args", async t => {
+    const exports = await compileSnippet(`
+int main() {
+    return 42;
+}`).execute({});
+    t.is(mainWrapper(exports, []), 42);
+});
