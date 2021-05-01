@@ -158,20 +158,20 @@ EXTERN(void) jtransform_request_workspace
 	JPP((j_decompress_ptr srcinfo, jpeg_transform_info *info));
 /* Adjust output image parameters */
 EXTERN(jvirt_barray_ptr *) jtransform_adjust_parameters
-	JPP((j_decompress_ptr srcinfo, j_compress_ptr dstinfo,
-	     jvirt_barray_ptr *src_coef_arrays,
+	JPP((j_decompress_ptr srcinfo, j_compress_ptr dstinfo, \
+	     jvirt_barray_ptr *src_coef_arrays, \
 	     jpeg_transform_info *info));
 /* Execute the actual transformation, if any */
 EXTERN(void) jtransform_execute_transform
-	JPP((j_decompress_ptr srcinfo, j_compress_ptr dstinfo,
-	     jvirt_barray_ptr *src_coef_arrays,
+	JPP((j_decompress_ptr srcinfo, j_compress_ptr dstinfo, \
+	     jvirt_barray_ptr *src_coef_arrays, \
 	     jpeg_transform_info *info));
 /* Determine whether lossless transformation is perfectly
  * possible for a specified image and transformation.
  */
 EXTERN(boolean) jtransform_perfect_transform
-	JPP((JDIMENSION image_width, JDIMENSION image_height,
-	     int MCU_width, int MCU_height,
+	JPP((JDIMENSION image_width, JDIMENSION image_height, \
+	     int MCU_width, int MCU_height, \
 	     JXFORM_CODE transform));
 
 /* jtransform_execute_transform used to be called
@@ -201,5 +201,5 @@ EXTERN(void) jcopy_markers_setup
 	JPP((j_decompress_ptr srcinfo, JCOPY_OPTION option));
 /* Copy markers saved in the given source object to the destination object */
 EXTERN(void) jcopy_markers_execute
-	JPP((j_decompress_ptr srcinfo, j_compress_ptr dstinfo,
+	JPP((j_decompress_ptr srcinfo, j_compress_ptr dstinfo, \
 	     JCOPY_OPTION option));

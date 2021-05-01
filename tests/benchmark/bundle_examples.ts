@@ -17,13 +17,13 @@ sourceBundle({
     simplify: false
 });
 
-// sourceBundle({
-//     name: "libjpeg",
-//     cacheFile: buildDir + "/libjpeg.json",
-//     sourceFolder: __dirname + "/jpeg/src/",
-//     // eslint-disable-next-line @typescript-eslint/no-var-requires
-//     require() {
-//         throw new Error();
-//     },
-//     simplify: false
-// });
+sourceBundle({
+    name: "libjpeg",
+    cacheFile: buildDir + "/libjpeg.json",
+    sourceFolder: __dirname + "/jpeg/src/",
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    require() {
+        throw new Error();
+    },
+    simplify: false
+});
