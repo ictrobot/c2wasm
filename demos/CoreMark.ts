@@ -19,7 +19,7 @@ document.body.innerHTML = `
 
 let downloadTime = performance.now();
 writeRow("Fetching sources");
-fetch("examples/coremark.json").then(async response => {
+fetch("examples/CoreMark.json").then(async response => {
     const text = await response.text();
 
     downloadTime = performance.now() - downloadTime;
