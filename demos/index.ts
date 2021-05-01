@@ -63,6 +63,17 @@ wabt().then(wabt => {
             <div id="flags" style="display: none"></div>
             <pre id="output"></pre>
         </div>
+        <hr>
+        <div>
+            <h3>Other demos:</h3>
+            <ul>
+                <li><a href="preprocessor.html" target="_blank">preprocessor</a></li>
+                <li><a href="parsetree.html" target="_blank">parse tree</a></li>
+                <li><a href="ir.html" target="_blank">intermediate representation</a></li>
+                <li><a href="cfg.html" target="_blank">control flow graph</a></li>
+                <li><a href="flags.html" target="_blank">flag comparison</a></li>
+            </ul>
+        </div>
     `);
         let module: ModuleBuilder | undefined;
         const files = new Files(

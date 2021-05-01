@@ -151,6 +151,15 @@ export class Files {
         const file = this.handleMap.get(this.nameMap.get(filename) ?? -Infinity);
         if (file instanceof File) return new Uint8Array(file.bytes);
     }
+
+    public delete(filename: string): boolean {
+        const handle = this.nameMap.get(filename);
+        if (!handle) return false;
+
+        this.nameMap.delete(filename);
+        this.handleMap.delete(handle);
+        return true;
+    }
 }
 
 export interface FileLike {

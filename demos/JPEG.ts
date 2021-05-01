@@ -193,6 +193,8 @@ async function setupSlider(cjpeg: WebAssembly.Module, files: Files, getOutput: (
 
 async function compress(quality: number, outputDiv: HTMLDivElement, image: HTMLImageElement, cjpeg: WebAssembly.Module, files: Files, getOutput: () => string) {
     setTimeout(async () => {
+        files.delete("output.jpg");
+
         try {
             const instance = await WebAssembly.instantiate(cjpeg, {c2wasm: {
                 ...files.getImports(),
