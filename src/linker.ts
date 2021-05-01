@@ -33,16 +33,16 @@ export class Linker {
         }
     }
 
-    /** check complete or link with other linker */
-    public link(other?: Linker): void {
+    /** check complete or link with others */
+    public link(...linkers: Linker[]): void {
         if (this._linked) throw new LinkingError("Already linked!");
-        if (other && !other._linked) throw new LinkingError("Cannot link against not-linked Linker!");
+        if (linkers && linkers.some(x => !x._linked)) throw new LinkingError("Cannot link against a not-linked Linker!");
 
-        // link this with other
+        outerLoop: // link this with others
         for (const linkable of this._linkables.values()) {
             if (linkable.definition !== undefined) continue; // we've got a definition
 
-            if (other !== undefined) {
+            for (const other of linkers) {
                 const linkable2 = other._linkables.get(linkable.id);
                 if (linkable2 !== undefined && linkable2.definition) {
                     if (linkable instanceof ExternalFunction && linkable2 instanceof ExternalFunction) {
@@ -54,7 +54,7 @@ export class Linker {
                     } else {
                         throw new LinkingError("Tried to link incompatible types", linkable.parseNode, linkable2.parseNode);
                     }
-                    continue;
+                    continue outerLoop;
                 }
             }
 

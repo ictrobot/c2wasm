@@ -2,7 +2,9 @@ import {setFlags} from "../src";
 import {mainWrapper} from "../src/c_library/runtime/args";
 import {Files} from "../src/c_library/runtime/files";
 import {loadBundle} from "../src/c_library/source_bundle";
-import {compile} from "../src/";
+import {stdLibrary} from "../src/compile";
+import {WGenerator} from "../src/generation";
+import {Linker} from "../src/linker";
 
 function writeRow(text: string = "", body: string = "") {
     const div = document.createElement("div");
@@ -17,6 +19,7 @@ function writeRow(text: string = "", body: string = "") {
 }
 
 const FILES = ["jcapimin.c", "jcapistd.c", "jctrans.c", "jcparam.c", "jdatadst.c", "jcinit.c", "jcmaster.c", "jcmarker.c", "jcmainct.c", "jcprepct.c", "jccoefct.c", "jccolor.c", "jcsample.c", "jchuff.c", "jcphuff.c", "jcdctmgr.c", "jfdctfst.c", "jfdctflt.c", "jfdctint.c", "jdapimin.c", "jdapistd.c", "jdtrans.c", "jdatasrc.c", "jdmaster.c", "jdinput.c", "jdmarker.c", "jdhuff.c", "jdphuff.c", "jdmainct.c", "jdcoefct.c", "jdpostct.c", "jddctmgr.c", "jidctfst.c", "jidctflt.c", "jidctint.c", "jidctred.c", "jdsample.c", "jdcolor.c", "jquant1.c", "jquant2.c", "jdmerge.c", "jcomapi.c", "jutils.c", "jerror.c", "jmemmgr.c", "jmemnobs.c", "rdppm.c", "rdgif.c", "rdtarga.c", "rdrle.c", "rdbmp.c", "rdswitch.c", "wrppm.c", "wrgif.c", "wrtarga.c", "wrrle.c", "wrbmp.c", "rdcolmap.c", "cdjpeg.c"];
+const DEFINITIONS = {"FILES": "1"};
 
 document.body.innerHTML = `
     <h1>JPEG Compression</h1>
@@ -48,7 +51,7 @@ fetch(`examples/libjpeg.json?v=${new Date().getTime()}`).then(async response => 
 async function precompile(sources: Map<string, string>) {
     let compileTime = performance.now();
     try {
-        compile("");
+        stdLibrary(DEFINITIONS);
     } catch (e) {
         writeRow("Failed ", `<pre>${e.stack}</pre>`);
         return;
@@ -59,21 +62,40 @@ async function precompile(sources: Map<string, string>) {
     setTimeout(() => compileModule(sources), 100);
 }
 
-async function compileProgram(allSources: Map<string, string>, program: "cjpeg" | "djpeg"): Promise<WebAssembly.Module> {
+function cdjpegLinker(allSources: Map<string, string>): Promise<Linker> {
+    writeRow("Compiling shared files");
+
+    return new Promise<Linker>(resolve => setTimeout(() => {
+        const sources = new Map<string, string>();
+        for (const [filename, contents] of allSources.entries()) {
+            if (filename.endsWith(".h") || FILES.includes(filename)) sources.set(filename, contents);
+        }
+
+        let compileTime = performance.now();
+        const l = new Linker(sources, true, DEFINITIONS);
+        l.link(stdLibrary(DEFINITIONS));
+        compileTime = performance.now() - compileTime;
+        writeRow("Compiled in", `${compileTime.toFixed(2)} ms`);
+
+        resolve(l);
+    }, 50));
+}
+
+async function compileProgram(base: Linker, allSources: Map<string, string>, program: "cjpeg" | "djpeg"): Promise<WebAssembly.Module> {
     writeRow("Compiling", `<code>${program}</code>`);
 
     const sources = new Map<string, string>();
     for (const [filename, contents] of allSources.entries()) {
-        if (filename.endsWith(".h") || FILES.includes(filename) || filename === `${program}.c`) {
-            sources.set(filename, contents);
-        }
+        if (filename.endsWith(".h") || filename === `${program}.c`) sources.set(filename, contents);
     }
 
     return new Promise(resolve => setTimeout(async () => {
         let module: WebAssembly.Module;
         let compileTime = performance.now();
         try {
-            const bytes = compile(sources, {FILES: "1"}).toBytes();
+            const linker = new Linker(sources, true, DEFINITIONS);
+            linker.link(base, stdLibrary(DEFINITIONS)); // link with precompiled libjpeg and stdlib
+            const bytes = new WGenerator(linker).module.toBytes();
             module = (await WebAssembly.compile(bytes));
         } catch (e) {
             writeRow("Failed ", `<pre>${e.stack}</pre>`);
@@ -88,8 +110,9 @@ async function compileProgram(allSources: Map<string, string>, program: "cjpeg" 
 async function compileModule(sources: Map<string, string>) {
     setFlags("none");
 
-    const cjpeg = await compileProgram(sources, "cjpeg");
-    const djpeg = await compileProgram(sources, "djpeg");
+    const base = await cdjpegLinker(sources);
+    const cjpeg = await compileProgram(base, sources, "cjpeg");
+    const djpeg = await compileProgram(base, sources, "djpeg");
 
     const fileInput = document.createElement("input");
     fileInput.type = "file";
@@ -216,7 +239,7 @@ async function compress(quality: number, outputDiv: HTMLDivElement, image: HTMLI
             const blob = new Blob([jpeg], {type: 'image/jpeg'});
             image.src = URL.createObjectURL(blob);
 
-            outputDiv.innerHTML += `<br>Size: ${(jpeg.length / 1024).toFixed(2)}`;
+            outputDiv.innerHTML += `<br>Output JPEG is ${(jpeg.length / 1024).toFixed(2)} KiB`;
         }
     }, 50);
 }
