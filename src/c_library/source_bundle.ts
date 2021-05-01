@@ -79,7 +79,7 @@ export function sourceBundle(bundle: Bundle): Map<string, string> {
     }
 }
 
-export function loadBundle(obj: {[s: string]: string}) {
+export function loadBundle(obj: {[s: string]: string}): Map<string, string> {
     const lib = new Map<string, string>();
     Object.entries(obj).forEach(([path, contents]) => lib.set(path, contents));
     return lib;
