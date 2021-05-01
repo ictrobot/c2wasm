@@ -14,6 +14,7 @@ function writeRow(text: string = "", body: string = "") {
 document.body.innerHTML = `
     <a href="https://github.com/eembc/coremark" target="_blank" style="float: right"><b>Sources</b></a>
     <h1>CoreMark</h1>
+    <h4>Compiled in the browser to WebAssembly using <a href="https://github.com/ictrobot/c2wasm">c2wasm</a>.</h4>
     <hr>
 `;
 

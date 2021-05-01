@@ -23,7 +23,7 @@ const DEFINITIONS = {"FILES": "1"};
 
 document.body.innerHTML = `
     <h1>JPEG Compression</h1>
-    <h3>Using libjpeg 6b compiled in browser</h3>
+    <h4>Using libjpeg 6b compiled in the browser to WebAssembly using <a href="https://github.com/ictrobot/c2wasm">c2wasm</a>.</h4>
     <hr>
 `;
 
