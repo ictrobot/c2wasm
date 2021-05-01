@@ -1,6 +1,7 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
+const CopyPlugin = require("copy-webpack-plugin");
 
 const demoPath = "./demos/";
 const demoFiles = Object.fromEntries(require("fs")
@@ -33,12 +34,19 @@ module.exports = (env, argv) => {
         module: {
             rules: [{test: /\.ts$/, loader: "ts-loader"}]
         },
-        plugins: Object.keys(demoFiles).map(entryPoint => new HtmlWebpackPlugin({
-            title: `c2wasm ${entryPoint}`,
-            chunks: [entryPoint],
-            filename: `${entryPoint}.html`,
-            template: "demos/index.html"
-        })),
+        plugins: [
+            new CopyPlugin({
+                patterns: [
+                    {context: "build/examples/", from: "*.json", to: "examples"}
+                ]
+            }),
+            ...Object.keys(demoFiles).map(entryPoint => new HtmlWebpackPlugin({
+                title: `c2wasm ${entryPoint}`,
+                chunks: [entryPoint],
+                filename: `${entryPoint}.html`,
+                template: "demos/index.html"
+            }))
+        ],
         target: "es2020",
         optimization: {
             minimize: argv.mode !== "development",
