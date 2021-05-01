@@ -206,9 +206,9 @@ async function compress(quality: number, outputDiv: HTMLDivElement, image: HTMLI
         const output = getOutput();
         const num = Number.parseFloat(output);
         if (!isNaN(num)) {
-            outputDiv.innerHTML = `Compressing took ${num.toFixed(2)}ms`;
+            outputDiv.innerHTML = `<code>cjpeg</code> took ${num.toFixed(2)}ms`;
         } else {
-            outputDiv.innerHTML = `Output<br><pre>${output}</pre>`;
+            outputDiv.innerHTML = `<code>cjpeg</code> output:<br><pre>${output}</pre>`;
         }
 
         if ((files.getContents("output.jpg")?.length ?? 0) > 0) {
