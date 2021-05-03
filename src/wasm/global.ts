@@ -1,7 +1,7 @@
 import {byte, globalidx} from "./base_types";
 import {encodeConstantInstr} from "./encoding";
 import {ModuleBuilder} from "./module";
-import {ValueType} from "./wtypes";
+import {ValueType, encodeGlobal} from "./wtypes";
 
 export class WGlobal {
 
@@ -18,8 +18,7 @@ export class WGlobal {
 
     toBytes(): byte[] {
         return [
-            this.type,
-            this.mutable ? 0x01 as byte : 0x00 as byte,
+            ...encodeGlobal([this.type, this.mutable]),
             ...encodeConstantInstr(this.initialValue, this.type),
             0x0B as byte
         ];
