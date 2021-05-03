@@ -1,5 +1,6 @@
 import test from "ava";
 import {compile, stdLibrary} from "../../src/compile";
+import {WGenerator} from "../../src/generation";
 import {Linker} from "../../src/linker";
 
 const standardLibraryTest = `
@@ -194,4 +195,29 @@ test("variable with multiple definitions", async t => {
     map.set("test2.c", `int x = 3;`);
 
     await t.throws(() => compile(map));
+});
+
+test("multiple fallback linkers", async t => {
+    const map1 = new Map<string, string>();
+    map1.set("a.c", `int add(int a, int b) { return a + b; }`);
+    const l1 = new Linker(map1, false);
+    l1.link();
+
+    const map2 = new Map<string, string>();
+    map2.set("b.c", `int mul(int a, int b) { return a * b; }`);
+    const l2 = new Linker(map2, false);
+    l2.link();
+
+    const map3 = new Map<string, string>();
+    map3.set("c.c", `
+    int mul(int, int);
+    int add(int, int);
+    
+    int main() { return mul(add(2, 4), 3); }
+    `);
+    const l3 = new Linker(map3, false);
+    l3.link(l1, l2);
+
+    const {main} = (await new WGenerator(l3).module.execute({})) as {main: () => number};
+    t.is(main(), 18);
 });
