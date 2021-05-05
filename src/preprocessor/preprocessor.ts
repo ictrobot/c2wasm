@@ -278,7 +278,6 @@ export class Preprocessor extends PreprocessorBase {
         try {
             return ppEvaluate(processed, this) !== 0n;
         } catch (e) {
-            console.debug(e);
             throw this.error("Invalid condition `" + s + "`");
         }
     }
