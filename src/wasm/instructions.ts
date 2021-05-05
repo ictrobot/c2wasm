@@ -38,10 +38,14 @@ export const Instructions = {
 
 
     // parametric instructions
-    drop: zeroArgsSpecial("drop", [0x1A], ({stack}) => ({
-        parameters: [stack[stack.length - 1]], result: null,
-        reads: [], writes: []
-    })),
+    drop: zeroArgsSpecial("drop", [0x1A], ({stack}) => {
+        if (stack.length <= 0) throw new Error("Drop on empty stack");
+
+        return {
+            parameters: [stack[stack.length - 1]], result: null,
+            reads: [], writes: []
+        };
+    }),
     // select: zeroArgsSpecial("select", ...),
 
 
