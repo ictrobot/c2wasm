@@ -44,7 +44,8 @@ module.exports = (env, argv) => {
                 title: `c2wasm ${entryPoint}`,
                 chunks: [entryPoint],
                 filename: `${entryPoint}.html`,
-                template: "demos/index.html"
+                template: "demos/index.html",
+                scriptLoading: "blocking"
             }))
         ],
         target: "es2020",
