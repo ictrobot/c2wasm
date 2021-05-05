@@ -1,5 +1,6 @@
 import test from "ava";
-import {ModuleBuilder, Instructions, i64Type, i32Type} from "../../src/wasm";
+import {setFlags} from "../../src";
+import {ModuleBuilder, Instructions, i64Type, i32Type, ValueType, WFunctionBuilder} from "../../src/wasm";
 import {labelidx} from "../../src/wasm/base_types";
 
 test("i64 recursive factorial", async t => {
@@ -88,4 +89,40 @@ test("imports", async t => {
 
     test();
     t.deepEqual(value, 47);
+});
+
+test("temporary locals", async t => {
+    function swap(b: WFunctionBuilder, type: ValueType) {
+        const temp1 = b.getTempLocal(type);
+        const temp2 = b.getTempLocal(type);
+        const instructions = [Instructions.local.set(temp2), Instructions.local.set(temp1), Instructions.local.get(temp2), Instructions.local.get(temp1)];
+        b.freeTempLocal(temp1);
+        b.freeTempLocal(temp2);
+        return instructions;
+    }
+
+    setFlags("none");
+
+    const m = new ModuleBuilder();
+    const x = m.function([], [i32Type], (b) => [
+        Instructions.i32.const(5),
+        Instructions.i32.const(10),
+        ...swap(b, i32Type),
+        ...swap(b, i32Type),
+        ...swap(b, i32Type),
+        Instructions.i32.div_u(),
+    ], "swapped");
+
+    t.is(x.locals.length, 2);
+
+    setFlags("default");
+});
+
+test("drop instruction checks if stack is empty", async t => {
+    setFlags("none");
+
+    const m = new ModuleBuilder();
+    t.throws(() => m.function([], [], () => [Instructions.drop()]));
+
+    setFlags("default");
 });

@@ -334,16 +334,6 @@ export class WExpression {
         return instr;
     }
 
-    unshift(...items: (PartialInstr | InstrInstance)[]): void {
-        const stack: ValueType[] = []; // new instructions going at start of expression, so stack will be empty
-        const instr: InstrInstance[] = [];
-        for (const instrFn of items) {
-            instr.push(this.createInstr(instrFn, stack));
-        }
-        this._instructions.unshift(...instr);
-        this._stack.unshift(...stack);
-    }
-
     replace(start: number, end: number, ...items: (PartialInstr | InstrInstance)[]): void {
         if (start < 0 || end < start || start > this._instructions.length) {
             throw new Error("Invalid replacement indices");
