@@ -573,35 +573,36 @@ export class CInitializer {
     /** Once the initializer is recursively constructed and the declaration's type is known, set the type of the
      * initializer to the type of the declaration, checking that this initializer is valid for the provided type */
     set type(value: CType) {
-        const error = () => {
-            throw new checks.ExpressionTypeError(this.node, "initializer to match type");
-        };
         this._memberTypes = [];
 
         if (value instanceof CArray) {
-            if (this.body.length > (value.length ?? Infinity)) error(); // too many elements in this initializer
+            if (this.body.length > (value.length ?? Infinity)) {
+                throw new checks.ExpressionTypeError(this.node, `at most ${value.length} elements`, `${this.body.length} elements`);
+            }
             for (let i = 0; i < this.body.length; i++) {
                 this.body[i] = CInitializer.typeCheck(value.type, this.body[i]);
                 this._memberTypes.push(value.type);
             }
 
         } else if (value instanceof CStruct) {
-            if (this.body.length > value.members.length) error(); // too many members
+            if (this.body.length > value.members.length) {
+                throw new checks.ExpressionTypeError(this.node, `at most ${value.members.length} elements`, `${this.body.length} elements`);
+            }
             for (let i = 0; i < this.body.length; i++) {
                 this.body[i] = CInitializer.typeCheck(value.members[i].type, this.body[i]);
                 this._memberTypes.push(value.members[i].type);
             }
 
         } else if (value instanceof CUnion) {
-            if (this.body.length > 1) error();
-            // unions have to be initialized to the first member in the union
-            if (this.body.length === 1) {
+            if (this.body.length > 1) {
+                throw new checks.ExpressionTypeError(this.node, `one element matching first member in union`, `${this.body.length} elements`);
+            } else if (this.body.length === 1) {
                 this.body[0] = CInitializer.typeCheck(value.members[0].type, this.body[0]);
                 this._memberTypes.push(value.members[0].type);
             }
 
         } else {
-            error();
+            throw new checks.ExpressionTypeError(this.node, "Invalid type for initializer");
         }
         this._type = value;
     }
