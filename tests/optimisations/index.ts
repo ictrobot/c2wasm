@@ -7,7 +7,7 @@ export function optimisationTest(title: string,
                                  flags: Partial<OptimisationFlags>,
                                  fn: (t: ExecutionContext, defaultModule: ModuleBuilder, flagsModule: ModuleBuilder) => void,
                                  src: string): void {
-    test(title, t => {
+    test.serial(title, t => {
         setFlags("none");
         const originalModule = compileSnippet(src);
         setFlags(flags);
