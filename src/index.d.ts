@@ -9,6 +9,8 @@ export declare function setFlags(flags: Partial<OptimisationFlags> | "none" | "d
 
 export declare function getFlags(): OptimisationFlags;
 
+export declare function getDefaultFlags(): OptimisationFlags;
+
 export interface CModule {
     toBytes(): Uint8Array;
     execute(imports: WebAssembly.Imports): Promise<WebAssembly.Exports>;

@@ -47,5 +47,10 @@ export function setFlags(flags: Partial<OptimisationFlags> | "none" | "default")
 }
 
 export function getFlags(): OptimisationFlags {
-    return current;
+    // return a copy
+    return {...current};
+}
+
+export function getDefaultFlags(): OptimisationFlags {
+    return {...DEFAULT};
 }

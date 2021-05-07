@@ -1,5 +1,5 @@
 export {compile, compileSnippet} from "./compile";
-export {getFlags, setFlags} from "./optimisation/flags";
+export {getFlags, getDefaultFlags, setFlags} from "./optimisation/flags";
 
 // runtime
 import {injectArgs, mainWrapper} from "./c_library/runtime/args";
