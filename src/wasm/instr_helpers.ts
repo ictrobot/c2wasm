@@ -85,9 +85,11 @@ interface ConstantInstance<T extends bigint | number> extends BaseInstance<Const
 
 export function constantArg<T extends bigint | number>(name: string, opcode: number[],
                                                        encodeFn: (x: T) => byte[],
+                                                       typeFn: (x: T) => T,
                                                        result: ValueType): (x: T) => InstrContext<ConstantInstance<T>> {
     return (value) => () => ({
-        name, type: "constant", immediate: {value},
+        name, type: "constant",
+        immediate: {value: typeFn(value)},
         encoded: [...opcode as byte[], ...encodeFn(value)],
         parameters: [], result,
         reads: [], writes: [],

@@ -95,7 +95,7 @@ export const Instructions = {
         store8: memArg("i32.store8", [0x3A], "store", i32Type),
         store16: memArg("i32.store16", [0x3B], "store", i32Type),
 
-        const: constantArg("i32.const", [0x41], encodeInt32Constant, i32Type),
+        const: constantArg<number|bigint>("i32.const", [0x41], encodeInt32Constant, BigInt, i32Type),
 
         eqz: zeroArgs("i32.eqz", [0x45], [i32Type], i32Type),
         eq: zeroArgs("i32.eq", [0x46], [i32Type, i32Type], i32Type),
@@ -158,7 +158,7 @@ export const Instructions = {
         store16: memArg("i64.store16", [0x3D], "store", i64Type),
         store32: memArg("i64.store32", [0x3E], "store", i64Type),
 
-        const: constantArg("i64.const", [0x42], encodeInt64Constant, i64Type),
+        const: constantArg<bigint>("i64.const", [0x42], encodeInt64Constant, BigInt, i64Type),
 
         eqz: zeroArgs("i64.eqz", [0x50], [i64Type], i32Type),
         eq: zeroArgs("i64.eq", [0x51], [i64Type, i64Type], i32Type),
@@ -214,7 +214,7 @@ export const Instructions = {
         load: memArg("f32.load", [0x2A], "load", f32Type),
         store: memArg("f32.store", [0x38], "store", f32Type),
 
-        const: constantArg("f32.const", [0x43], encodeF32, f32Type),
+        const: constantArg<number>("f32.const", [0x43], encodeF32, Number, f32Type),
 
         eq: zeroArgs("f32.eq", [0x5B], [f32Type, f32Type], i32Type),
         ne: zeroArgs("f32.ne", [0x5C], [f32Type, f32Type], i32Type),
@@ -251,7 +251,7 @@ export const Instructions = {
         load: memArg("f64.load", [0x2B], "load", f64Type),
         store: memArg("f64.store", [0x39], "store", f64Type),
 
-        const: constantArg("f64.const", [0x44], encodeF64, f64Type),
+        const: constantArg<number>("f64.const", [0x44], encodeF64, Number, f64Type),
 
         eq: zeroArgs("f64.eq", [0x61], [f64Type, f64Type], i32Type),
         ne: zeroArgs("f64.ne", [0x62], [f64Type, f64Type], i32Type),
