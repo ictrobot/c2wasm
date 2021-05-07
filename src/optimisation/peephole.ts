@@ -313,7 +313,8 @@ export function eliminateStructuredInstruction(expr: WExpression): InstrInstance
             if (child.immediate.value < depth) return;
 
             if (child.name === "br") {
-                return [Instructions.br(child.immediate.value - 1n as labelidx)];
+                // ...child.parameters => preserve whether the br consumes a result
+                return [Instructions.br(child.immediate.value - 1n as labelidx, ...child.parameters)];
             } else if (child.name === "br_if") {
                 return [Instructions.br_if(child.immediate.value - 1n as labelidx)];
             }
