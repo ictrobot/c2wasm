@@ -38,7 +38,7 @@ function displayObject(parent: HTMLElement, key: string, obj: any): void {
     const [id, idNew] = getId(obj);
     li.classList.add(`objID${id}`);
     if (idNew) li.id = `objID${id}`;
-    li.innerHTML = `<span class="key">${key}:</span> <code>${obj instanceof CArithmetic ? obj.name : Object.getPrototypeOf(obj).constructor.name}</code>`;
+    li.innerHTML = `<span class="key">${key}:</span> <code>${obj instanceof CArithmetic ? obj.typeName : Object.getPrototypeOf(obj).constructor.name}</code>`;
     if (obj instanceof CArithmetic && !(obj as any).qualifier) return; // reduce tree clutter
 
     if (idNew) {

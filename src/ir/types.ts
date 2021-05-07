@@ -36,7 +36,6 @@ export class CFuncType {
 }
 
 export class CPointer {
-    readonly typeName = "pointer";
     readonly bytes = 4;
     readonly alignment = 4;
     readonly incomplete = false;
@@ -57,10 +56,13 @@ export class CPointer {
     get pointerGeneration(): this {
         return this; // no pointer generation (already a pointer!)
     }
+
+    get typeName(): string {
+        return this.type.typeName + "*" + (this.qualifier ? " " + this.qualifier : "");
+    }
 }
 
 export class CArray {
-    readonly typeName = "array";
     readonly alignment: number;
 
     constructor(readonly node: ParseNode | undefined, readonly type: CType, public length?: number) {
@@ -84,6 +86,14 @@ export class CArray {
     get pointerGeneration(): CPointer {
         return addQualifier(new CPointer(this.node, this.type, false, this), getQualifier(this));
     }
+
+    get typeName(): string {
+        if (this.length) {
+            return this.type.typeName + "[" + this.length + "]";
+        } else {
+            return this.type.typeName + "[]";
+        }
+    }
 }
 
 export type CCompound = CStruct | CUnion | CEnum;
@@ -93,7 +103,6 @@ export class CCompoundMember {
 }
 
 export class CStruct {
-    readonly typeName = "struct";
     private _members: ReadonlyArray<CCompoundMember> | undefined;
 
     constructor(public node: ParseNode | undefined, readonly name: string | undefined) {
@@ -155,10 +164,17 @@ export class CStruct {
     get pointerGeneration(): this {
         return this; // no pointer generation
     }
+
+    get typeName(): string {
+        if (this.name) {
+            return "struct " + this.name;
+        } else {
+            return "struct {" + this.members.map(x => x.type.typeName + " " + x.name + ";").join(" ") + "}";
+        }
+    }
 }
 
 export class CUnion {
-    readonly typeName = "union";
     private _members: ReadonlyArray<CCompoundMember> | undefined;
 
     constructor(public node: ParseNode | undefined, readonly name: string | undefined) {
@@ -212,6 +228,14 @@ export class CUnion {
     get pointerGeneration(): this {
         return this; // no pointer generation
     }
+
+    get typeName(): string {
+        if (this.name) {
+            return "union " + this.name;
+        } else {
+            return "union {" + this.members.map(x => x.type.typeName + " " + x.name + ";").join(" ") + "}";
+        }
+    }
 }
 
 export type CEnumValue = {name: string, value: bigint};
@@ -260,17 +284,16 @@ export class CVoid {
 }
 
 export class CArithmetic {
-    readonly typeName = "arithmetic";
     readonly incomplete = false;
     readonly node = undefined;
     readonly alignment: number;
 
-    private constructor(readonly name: string, readonly bytes: number, readonly type: "float" | "signed" | "unsigned") {
+    private constructor(readonly typeName: string, readonly bytes: number, readonly type: "float" | "signed" | "unsigned") {
         this.alignment = bytes;
     }
 
     equals(t: object): boolean {
-        return t instanceof CArithmetic && t.name === this.name && t.type === this.type && t.bytes === this.bytes;
+        return t instanceof CArithmetic && t.typeName === this.typeName && t.type === this.type && t.bytes === this.bytes;
     }
 
     get minValue(): bigint | number {
@@ -345,13 +368,6 @@ export function addQualifier<T extends CType>(t: T, qualifier?: TypeQualifier): 
     const type = Object.setPrototypeOf({qualifier, _base: t}, t);
     baseType[constType] = type;
     return type;
-}
-
-function withoutQualifiers<T extends CType>(t: T): T {
-    if (Object.prototype.hasOwnProperty.call(t, "qualifier")) {
-        return (t as CQualifiedType<T>)._base ?? t;
-    }
-    return t;
 }
 
 export function getQualifier(t: CQualifiedType<CType>): TypeQualifier | undefined {

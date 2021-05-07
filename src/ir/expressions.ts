@@ -38,7 +38,7 @@ export class CConstant {
             newValue = Number(this.value);
         } else {
             if (this.value > type.maxValue || this.value < type.minValue) {
-                throw new checks.ExpressionTypeError(this.node, `value which fits in ${type.name}`, this.value.toString());
+                throw new checks.ExpressionTypeError(this.node, `value which fits in ${type.typeName}`, this.value.toString());
             }
             newValue = BigInt(this.value);
         }
