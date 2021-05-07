@@ -82,3 +82,138 @@ int main() {
 
     t.is(main(), 0);
 });
+
+test("stdout", async t => {
+    let output = "";
+
+    const {main} = await compile(`
+#include <stdio.h>
+
+int main() {
+  printf("The answer is %d!", 42);
+  
+  return fgetc(stdout) >= 0;
+}
+    `, {FILES: "1"}).execute({c2wasm: {
+        ...new Files((c) => output += c).getImports()
+    }}) as {main: () => number};
+
+    t.is(main(), 0); // cannot read from stdout
+    t.is(output, "The answer is 42!");
+});
+
+test("stderr", async t => {
+    let output = "";
+
+    const {main} = await compile(`
+#include <stdio.h>
+
+int main() {
+  fputs("ERROR!\\n", stderr);
+  
+  return fgetc(stderr) >= 0;
+}
+    `, {FILES: "1"}).execute({c2wasm: {
+        ...new Files((c) => output += c).getImports()
+    }}) as {main: () => number};
+
+    t.is(main(), 0); // cannot read from stderr
+    t.is(output, "ERROR!\n");
+});
+
+test("stdin (not provided)", async t => {
+    const {main} = await compile(`
+#include <stdio.h>
+
+int main() {
+  return fgetc(stdin) >= 0;
+}
+    `, {FILES: "1"}).execute({c2wasm: {
+        ...new Files((c) => c).getImports()
+    }}) as {main: () => number};
+
+    t.is(main(), 0); // no stdin provided
+});
+
+test("stdin (provided)", async t => {
+    let output = "";
+
+    const {main} = await compile(`
+#include <stdio.h>
+#define n 100
+
+char line[n];
+
+int main() {
+  fgets(line, n, stdin);
+  printf("From stdin: %s", line);
+   
+  return fputc('E', stdin) >= 0;
+}
+    `, {FILES: "1"}).execute({c2wasm: {
+        ...new Files((c) => output += c, () => "Hello World\n").getImports()
+    }}) as {main: () => number};
+
+    t.is(main(), 0); // cannot write to stdin
+    t.is(output, "From stdin: Hello World\n");
+});
+
+test("stdout pos/len", async t => {
+    const {main} = await compile(`
+#include <stdio.h>
+
+int main() {
+  fseek(stdout, -100, SEEK_END);
+  
+  fpos_t pos;
+  fgetpos(stdout, &pos);
+  if (pos != 0) return 1;
+  
+  pos = 100;
+  if (fsetpos(stdout, &pos) == 0) return 2; 
+
+  return 0;
+}
+    `, {FILES: "1"}).execute({c2wasm: {
+        ...new Files((c) => c).getImports()
+    }}) as {main: () => number};
+
+    t.is(main(), 0);
+});
+
+test("updating file", async t => {
+    const files = new Files((c) => c);
+
+    const {main} = await compile(`
+#include <stdio.h>
+#define FILENAME "num.txt"
+
+int main() {
+  int counter = 0;
+
+  FILE* r;
+  if ((r = fopen(FILENAME, "r")) != NULL) {
+    fscanf(r, "%d", &counter);
+    fclose(r);
+
+    printf("Counter was %d\\n", counter);
+    printf("Incremented to %d\\n", ++counter);
+  } else {
+    printf("Failed to read file %s", FILENAME);
+  }
+
+  FILE* w = fopen(FILENAME, "w");
+  fprintf(w, "%d", counter);
+  fclose(r);
+
+  return counter;
+}
+    `, {FILES: "1"}).execute({c2wasm: {
+        ...files.getImports()
+    }}) as {main: () => number};
+
+    t.deepEqual([main(), main(), main(), main()], [0, 1, 2, 3]);
+    t.deepEqual([main(), main(), main()], [4, 5, 6]);
+    files.delete("num.txt");
+    t.deepEqual([main(), main(), main()], [0, 1, 2]);
+});
