@@ -228,6 +228,7 @@ peepholeOptimisers.push({
         if (instr3.result === i32Type) {
             if (instr3.name === "i32.load") return [Instructions.i32.load(instr3.immediate.align, offset)];
             if (instr3.name === "i32.load8_s") return [Instructions.i32.load8_s(instr3.immediate.align, offset)];
+            if (instr3.name === "i32.load8_u") return [Instructions.i32.load8_u(instr3.immediate.align, offset)];
             if (instr3.name === "i32.load16_s") return [Instructions.i32.load16_s(instr3.immediate.align, offset)];
             if (instr3.name === "i32.load16_u") return [Instructions.i32.load16_u(instr3.immediate.align, offset)];
         } else if (instr3.result === i64Type) {
