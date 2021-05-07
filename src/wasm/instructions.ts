@@ -13,7 +13,7 @@ export const Instructions = {
     block: blockLoopInstr(0x02, "block"),
     loop: blockLoopInstr(0x03, "loop"),
     if: ifInstr(0x04, 0x05),
-    br: idxArg<labelidx, [] | [ValueType]>("br", [0x0C], [], ({extra}) => ({
+    br: idxArg<labelidx, ValueType[]>("br", [0x0C], [], ({extra}) => ({
         // if this br consumes a result, it must be passed into the function call as it cannot be inferred
         parameters: extra, result: null,
         reads: [], writes: ["jump"]
