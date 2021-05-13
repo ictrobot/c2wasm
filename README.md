@@ -1,6 +1,6 @@
 # c2wasm
 
-[Compiler demo](https://ictrobot.github.io/c2wasm/)
+[Compiler demo](https://ictrobot.github.io/c2wasm/), [Dissertation PDF](https://files.ethanjones.me/c2wasm.pdf)
 
 Other demos:
 - [preprocessor](https://ictrobot.github.io/c2wasm/preprocessor.html)
