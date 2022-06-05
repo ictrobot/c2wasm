@@ -48,7 +48,7 @@ export namespace runtime {
             __exists: () => number;
             __move: () => number;
             __get_fhandle: () => number;
-        }
+        };
 
         getContents(filename: string): Uint8Array | undefined;
     }

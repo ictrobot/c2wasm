@@ -262,7 +262,7 @@ export class Declaration extends ParseNode{
 }
 
 export class InitDeclarator extends ParseNode {
-    readonly type= "initDeclarator";
+    readonly type = "initDeclarator";
 
     constructor(loc: Location, readonly body: Declarator, readonly initializer: Initializer) {
         super(loc);
@@ -295,7 +295,7 @@ export class StructUnionSpecifier extends ParseNode {
 }
 
 export class StructDeclaration extends ParseNode {
-    readonly type= "structDeclaration";
+    readonly type = "structDeclaration";
 
     constructor(loc: Location, readonly typeInfo: DeclarationSpecifiers, readonly list: ReadonlyArray<Declarator> = []) {
         super(loc);
@@ -310,7 +310,7 @@ export class StructDeclaration extends ParseNode {
 export type Declarator = PointerDeclarator | IdentifierDeclarator | ArrayDeclarator | FunctionDeclarator;
 
 export class PointerDeclarator extends ParseNode {
-    readonly type= "pointerDeclarator";
+    readonly type = "pointerDeclarator";
     readonly abstractDeclarator = false;
 
     constructor(loc: Location, readonly pointer: Pointer, readonly body: Declarator) {
@@ -324,7 +324,7 @@ export class PointerDeclarator extends ParseNode {
 }
 
 export class IdentifierDeclarator extends ParseNode {
-    readonly type= "identifierDeclarator";
+    readonly type = "identifierDeclarator";
     readonly abstractDeclarator = false;
 
     constructor(loc: Location, readonly id: string) {
@@ -333,7 +333,7 @@ export class IdentifierDeclarator extends ParseNode {
 }
 
 export class ArrayDeclarator extends ParseNode {
-    readonly type= "arrayDeclarator";
+    readonly type = "arrayDeclarator";
     readonly abstractDeclarator = false;
 
     constructor(loc: Location, readonly body: Declarator, readonly length?: ConstantExpression) {
@@ -347,7 +347,7 @@ export class ArrayDeclarator extends ParseNode {
 }
 
 export class FunctionDeclarator extends ParseNode {
-    readonly type= "functionDeclarator";
+    readonly type = "functionDeclarator";
     readonly abstractDeclarator = false;
 
     constructor(loc: Location, readonly body: Declarator, readonly args?: ReadonlyArray<ParameterDeclaration>, readonly variadic: boolean = false) {
@@ -363,7 +363,7 @@ export class FunctionDeclarator extends ParseNode {
 }
 
 export class ParameterDeclaration extends ParseNode {
-    readonly type= "parameterDeclaration";
+    readonly type = "parameterDeclaration";
 
     constructor(loc: Location, readonly typeInfo: DeclarationSpecifiers, readonly declarator?: Declarator | AbstractDeclarator) {
         super(loc);
@@ -376,7 +376,7 @@ export class ParameterDeclaration extends ParseNode {
 }
 
 export class Pointer extends ParseNode {
-    readonly type= "pointer";
+    readonly type = "pointer";
 
     constructor(loc: Location, readonly qualifierList?: ReadonlyArray<TypeQualifier>, readonly body?: Pointer) {
         super(loc);
@@ -388,7 +388,7 @@ export class Pointer extends ParseNode {
 }
 
 export class TypeName extends ParseNode {
-    readonly type= "typeName";
+    readonly type = "typeName";
 
     constructor(loc: Location, readonly typeInfo: SpecifierQualifiers, readonly declarator?: AbstractDeclarator) {
         super(loc);
@@ -403,7 +403,7 @@ export class TypeName extends ParseNode {
 export type AbstractDeclarator = AbstractPointerDeclarator | AbstractArrayDeclarator | AbstractFunctionDeclarator;
 
 export class AbstractPointerDeclarator extends ParseNode {
-    readonly type= "abstractPointerDeclarator";
+    readonly type = "abstractPointerDeclarator";
     readonly abstractDeclarator = true;
 
     constructor(loc: Location, readonly pointer: Pointer, readonly body?: AbstractDeclarator) {
@@ -417,7 +417,7 @@ export class AbstractPointerDeclarator extends ParseNode {
 }
 
 export class AbstractArrayDeclarator extends ParseNode {
-    readonly type= "abstractArrayDeclarator";
+    readonly type = "abstractArrayDeclarator";
     readonly abstractDeclarator = true;
 
     constructor(loc: Location, readonly body?: AbstractDeclarator, readonly length?: ConstantExpression) {
@@ -431,7 +431,7 @@ export class AbstractArrayDeclarator extends ParseNode {
 }
 
 export class AbstractFunctionDeclarator extends ParseNode {
-    readonly type= "abstractFunctionDeclarator";
+    readonly type = "abstractFunctionDeclarator";
     readonly abstractDeclarator = true;
 
     constructor(loc: Location, readonly body?: AbstractDeclarator, readonly args?: ReadonlyArray<ParameterDeclaration>, readonly variadic: boolean = false) {
@@ -535,7 +535,7 @@ export class ExpressionStatement extends Statement {
 }
 
 export class NoOp extends Statement {
-    readonly type= "nopStatement";
+    readonly type = "nopStatement";
 
     constructor(loc: Location) {
         super(loc);
