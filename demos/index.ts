@@ -77,6 +77,8 @@ wabt().then(wabt => {
         </div>
     `);
         let module: ModuleBuilder | undefined;
+        let canRun = false;
+
         const files = new Files(
             (s) => output.textContent += s,
             () => (prompt("Input?") ?? "") + "\n",
@@ -88,7 +90,7 @@ wabt().then(wabt => {
         // running Wasm
         const runButton = window.document.getElementById("runButton") as HTMLButtonElement;
         runButton.addEventListener("click", async () => {
-            if (module === undefined) return;
+            if (!module || !canRun) return;
             output.textContent = "Output:\n\n";
 
             const imports = {c2wasm: {...files.getImports()}};
@@ -110,17 +112,16 @@ wabt().then(wabt => {
             } catch (e) {
                 output.textContent = e.stack;
                 module = undefined;
+                canRun = false;
+                runButton.disabled = true;
+                downloadButton.disabled = true;
                 throw e;
             }
 
             output.textContent = toWat(module);
-
-            if (module.functions.find(x => x.exportName === "main") === undefined) {
-                runButton.disabled = true;
-                module = undefined;
-            } else {
-                runButton.disabled = false;
-            }
+            canRun = module.functions.find(x => x.exportName === "main") !== undefined;
+            runButton.disabled = !canRun;
+            downloadButton.disabled = false;
         };
         textInput.addEventListener("input", recompile);
 
