@@ -4,7 +4,7 @@ import {getFlags} from "../optimisation/flags";
 import {CFuncDefinition, CFuncDeclaration} from "../ir/declarations";
 import type {CExpression} from "../ir/expressions";
 import type {CStatement} from "../ir/statements";
-import type {CFuncType} from "../ir/types";
+import {CArithmetic, CFuncType, CPointer} from "../ir/types";
 import {ModuleBuilder, WFunctionBuilder, WFunction, Instructions, WImportedFunction, ValueType, i32Type} from "../wasm";
 import type {funcidx, tableidx, typeidx} from "../wasm/base_types";
 import type {WLocal} from "../wasm/functions";
@@ -18,18 +18,18 @@ import {storageSetupStaticVar} from "./storage";
 import {realType, returnType, largeReturn} from "./type_conversion";
 
 export const SHADOW_STACK_SIZE = 2 ** 20;
+export const FIRST_STATIC_ADDR = 32; // reserve first 32 bytes as 0
 
 export class WGenerator {
     readonly module: ModuleBuilder;
     readonly functions = new Map<CFuncDefinition | CFuncDeclaration, WFunction | WImportedFunction>();
 
     // current memory pointers
-    nextStaticAddr = 32; // reserve first 32 bytes as 0
-    readonly shadowStackPtr: WGlobal;
+    nextStaticAddr = FIRST_STATIC_ADDR;
+    _shadowStackPtr?: WGlobal;
 
     constructor(linker: Linker) {
         this.module = new ModuleBuilder();
-        this.shadowStackPtr = this.module.global(i32Type, true, 0n, "__sp");
 
         const staticInitializers = [];
         for (const variable of linker.emitVariables) {
@@ -54,16 +54,54 @@ export class WGenerator {
         interproceduralOptimise(this.module);
 
         this.module.emitCallback = () => {
-            const shadowStackStart = Math.ceil(this.nextStaticAddr / 1024) * 1024;
-            this.shadowStackPtr.initialValue = BigInt(shadowStackStart);
-            this.module.setupMemory(Math.ceil((shadowStackStart + SHADOW_STACK_SIZE) / 65536));
+            const staticSize = Math.ceil(this.nextStaticAddr / 1024) * 1024;
+            if (this._shadowStackPtr) {
+                const shadowStackStart = staticSize + 1024; // between 1024-2047 byte buffer
+                this._shadowStackPtr.initialValue = BigInt(shadowStackStart);
+                this.module.setupMemory(Math.ceil((shadowStackStart + SHADOW_STACK_SIZE) / 65536));
+            } else if (this.isMemoryUsed()) {
+                this.module.setupMemory(Math.ceil(staticSize / 65536));
+            }
         };
+    }
+
+    get shadowStackPtr(): WGlobal {
+        if (!this._shadowStackPtr) {
+            this._shadowStackPtr = this.module.global(i32Type, true, 0n, "__sp");
+        }
+        return this._shadowStackPtr;
+    }
+
+    private isMemoryUsed(): boolean {
+        if (this._shadowStackPtr || this.nextStaticAddr > FIRST_STATIC_ADDR) return true;
+
+        for (const f of this.module.functions) {
+            for (const instr of f.body.instructionsRecursive()) {
+                if (instr.type === "structured") {
+                    // structured instructions include the resources used by child instructions
+                    // and can't directly read/write memory
+                    continue;
+                }
+                if (instr.name === "call" || instr.name === "call_indirect") {
+                    // call instructions include "memory" to ensure flow analysis is safe
+                    continue;
+                }
+                if (instr.reads.includes("memory") || instr.writes.includes("memory")) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private function(func: CFuncDefinition, name?: string) {
         if (largeReturn(func.type.returnType)) {
             // would be hard to correctly call, so don't export
             name = undefined;
+        }
+        if (name && !func.type.parameterTypes.every(t => t instanceof CArithmetic)) {
+            // ensure ssp is included for argument passing when exported unless arguments are all numbers
+            this.shadowStackPtr;
         }
 
         const wasmFunc = this.module.function(...WGenerator.funcType(func.type), undefined, name);

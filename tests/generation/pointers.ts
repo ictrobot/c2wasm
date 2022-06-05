@@ -30,7 +30,7 @@ void test() {
 
 pointerTest("pointer as fn argument", [12, 13, 14, 15], `
 void increment(int* x) {
-  (*x)++;
+    (*x)++;
 }
 
 void test() {
@@ -46,11 +46,11 @@ void test() {
 }
 `);
 
-pointerTest("shadow stack", [1024, 1028, 1032, 1036, 1040], `
+pointerTest("shadow stack", [2048, 2052, 2056, 2060, 2064], `
     void fn(int i) {
-      int x = i;
-      log((int) &x);
-      if (i > 0) fn(--i);
+        int x = i;
+        log((int) &x);
+        if (i > 0) fn(--i);
     }
     
     void test() {

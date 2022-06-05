@@ -371,6 +371,16 @@ export class WExpression {
         for (const instr of this.instructions) target.push(instr.copy());
     }
 
+    *instructionsRecursive(): IterableIterator<InstrInstance> {
+        for (const instr of this.instructions) {
+            yield instr;
+            if (instr.type === "structured") {
+                yield* instr.immediate.expression.instructionsRecursive();
+                if (instr.immediate.expression2) yield* instr.immediate.expression2.instructionsRecursive();
+            }
+        }
+    }
+
     private stackManipulation(instr: InstrInstance, stack: ValueType[]) {
         // check stack parameters
         for (let i = instr.parameters.length - 1; i >= 0; i--) {
