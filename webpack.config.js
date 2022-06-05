@@ -26,10 +26,11 @@ module.exports = (env, argv) => {
         output: {
             filename: "[name].js",
             path: path.resolve(__dirname, 'dist/demos/'),
+            chunkFormat: 'module',
         },
         resolve: {
             extensions: [".ts", ".js"],
-            fallback: Object.fromEntries(["crypto", "path", "fs", "stream", "util"].map(x => [x, false]))
+            fallback: Object.fromEntries(["crypto", "path", "fs", "stream", "util", "buffer"].map(x => [x, false]))
         },
         module: {
             rules: [{test: /\.ts$/, loader: "ts-loader"}]
@@ -65,7 +66,8 @@ module.exports = (env, argv) => {
                 filename: `${mode}.js`,
                 path: path.resolve(__dirname, 'dist/'),
                 library: "c2wasm",
-                libraryTarget: "umd"
+                libraryTarget: "umd",
+                chunkFormat: 'module',
             },
             resolve: {
                 extensions: [".ts", ".js"],

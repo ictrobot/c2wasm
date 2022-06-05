@@ -9,9 +9,9 @@ int main(int argc, char *argv[]) {
     return argc;
 }`).execute({});
 
-    t.is(0, mainWrapper(exports, []));
-    t.is(1, mainWrapper(exports, ["Test"]));
-    t.is(2, mainWrapper(exports, ["Hello", "World"]));
+    t.is(mainWrapper(exports, []), 0);
+    t.is(mainWrapper(exports, ["Test"]), 1);
+    t.is(mainWrapper(exports, ["Hello", "World"]), 2);
 });
 
 test("argv", async t => {
