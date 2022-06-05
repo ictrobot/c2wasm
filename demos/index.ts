@@ -58,6 +58,7 @@ wabt().then(wabt => {
             <div style="position: absolute; right: 2px">
                 <button id="flagsButton">Flags</button>
                 <button id="copyButton">Copy URL</button>
+                <button id="downloadButton">Download Module</button>
                 <button id="runButton">Run!</button>
             </div>
             <div id="flags" style="display: none"></div>
@@ -186,6 +187,17 @@ wabt().then(wabt => {
             const baseURL = window.location.href.split("#")[0];
             const base64 = compress(textInput.value, {outputEncoding: "Base64"});
             await navigator.clipboard.writeText(baseURL + "#" + base64);
+        });
+
+        // Module downloading
+        const downloadButton = window.document.getElementById("downloadButton") as HTMLButtonElement;
+        downloadButton.addEventListener("click", async () => {
+            if (!module) return;
+
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(new Blob([module.toBytes()], {type: 'application/wasm'}));
+            a.download = 'module.wasm';
+            a.click();
         });
 
         // add some base functions to the window which can then be accessed via dev tools
