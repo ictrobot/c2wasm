@@ -2,5 +2,5 @@
 node_modules/
 dist/
 build/
-src/c_library/_standard_library.json
+src/c_library/standard_library.json
 *.wasm

@@ -1,7 +1,6 @@
 import {setFlags} from "../src";
 import {mainWrapper} from "../src/c_library/runtime/args";
 import {Files} from "../src/c_library/runtime/files";
-import {loadBundle} from "../src/c_library/source_bundle";
 import {stdLibrary} from "../src/compile";
 import {WGenerator} from "../src/generation";
 import {Linker} from "../src/linker";
@@ -35,7 +34,7 @@ fetch(`examples/libjpeg.json?v=${new Date().getTime()}`).then(async response => 
     downloadTime = performance.now() - downloadTime;
     writeRow("Downloaded sources ", `- ${(text.length / 1024).toFixed(2)} KiB in ${downloadTime.toFixed(2)}ms (${(text.length * 8 / 1024 / 1024 / (downloadTime / 1000)).toFixed(2)} Mb/s)`);
 
-    const sources = loadBundle(JSON.parse(text) as {[s: string]: string});
+    const sources = new Map(Object.entries(JSON.parse(text) as {[s: string]: string}));
     writeRow("Source license:", `
         <style>.hidden { display: none; }</style>
         <div onclick="[...this.children].forEach(x => x.classList.toggle('hidden'));">
