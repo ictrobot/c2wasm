@@ -1,4 +1,4 @@
-import lib from "./standard_library.json";
+import lib from "./_standard_library.json";
 
 export const STANDARD_LIBRARY = new Map(Object.entries(lib)) as ReadonlyMap<string, string>;
 

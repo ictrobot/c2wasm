@@ -31,7 +31,7 @@ function bundle(folder: string, outputFile: string, simplify: boolean) {
 
 // Standard
 const cLib = join(__dirname, '..', 'src', 'c_library');
-bundle(join(cLib, 'impl'),  join(cLib, 'standard_library.json'), true);
+bundle(join(cLib, 'impl'),  join(cLib, '_standard_library.json'), true);
 
 // Examples
 const exampleDir = join(__dirname, '..', 'tests', 'benchmark');
