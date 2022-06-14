@@ -21,6 +21,14 @@ module.exports = (env, argv) => {
         })
     ];
 
+    const tsLoaderOptions = {
+        onlyCompileBundledFiles: true,
+        compilerOptions: {
+            module: "es2020",
+            moduleResolution: "node",
+        },
+    };
+
     const demos = {
         entry: demoFiles,
         output: {
@@ -33,7 +41,7 @@ module.exports = (env, argv) => {
             fallback: Object.fromEntries(["crypto", "path", "fs", "stream", "util", "buffer"].map(x => [x, false]))
         },
         module: {
-            rules: [{test: /\.ts$/, loader: "ts-loader"}]
+            rules: [{test: /\.ts$/, loader: "ts-loader", options: tsLoaderOptions}]
         },
         plugins: [
             new CopyPlugin({
@@ -74,7 +82,7 @@ module.exports = (env, argv) => {
                 fallback: {fs: false}
             },
             module: {
-                rules: [{test: /\.ts$/, loader: "ts-loader"}]
+                rules: [{test: /\.ts$/, loader: "ts-loader", options: tsLoaderOptions}]
             },
             target: "es2020",
             optimization: {
