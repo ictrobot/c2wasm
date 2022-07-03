@@ -50,7 +50,7 @@ module.exports = (env, argv) => {
                 ]
             }),
             ...Object.keys(demoFiles).map(entryPoint => new HtmlWebpackPlugin({
-                title: `c2wasm ${entryPoint}`,
+                title: entryPoint === 'index' ? 'c2wasm' : `c2wasm ${entryPoint}`,
                 chunks: [entryPoint],
                 filename: `${entryPoint}.html`,
                 template: "demos/index.html",
