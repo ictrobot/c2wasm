@@ -225,7 +225,7 @@ function processResults(exprs: SubExpr[], {INSERT, INSERT_EDGE, REPLACE}: Return
                 if (i.instr) {
                     insertBefore.push(i);
                 } else { // i must be entry
-                    insertBefore.push(...i.flowNext as Set<InstrFlow>);
+                    insertBefore.push(...i.flowNext as InstrFlow[]);
                 }
             }
         }
@@ -273,7 +273,7 @@ function processResults(exprs: SubExpr[], {INSERT, INSERT_EDGE, REPLACE}: Return
             if (check) {
                 // remove [i, *j] from edges and [*j] from nodes
                 result.insertBetween = result.insertBetween.filter(([i2]) => i !== i2);
-                result.insertBefore = result.insertBefore.filter(j2 => !i.flowNext.has(j2));
+                result.insertBefore = result.insertBefore.filter(j2 => i.flowNext.indexOf(j2) === -1);
 
                 if (i.instr.type === "structured") {
                     // the structured nodes appear in the flow graph at the start of their blocks, and the algorithm

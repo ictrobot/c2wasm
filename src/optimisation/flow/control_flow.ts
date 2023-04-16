@@ -2,8 +2,8 @@ import {WExpression} from "../../wasm";
 import {InstrInstance} from "../../wasm/instr_helpers";
 
 export function controlFlow(expr: WExpression): ControlFlowGraph {
-    const entryFlow: MarkerFlow = {type: "entry", instr: undefined, flowPrevious: new Set(), flowNext: new Set()};
-    const exitFlow: MarkerFlow = {type: "exit", instr: undefined, flowPrevious: new Set(), flowNext: new Set()};
+    const entryFlow: MarkerFlow = {type: "entry", instr: undefined, flowPrevious: [], flowNext: []};
+    const exitFlow: MarkerFlow = {type: "exit", instr: undefined, flowPrevious: [], flowNext: []};
     const allFlows: Flow[] = [entryFlow, exitFlow];
     const brTargets: Flow[] = [];
 
@@ -12,7 +12,7 @@ export function controlFlow(expr: WExpression): ControlFlowGraph {
         const flows: Flow[] = [];
 
         for (const [instrIndex, instr] of instructions.entries()) {
-            flows.push({instr, instrIndex, expr, type: "instr", flowPrevious: new Set(), flowNext: new Set()});
+            flows.push({instr, instrIndex, expr, type: "instr", flowPrevious: [], flowNext: []});
         }
         allFlows.push(...flows);
         flows.push(followingFlow);
@@ -42,7 +42,7 @@ export function controlFlow(expr: WExpression): ControlFlowGraph {
             } else if (instr.type === "index" && instr.name.startsWith("br")) {
                 const target = brTargets[Number(instr.immediate.value)];
                 if (!target) throw new Error("No such target for br?");
-                flow.flowNext.add(target);
+                flow.flowNext.push(target);
 
                 if (instr.name !== "br_if") continue;
 
@@ -50,21 +50,21 @@ export function controlFlow(expr: WExpression): ControlFlowGraph {
                 for (const targetIdx of [instr.immediate.defaultValue, ...instr.immediate.valueTable]) {
                     const target = brTargets[Number(targetIdx)];
                     if (!target) throw new Error("No such target for br_table?");
-                    flow.flowNext.add(target);
+                    flow.flowNext.push(target);
                 }
                 continue;
 
             } else if (instr.name === "return") {
-                flow.flowNext.add(exitFlow);
+                flow.flowNext.push(exitFlow);
                 continue;
             }
 
             // flow passes through to next
-            flow.flowNext.add(flows[i + 1]);
+            flow.flowNext.push(flows[i + 1]);
         }
 
         const initial = flows.find(x => x.type === "instr");
-        if (initial) previousFlow.flowNext.add(initial);
+        if (initial) previousFlow.flowNext.push(initial);
         return !!initial;
     }
 
@@ -73,7 +73,7 @@ export function controlFlow(expr: WExpression): ControlFlowGraph {
     // populate flowPrevious
     for (const flow of allFlows) {
         for (const next of flow.flowNext) {
-            next.flowPrevious.add(flow);
+            next.flowPrevious.push(flow);
         }
     }
 
@@ -85,15 +85,12 @@ export function simplifiedControlFlow(expr: WExpression, filter: (instr: InstrIn
     const newAll: InstrFlow[] = [];
 
     for (const flow of all) {
-        if (flow.flowPrevious.size === 1 && flow.flowNext.size === 1 && !filter(flow.instr)) {
-            const previous = [...flow.flowPrevious][0];
-            const next = [...flow.flowNext][0];
+        if (flow.flowPrevious.length === 1 && flow.flowNext.length === 1 && !filter(flow.instr)) {
+            const previous = flow.flowPrevious[0];
+            const next = flow.flowNext[0];
 
-            previous.flowNext.delete(flow);
-            previous.flowNext.add(next);
-
-            next.flowPrevious.delete(flow);
-            next.flowPrevious.add(previous);
+            previous.flowNext[previous.flowNext.indexOf(flow)] = next;
+            next.flowPrevious[next.flowPrevious.indexOf(flow)] = previous;
         } else {
             newAll.push(flow);
         }
@@ -109,17 +106,17 @@ export interface InstrFlow {
     instrIndex: number;
 
     // instructions which could be the previous executed instruction
-    flowPrevious: Set<Flow>;
+    flowPrevious: Flow[];
     // instructions which could be the next executed instruction
-    flowNext: Set<Flow>;
+    flowNext: Flow[];
 }
 
 export interface MarkerFlow {
     type: "entry" | "exit";
     instr: undefined;
 
-    flowPrevious: Set<Flow>;
-    flowNext: Set<Flow>;
+    flowPrevious: Flow[];
+    flowNext: Flow[];
 }
 
 export type Flow = InstrFlow | MarkerFlow;

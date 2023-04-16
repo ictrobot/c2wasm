@@ -7,12 +7,10 @@ export function rangeSplitting(expr: WExpression): void {
     const localsMap = new Map<Flow, LocalRange[]>();
     const definitionMap = new Map<Flow, LocalRange>();
 
-    const queue = new Set<Flow>(cfg.entry.flowNext);
-    let next: IteratorResult<Flow, Flow>;
-    while ((next = queue.keys().next()).value) {
-        const flow = next.value;
-        queue.delete(flow);
+    const queue = cfg.entry.flowNext.slice();
 
+    let flow: Flow | undefined;
+    while ((flow = queue.shift()) !== undefined) {
         const ranges: LocalRange[] = [];
         for (const prev of flow.flowPrevious) {
             for (const [i, local] of (localsMap.get(prev) ?? []).entries()) {
@@ -37,7 +35,7 @@ export function rangeSplitting(expr: WExpression): void {
         const existing = localsMap.get(flow);
         if (!existing || existing.length !== ranges.length || existing.some((x, i) => ranges[i] !== x)) {
             localsMap.set(flow, ranges);
-            for (const next of flow.flowNext) queue.add(next);
+            for (const next of flow.flowNext) queue.push(next);
         }
     }
 

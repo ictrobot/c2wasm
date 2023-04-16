@@ -10,17 +10,11 @@ export function framework(
     intermediateOverride?: (f: Flow, x: bigint) => bigint
 ): void {
 
-    const queue = new Set<Flow>();
+    const queue: Flow[] = (direction === "forwards" ? cfg.entry.flowNext : cfg.exit.flowPrevious)
+        .filter(x => x.instr);
 
-    for (const starting of (direction === "forwards" ? cfg.entry.flowNext : cfg.exit.flowPrevious)) {
-        if (starting.instr) queue.add(starting);
-    }
-
-    let next: IteratorResult<Flow, Flow>;
-    while ((next = queue.keys().next()).value) {
-        const flow = next.value;
-        queue.delete(flow);
-
+    let flow: Flow | undefined;
+    while ((flow = queue.shift()) !== undefined) {
         let X = meetOperation === "union" ? 0n : -1n;
         for (const before of (direction === "forwards" ? flow.flowPrevious : flow.flowNext)) {
             const beforeBits = bitMap.get(before as InstrFlow) ?? 0n;
@@ -43,7 +37,7 @@ export function framework(
             bitMap.set(flow, X);
 
             for (const after of (direction === "forwards" ? flow.flowNext : flow.flowPrevious)) {
-                if (after.instr) queue.add(after);
+                if (after.instr) queue.push(after);
             }
         }
     }
