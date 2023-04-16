@@ -7,7 +7,7 @@ const fakeParseNode: ParseNode = new class extends ParseNode {
     readonly type: string = "__internal__";
 
     constructor() {
-        super({first_line: 0, first_column: 0, last_line: 0, last_column: 0, _source: "", _sourceId: -1});
+        super({first_line: 0, first_column: 0, last_line: 0, last_column: 0, source: ""});
     }
 }();
 

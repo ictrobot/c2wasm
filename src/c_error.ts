@@ -14,7 +14,7 @@ export class CError extends Error {
 }
 
 export function locationString(loc: Location, label: string = "Location"): string {
-    const lines = loc._source.split("\n");
+    const lines = loc.source.split("\n");
     if (loc.first_line >= lines.length) return `${label}: [UNKNOWN]`;
 
     let output = `${label}:\n`;

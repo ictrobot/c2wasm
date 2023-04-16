@@ -33,7 +33,6 @@ test('basic validation of specifiers', t => {
 
 test("abstract function declarators", t => {
     t.truthy(parse(`
-        // int (*)(int)
         int eval(int (*)(int), int);
 
         int eval(int (*f)(int), int x) {

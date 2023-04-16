@@ -1,7 +1,4 @@
-export type Location = {
-    first_line: number, last_line: number, first_column: number, last_column: number,
-    _source: string, _sourceId: number // hidden attributes for error printing
-};
+import type {Location} from "./lexer";
 
 // Classes used to build up the C parse tree - mostly just simple objects storing the relevant fields.
 

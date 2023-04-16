@@ -1,39 +1,23 @@
 import {locationString} from "../c_error";
-import {lexer} from "./lexer";
 import gen from "./gen/c_grammar";
+import {lexer, Location} from "./lexer";
 import * as parsetree from "./parsetree";
 import {validate} from "./validation";
 
-function newLocation(): parsetree.Location {
-    return {first_line: 0, first_column: 0, last_line: 0, last_column: 0, _source: "", _sourceId: 0};
-}
-let nextSourceId: number = 1;
-
-// adapt moo parser to work with Jison
+// adapt lexer to work with Jison
 class WrappedLexer {
     yytext?: string;
-    yylloc: parsetree.Location = newLocation();
-    yylineno: number = 0;
-    types = new Map<string, boolean>();
+    yylloc?: Location;
+    yylineno?: number;
+
+    private types = new Map<string, boolean>();
 
     /** return the token type and update yytext, yylloc, yylineno */
     lex(): string {
         const token = lexer.next();
-        this.yytext = token?.value;
-        if (!token || !token.type) {
-            // no more tokens, end of file reached
-            return "EOF";
-        }
-
-        this.yylloc = {
-            first_line: token.line - 1,
-            first_column: token.col,
-            last_line: token.line + token.lineBreaks - 1,
-            last_column: token.lineBreaks ? 0 : token.col + token.text.length,
-            _sourceId: this.yylloc._sourceId,
-            _source: this.yylloc._source
-        };
-        this.yylineno = this.yylloc.first_line;
+        this.yytext = token.value;
+        this.yylloc = token.loc;
+        this.yylineno = token.loc.first_line;
 
         if (token.type === "IDENTIFIER" && this.types.get(token.text)) {
             return "TYPE_NAME";
@@ -42,15 +26,12 @@ class WrappedLexer {
     }
 
     setInput(input: string): void {
-        // completely reset all state
-        this.yylloc = newLocation();
-        this.yylineno = 0;
         this.yytext = undefined;
+        this.yylloc = undefined;
+        this.yylineno = undefined;
         this.types.clear();
 
         lexer.reset(input);
-        this.yylloc._source = input; // store source on the parser tokens, allowing error information to be easily printed
-        this.yylloc._sourceId = nextSourceId++; // identifier which can be used to check if tokens are from the same file
     }
 
     externalDeclaration(d: parsetree.Declaration) {

@@ -10,7 +10,7 @@ export const PreProRegex = {
     token: /^(?:"(?:\\"|[^\n"])*"|[^ \t\v\f\na-zA-Z_]+)/,
     whitespace: /^[ \t\v\f]+/,
     // used in first pass so is global and multiline
-    comments: /(?:\/\*[^]*?\*\/)|(?:\/\/.*?$)/gm,
+    comments: /\/\*[^]*?\*\/|\/\/.*?$/gm,
     // used to process conditions
     condition: /defined(?:[ \t]*\([ \t]*([a-zA-Z_][a-zA-Z0-9_]*)[ \t]*\)|[ \t]+([a-zA-Z_][a-zA-Z0-9_]*))|(d?[^d]*)/gm
 };

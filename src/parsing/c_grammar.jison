@@ -49,9 +49,9 @@ postfix_expression
     | postfix_expression '(' ')'                                                        -> new t.FunctionCallExpression(@$, $postfix_expression)
     | postfix_expression '(' argument_expression_list ')'                               -> new t.FunctionCallExpression(@$, $postfix_expression, $argument_expression_list)
     | postfix_expression '.' identifier                                                 -> new t.MemberAccessExpression(@$, false, $postfix_expression, $identifier)
-    | postfix_expression PTR_OP identifier                                              -> new t.MemberAccessExpression(@$, true, $postfix_expression, $identifier)
-    | postfix_expression INC_OP                                                         -> new t.UnaryExpression(@$, "postfixIncrement", $1)
-    | postfix_expression DEC_OP                                                         -> new t.UnaryExpression(@$, "postfixDecrement", $1)
+    | postfix_expression '->' identifier                                                -> new t.MemberAccessExpression(@$, true, $postfix_expression, $identifier)
+    | postfix_expression '++'                                                           -> new t.UnaryExpression(@$, "postfixIncrement", $1)
+    | postfix_expression '--'                                                           -> new t.UnaryExpression(@$, "postfixDecrement", $1)
     ;
 
 argument_expression_list
@@ -61,8 +61,8 @@ argument_expression_list
 
 unary_expression
     : postfix_expression                                                                -> $1
-    | INC_OP unary_expression                                                           -> new t.UnaryExpression(@$, "prefixIncrement", $2)
-    | DEC_OP unary_expression                                                           -> new t.UnaryExpression(@$, "prefixDecrement", $2)
+    | '++' unary_expression                                                             -> new t.UnaryExpression(@$, "prefixIncrement", $2)
+    | '--' unary_expression                                                             -> new t.UnaryExpression(@$, "prefixDecrement", $2)
     | unary_operator cast_expression                                                    -> new t.UnaryExpression(@$, $1, $2)
     | SIZEOF unary_expression                                                           -> new t.SizeofExpression(@$, $2)
     | SIZEOF '(' type_name ')'                                                          -> new t.SizeofExpression(@$, $3)
@@ -97,22 +97,22 @@ additive_expression
 
 shift_expression
     : additive_expression                                                               -> $1
-    | shift_expression LEFT_OP additive_expression                                      -> new t.BinaryExpression(@$, "bitwiseShiftLeft", $1, $3)
-    | shift_expression RIGHT_OP additive_expression                                     -> new t.BinaryExpression(@$, "bitwiseShiftRight", $1, $3)
+    | shift_expression '<<' additive_expression                                         -> new t.BinaryExpression(@$, "bitwiseShiftLeft", $1, $3)
+    | shift_expression '>>' additive_expression                                         -> new t.BinaryExpression(@$, "bitwiseShiftRight", $1, $3)
     ;
 
 relational_expression
     : shift_expression                                                                  -> $1
     | relational_expression '<' shift_expression                                        -> new t.BinaryExpression(@$, "relationalLT", $1, $3)
     | relational_expression '>' shift_expression                                        -> new t.BinaryExpression(@$, "relationalGT", $1, $3)
-    | relational_expression LE_OP shift_expression                                      -> new t.BinaryExpression(@$, "relationalLEq", $1, $3)
-    | relational_expression GE_OP shift_expression                                      -> new t.BinaryExpression(@$, "relationalGEq", $1, $3)
+    | relational_expression '<=' shift_expression                                       -> new t.BinaryExpression(@$, "relationalLEq", $1, $3)
+    | relational_expression '>=' shift_expression                                       -> new t.BinaryExpression(@$, "relationalGEq", $1, $3)
     ;
 
 equality_expression
     : relational_expression                                                             -> $1
-    | equality_expression EQ_OP relational_expression                                   -> new t.BinaryExpression(@$, "relationalEq", $1, $3)
-    | equality_expression NE_OP relational_expression                                   -> new t.BinaryExpression(@$, "relationalNEq", $1, $3)
+    | equality_expression '==' relational_expression                                    -> new t.BinaryExpression(@$, "relationalEq", $1, $3)
+    | equality_expression '!=' relational_expression                                    -> new t.BinaryExpression(@$, "relationalNEq", $1, $3)
     ;
 
 and_expression
@@ -132,12 +132,12 @@ inclusive_or_expression
 
 logical_and_expression
     : inclusive_or_expression                                                           -> $1
-    | logical_and_expression AND_OP inclusive_or_expression                             -> new t.BinaryExpression(@$, "logicalAnd", $1, $3)
+    | logical_and_expression '&&' inclusive_or_expression                               -> new t.BinaryExpression(@$, "logicalAnd", $1, $3)
     ;
 
 logical_or_expression
     : logical_and_expression                                                            -> $1
-    | logical_or_expression OR_OP logical_and_expression                                -> new t.BinaryExpression(@$, "logicalOr", $1, $3)
+    | logical_or_expression '||' logical_and_expression                                 -> new t.BinaryExpression(@$, "logicalOr", $1, $3)
     ;
 
 conditional_expression
@@ -152,16 +152,16 @@ assignment_expression
 
 assignment_operator
     : '='                                                                               -> undefined
-    | MUL_ASSIGN                                                                        -> "mul"
-    | DIV_ASSIGN                                                                        -> "div"
-    | MOD_ASSIGN                                                                        -> "mod"
-    | ADD_ASSIGN                                                                        -> "add"
-    | SUB_ASSIGN                                                                        -> "sub"
-    | LEFT_ASSIGN                                                                       -> "leftShift"
-    | RIGHT_ASSIGN                                                                      -> "rightShift"
-    | AND_ASSIGN                                                                        -> "bitwiseAnd"
-    | XOR_ASSIGN                                                                        -> "bitwiseXor"
-    | OR_ASSIGN                                                                         -> "bitwiseOr"
+    | '*='                                                                              -> "mul"
+    | '/='                                                                              -> "div"
+    | '%='                                                                              -> "mod"
+    | '+='                                                                              -> "add"
+    | '-='                                                                              -> "sub"
+    | '<<='                                                                             -> "leftShift"
+    | '>>='                                                                             -> "rightShift"
+    | '&='                                                                              -> "bitwiseAnd"
+    | '^='                                                                              -> "bitwiseXor"
+    | '|='                                                                              -> "bitwiseOr"
     ;
 
 expression
@@ -319,7 +319,7 @@ type_qualifier_list
 
 parameter_type_list
     : parameter_list                                                                    -> ($1.variadic = false, $1)
-    | parameter_list ',' ELLIPSIS                                                       -> ($1.variadic = true, $1)
+    | parameter_list ',' '...'                                                          -> ($1.variadic = true, $1)
     ;
 
 parameter_list
